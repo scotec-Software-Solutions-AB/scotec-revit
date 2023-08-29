@@ -31,7 +31,7 @@
 
 	<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
-		<Content Include="..\..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt"/>
+		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt"/>
 	</ItemGroup>
 
 	<ItemGroup>

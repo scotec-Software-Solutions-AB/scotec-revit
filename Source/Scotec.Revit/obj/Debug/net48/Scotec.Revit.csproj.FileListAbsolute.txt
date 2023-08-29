@@ -2,7 +2,6 @@ C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit.GeneratedMSBuildEditorConfig.editorconfig
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit.csproj.CoreCompileInputs.cache
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\Scotec.Revit.dll
-C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\Scotec.Revit.pdb
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\Autofac.dll
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\Autofac.Extensions.DependencyInjection.dll
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\Microsoft.Bcl.AsyncInterfaces.dll
@@ -42,4 +41,3 @@ C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\System.Threa
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\bin\Debug\net48\System.ValueTuple.dll
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit.csproj.CopyComplete
 C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit.dll
-C:\Projects\scotec\scotec-revit\Source\Scotec.Revit\obj\Debug\net48\Scotec.Revit.pdb
