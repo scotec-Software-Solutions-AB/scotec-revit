@@ -1,0 +1,63 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Projects\\scotec\\scotec-revit\\Source\\Scotec.Revit\\Scotec.Revit.csproj": {}
+  },
+  "projects": {
+    "C:\\Projects\\scotec\\scotec-revit\\Source\\Scotec.Revit\\Scotec.Revit.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Projects\\scotec\\scotec-revit\\Source\\Scotec.Revit\\Scotec.Revit.csproj",
+        "projectName": "Scotec.Revit",
+        "projectPath": "C:\\Projects\\scotec\\scotec-revit\\Source\\Scotec.Revit\\Scotec.Revit.csproj",
+        "packagesPath": "C:\\Projects\\scotec\\scotec-revit\\packages",
+        "outputPath": "C:\\Projects\\scotec\\scotec-revit\\Source\\Scotec.Revit\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Projects\\scotec\\scotec-revit\\NuGet.Config",
+          "C:\\Users\\Olaf\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net48"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "targetAlias": "net48",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net48": {
+          "targetAlias": "net48",
+          "dependencies": {
+            "Autofac.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[7.0.1, )"
+            },
+            "Revit_All_Main_Versions_API_x64": {
+              "include": "Compile",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2023.0.0, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.302\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
