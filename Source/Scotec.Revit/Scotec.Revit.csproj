@@ -31,10 +31,11 @@
 
 	<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
-		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt"/>
+		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Autofac" Version="7.1.0" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
 		<PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2023.0.0">
