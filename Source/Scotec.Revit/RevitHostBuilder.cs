@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright © 2023 Olaf Meyer
+// Copyright © 2023 scotec Software Solutions AB, www.scotec-software.com
+// This file is licensed to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -49,7 +53,7 @@ internal class RevitHostBuilder : IHostBuilder
         Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory)
         where TContainerBuilder : notnull
     {
-        return _hostBuilder.UseServiceProviderFactory(factory);
+        throw new InvalidOperationException("Replacing the service provider factory is not supported.");
     }
 
     public IHostBuilder ConfigureContainer<TContainerBuilder>(

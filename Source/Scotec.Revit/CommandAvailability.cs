@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright © 2023 Olaf Meyer
+// Copyright © 2023 scotec Software Solutions AB, www.scotec-software.com
+// This file is licensed to you under the MIT license.
+
+using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -8,7 +12,8 @@ namespace Scotec.Revit;
 
 public abstract class CommandAvailability : IExternalCommandAvailability
 {
-    public bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    /// <inheritdoc/>
+    bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
     {
         try
         {
@@ -35,5 +40,8 @@ public abstract class CommandAvailability : IExternalCommandAvailability
         }
     }
 
+    /// <summary>
+    /// Implement this method to provide control over whether your external command is enabled or disabled.
+    /// </summary>
     protected abstract bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories, IServiceProvider services);
 }

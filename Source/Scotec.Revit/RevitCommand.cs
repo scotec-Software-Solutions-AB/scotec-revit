@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright © 2023 Olaf Meyer
+// Copyright © 2023 scotec Software Solutions AB, www.scotec-software.com
+// This file is licensed to you under the MIT license.
+
+using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -11,8 +15,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     protected abstract string CommandName { get; }
 
     /// <inheritdoc />
-    /// >
-    public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
         try
         {
@@ -49,23 +52,39 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     /// <inheritdoc />
-    /// >
-    public virtual FailureProcessingResult PreprocessFailures(FailuresAccessor failuresAccessor)
+    FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
     {
-        return FailureProcessingResult.Continue;
+        return OnPreprocessFailures(failuresAccessor);
     }
 
     /// <inheritdoc />
-    /// >
-    public virtual FailureProcessingResult ProcessFailures(FailuresAccessor data)
+    FailureProcessingResult IFailuresProcessor.ProcessFailures(FailuresAccessor data)
     {
-        return FailureProcessingResult.Continue;
+        return OnProcessFailures(data);
     }
 
     /// <inheritdoc />
-    /// >
     public virtual void Dismiss(Document document)
     {
+        OnDismiss(document);
+    }
+
+    /// <summary>
+    ///     This method can be overwritten to dismiss any possible pending failure UI that may
+    ///     have left on the screen in case of exception or document destruction.
+    /// </summary>
+    protected virtual void OnDismiss(Document document)
+    {
+    }
+
+    protected virtual FailureProcessingResult OnPreprocessFailures(FailuresAccessor failuresAccessor)
+    {
+        return FailureProcessingResult.Continue;
+    }
+
+    protected virtual FailureProcessingResult OnProcessFailures(FailuresAccessor data)
+    {
+        return FailureProcessingResult.Continue;
     }
 
     protected abstract Result OnExecute(ExternalCommandData commandData, IServiceProvider ervices);
