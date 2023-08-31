@@ -13,9 +13,14 @@ namespace Scotec.Revit;
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
     /// <summary>
-    /// The command name that appears in Revit's undo list.
+    ///     The command name that appears in Revit's undo list.
     /// </summary>
     protected abstract string CommandName { get; }
+
+    /// <summary>
+    ///     Should be set to true for commands working on application level only.
+    /// </summary>
+    protected bool NoTransaction { get; set; }
 
     /// <inheritdoc />
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -43,6 +48,12 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                                       });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
+            if (document == null || NoTransaction)
+            {
+                // No open document. Therefore we cannot create a transaction.
+                return OnExecute(commandData, serviceProvider);
+            }
+
             using var transaction = new Transaction(document);
             transaction.Start(CommandName);
 
