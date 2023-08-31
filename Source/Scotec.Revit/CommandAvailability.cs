@@ -17,13 +17,16 @@ public abstract class CommandAvailability : IExternalCommandAvailability
     {
         try
         {
-            var document = applicationData.ActiveUIDocument.Document;
+            var document = applicationData.ActiveUIDocument?.Document;
 
             using var scope = RevitApp.GetServiceProvider(applicationData.ActiveAddInId.GetGUID())
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {
-                                          builder.RegisterInstance(document).ExternallyOwned();
+                                          if (document != null)
+                                          {
+                                            builder.RegisterInstance(document).ExternallyOwned();
+                                          }
                                           builder.RegisterInstance(applicationData).ExternallyOwned();
                                           builder.RegisterInstance(applicationData.Application).ExternallyOwned();
                                           builder.RegisterInstance(selectedCategories).ExternallyOwned();

@@ -12,6 +12,9 @@ namespace Scotec.Revit;
 
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
+    /// <summary>
+    /// The command name that appears in Revit's undo list.
+    /// </summary>
     protected abstract string CommandName { get; }
 
     /// <inheritdoc />
@@ -19,14 +22,24 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     {
         try
         {
-            var document = commandData.Application.ActiveUIDocument.Document;
+            var document = commandData.Application.ActiveUIDocument?.Document;
 
             using var scope = RevitApp.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {
-                                          builder.RegisterInstance(document).ExternallyOwned();
+                                          if (document != null)
+                                          {
+                                              builder.RegisterInstance(document).ExternallyOwned();
+                                          }
+
+                                          if (commandData.View != null)
+                                          {
+                                              builder.RegisterInstance(commandData.View).ExternallyOwned();
+                                          }
+
                                           builder.RegisterInstance(commandData.Application).ExternallyOwned();
+                                          builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
                                       });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
