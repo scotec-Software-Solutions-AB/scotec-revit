@@ -12,24 +12,48 @@ namespace Scotec.Revit;
 
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
+    /// <summary>
+    ///     The command name that appears in Revit's undo list.
+    /// </summary>
     protected abstract string CommandName { get; }
+
+    /// <summary>
+    ///     Should be set to true for commands working on application level only.
+    /// </summary>
+    protected bool NoTransaction { get; set; }
 
     /// <inheritdoc />
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
         try
         {
-            var document = commandData.Application.ActiveUIDocument.Document;
+            var document = commandData.Application.ActiveUIDocument?.Document;
 
             using var scope = RevitApp.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {
-                                          builder.RegisterInstance(document).ExternallyOwned();
+                                          if (document != null)
+                                          {
+                                              builder.RegisterInstance(document).ExternallyOwned();
+                                          }
+
+                                          if (commandData.View != null)
+                                          {
+                                              builder.RegisterInstance(commandData.View).ExternallyOwned();
+                                          }
+
                                           builder.RegisterInstance(commandData.Application).ExternallyOwned();
+                                          builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
                                       });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
+            if (document == null || NoTransaction)
+            {
+                // No open document. Therefore we cannot create a transaction.
+                return OnExecute(commandData, serviceProvider);
+            }
+
             using var transaction = new Transaction(document);
             transaction.Start(CommandName);
 
