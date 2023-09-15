@@ -4,16 +4,16 @@ branches:
     main:
         increment: Patch
         tag: ''
-        track-merge-target: false
+#        track-merge-target: false
     develop:
         increment: Patch
         tag: dev
-        track-merge-target: true
+#        track-merge-target: true
     feature:
         increment: Patch
         regex: (^test$)
         tag: alpha
-        track-merge-target: true
+#        track-merge-target: true
         
 ignore:
   sha: []
