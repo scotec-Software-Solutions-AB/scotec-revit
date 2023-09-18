@@ -21,7 +21,6 @@
 		<RepositoryType>git</RepositoryType>
 		<SignAssembly>False</SignAssembly>
 		<Title>Scotec.Revit</Title>
-		<InformationalVersion>$(PackageVersion)</InformationalVersion>
 	</PropertyGroup>
 
 	<PropertyGroup>
