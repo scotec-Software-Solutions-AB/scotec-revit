@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +26,16 @@ internal class RevitHostBuilder : IHostBuilder
                            services.AddSingleton(app.Application);
                            services.AddSingleton(app.Application.ActiveAddInId);
                            services.AddSingleton(app.Application.ControlledApplication);
+                       })
+                       .ConfigureAppConfiguration(builder =>
+                       {
+                           builder.SetBasePath(GetRootPath());
+                           builder.AddJsonFile("appsettings.json", true, false);
+                           var environment = Environment.GetEnvironmentVariable("REVIT_ENVIRONMENT");
+                           if (!string.IsNullOrEmpty(environment))
+                           {
+                               builder.AddJsonFile(Path.Combine(environment, "appsettings.json"), true, false);
+                           }
                        });
     }
 
@@ -70,4 +82,9 @@ internal class RevitHostBuilder : IHostBuilder
     }
 
     public IDictionary<object, object> Properties => _hostBuilder.Properties;
+
+    private string GetRootPath()
+    {
+        return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+    }
 }
