@@ -34,7 +34,7 @@ internal class RevitHostBuilder : IHostBuilder
                            var environment = Environment.GetEnvironmentVariable("REVIT_ENVIRONMENT");
                            if (!string.IsNullOrEmpty(environment))
                            {
-                               builder.AddJsonFile(Path.Combine(environment, "appsettings.json"), true, false);
+                               builder.AddJsonFile($"appsettings.{environment}.json", true, false);
                            }
                        });
     }
