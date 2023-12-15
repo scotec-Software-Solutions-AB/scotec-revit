@@ -10,6 +10,9 @@ using Autofac.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
+/// <summary>
+/// 
+/// </summary>
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
     /// <summary>
@@ -50,7 +53,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             var serviceProvider = scope.Resolve<IServiceProvider>();
             if (document == null || NoTransaction)
             {
-                // No open document. Therefore we cannot create a transaction.
+                // No open document or no transaction requested. Therefore we cannot create a transaction.
                 return OnExecute(commandData, serviceProvider);
             }
 
@@ -101,15 +104,29 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     {
     }
 
+    /// <summary>
+    ///    This method can be overwritten to handle failures found at the end of a transaction and Revit is about to start processing them.
+    /// </summary>
+    /// <seealso cref="Autodesk.Revit.DB.IFailuresPreprocessor.PreprocessFailures"/>
     protected virtual FailureProcessingResult OnPreprocessFailures(FailuresAccessor failuresAccessor)
     {
         return FailureProcessingResult.Continue;
     }
 
+    /// <summary>
+    ///    This method can be overwritten to handle failures found at the end of a transaction and Revit is processing them.
+    /// </summary>
+    /// <seealso cref="Autodesk.Revit.DB.IFailuresProcessor.ProcessFailures"/>
     protected virtual FailureProcessingResult OnProcessFailures(FailuresAccessor data)
     {
         return FailureProcessingResult.Continue;
     }
 
-    protected abstract Result OnExecute(ExternalCommandData commandData, IServiceProvider ervices);
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="commandData"></param>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    protected abstract Result OnExecute(ExternalCommandData commandData, IServiceProvider services);
 }

@@ -5,6 +5,8 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Scotec.Revit", "Scotec.Revit\Scotec.Revit.csproj", "{C9FFC09F-21B8-41EB-9C46-E8C54020DD4C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scotec.Revit.Test", "Scotec.Revit.Test\Scotec.Revit.Test.csproj", "{FD4503E6-5BE3-4A52-870F-1AE169C03F99}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{C9FFC09F-21B8-41EB-9C46-E8C54020DD4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9FFC09F-21B8-41EB-9C46-E8C54020DD4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9FFC09F-21B8-41EB-9C46-E8C54020DD4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD4503E6-5BE3-4A52-870F-1AE169C03F99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD4503E6-5BE3-4A52-870F-1AE169C03F99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD4503E6-5BE3-4A52-870F-1AE169C03F99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD4503E6-5BE3-4A52-870F-1AE169C03F99}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
