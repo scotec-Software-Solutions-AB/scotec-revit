@@ -29,7 +29,7 @@ internal class RevitHostBuilder : IHostBuilder
                        })
                        .ConfigureAppConfiguration(builder =>
                        {
-                           builder.SetBasePath(GetRootPath());
+                           builder.SetBasePath(app.GetAddinPath());
                            builder.AddJsonFile("appsettings.json", true, false);
                            var environment = Environment.GetEnvironmentVariable("REVIT_ENVIRONMENT");
                            if (!string.IsNullOrEmpty(environment))
@@ -82,9 +82,4 @@ internal class RevitHostBuilder : IHostBuilder
     }
 
     public IDictionary<object, object> Properties => _hostBuilder.Properties;
-
-    private string GetRootPath()
-    {
-        return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-    }
 }

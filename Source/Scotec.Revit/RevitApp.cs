@@ -31,6 +31,20 @@ public abstract class RevitApp : IExternalApplication
     }
 
     /// <summary>
+    /// Returns the location of the add-in.
+    /// </summary>
+    public string GetAddinPath()
+    {
+        // Do not use Assembly.GetExecutingAssembly().Location. This assembly might be used in multiple addins but will be loaded into the
+        // process only once. Therefore do not use Assembly.GetExecutingAssembly().Location because this might not return the path of
+        // the current addin. Use GetType().Assembly-Location instead. This will return the path to the assembly that contains the derived RevitApp.
+        //var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        return Path.GetDirectoryName(GetType().Assembly.Location);
+
+    }
+
+
+    /// <summary>
     ///     Returns the Autodesk Revit user interface, providing access to  UI customization methods and events.
     /// </summary>
     protected internal UIControlledApplication Application { get; internal set; }
@@ -117,11 +131,7 @@ public abstract class RevitApp : IExternalApplication
     /// <returns>Returns the loaded assembly or null if the assembly could not be loaded.</returns>
     protected virtual Assembly OnAssemblyResolve(ResolveEventArgs args)
     {
-        // Do not use Assembly.GetExecutingAssembly().Location. This assembly might be used in multiple addins but will be loaded into the
-        // process only once. Therefore do not use Assembly.GetExecutingAssembly().Location because this might not return the path of
-        // the current addin. Use GetType().Assembly-Location instead. This will return the path to the assembly that contains the derived RevitApp.
-        //var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var currentPath = Path.GetDirectoryName(GetType().Assembly.Location);
+        var currentPath = GetAddinPath();
         var assemblyName = new AssemblyName(args.Name);
 
         var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
