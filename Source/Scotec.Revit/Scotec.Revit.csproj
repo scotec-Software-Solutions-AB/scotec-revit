@@ -38,10 +38,8 @@
 		<PackageReference Include="Autofac" Version="7.1.0" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2023.0.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>compile</IncludeAssets>
-		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2023.1.1" />
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2023.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>

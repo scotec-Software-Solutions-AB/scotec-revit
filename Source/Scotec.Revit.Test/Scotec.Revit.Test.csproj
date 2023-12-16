@@ -7,7 +7,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2023.0.0" />
+	  <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2023.1.1" />
+	  <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2023.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>
