@@ -21,7 +21,7 @@ public abstract class RevitApp : IExternalApplication
     ///     Due to Revit's assembly resolver implementation, assemblies used in multiple addins are only loaded once. Static
     ///     members are therefore shared between multiple addins. Since each add-in should use its own service provider, the
     ///     individual service providers are kept in a static dictionary. The addin ID serves as the key here. The
-    ///     addin-specific service providers are called when executing Revit commands.
+    ///     addin-specific service providers are used when executing Revit commands.
     /// </summary>
     private static readonly Dictionary<Guid, IServiceProvider> ServiceProviders;
 
@@ -49,6 +49,9 @@ public abstract class RevitApp : IExternalApplication
     /// </summary>
     protected internal UIControlledApplication Application { get; internal set; }
 
+    /// <summary>
+    /// 
+    /// </summary>
     protected internal IHost Host { get; internal set; }
 
     /// <summary>
