@@ -2,16 +2,15 @@
 // Copyright © 2023 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using System;
 
 namespace Scotec.Revit;
 
 /// <summary>
-/// 
 /// </summary>
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
@@ -22,7 +21,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
     /// <summary>
     ///     Should be set to true for commands working on application level only.
+    ///     You can set this property to true as well if you need the transaction to be handled by user code.
     /// </summary>
+    /// <remarks>If <c>NoTransaction</c> is set to true, no failure processing takes place.</remarks>
     protected bool NoTransaction { get; set; }
 
     /// <inheritdoc />
@@ -105,25 +106,25 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     /// <summary>
-    ///    This method can be overwritten to handle failures found at the end of a transaction and Revit is about to start processing them.
+    ///     This method can be overwritten to handle failures found at the end of a transaction and Revit is about to start
+    ///     processing them.
     /// </summary>
-    /// <seealso cref="Autodesk.Revit.DB.IFailuresPreprocessor.PreprocessFailures"/>
+    /// <seealso cref="Autodesk.Revit.DB.IFailuresPreprocessor.PreprocessFailures" />
     protected virtual FailureProcessingResult OnPreprocessFailures(FailuresAccessor failuresAccessor)
     {
         return FailureProcessingResult.Continue;
     }
 
     /// <summary>
-    ///    This method can be overwritten to handle failures found at the end of a transaction and Revit is processing them.
+    ///     This method can be overwritten to handle failures found at the end of a transaction and Revit is processing them.
     /// </summary>
-    /// <seealso cref="Autodesk.Revit.DB.IFailuresProcessor.ProcessFailures"/>
+    /// <seealso cref="Autodesk.Revit.DB.IFailuresProcessor.ProcessFailures" />
     protected virtual FailureProcessingResult OnProcessFailures(FailuresAccessor data)
     {
         return FailureProcessingResult.Continue;
     }
 
     /// <summary>
-    /// 
     /// </summary>
     /// <param name="commandData"></param>
     /// <param name="services"></param>
