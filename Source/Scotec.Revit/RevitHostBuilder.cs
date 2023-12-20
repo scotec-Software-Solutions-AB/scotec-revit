@@ -13,10 +13,16 @@ using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
 
-internal class RevitHostBuilder : IHostBuilder
+/// <summary>
+/// The program initialization.
+/// </summary>
+public class RevitHostBuilder : IHostBuilder
 {
     private readonly IHostBuilder _hostBuilder;
 
+    /// <summary>
+    /// 
+    /// </summary>
     public RevitHostBuilder(RevitApp app)
     {
         _hostBuilder = new HostBuilder()
@@ -39,28 +45,33 @@ internal class RevitHostBuilder : IHostBuilder
                        });
     }
 
+    /// <inheritdoc/>
     public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
     {
         return _hostBuilder.ConfigureHostConfiguration(configureDelegate);
     }
 
+    /// <inheritdoc/>
     public IHostBuilder ConfigureAppConfiguration(
         Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
     {
         return _hostBuilder.ConfigureAppConfiguration(configureDelegate);
     }
 
+    /// <inheritdoc/>
     public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
     {
         return _hostBuilder.ConfigureServices(configureDelegate);
     }
 
+    /// <inheritdoc/>
     public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(
         IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
     {
         return _hostBuilder.UseServiceProviderFactory(factory);
     }
 
+    /// <inheritdoc/>
     public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(
         Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory)
         where TContainerBuilder : notnull
@@ -68,12 +79,14 @@ internal class RevitHostBuilder : IHostBuilder
         throw new InvalidOperationException("Replacing the service provider factory is not supported.");
     }
 
+    /// <inheritdoc/>
     public IHostBuilder ConfigureContainer<TContainerBuilder>(
         Action<HostBuilderContext, TContainerBuilder> configureDelegate)
     {
         return _hostBuilder.ConfigureContainer(configureDelegate);
     }
 
+    /// <inheritdoc/>
     public IHost Build()
     {
         var host = _hostBuilder.Build();
@@ -81,5 +94,6 @@ internal class RevitHostBuilder : IHostBuilder
         return host;
     }
 
+    /// <inheritdoc/>
     public IDictionary<object, object> Properties => _hostBuilder.Properties;
 }
