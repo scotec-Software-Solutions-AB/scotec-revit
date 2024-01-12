@@ -2,3 +2,7 @@
 /Source/.vs
 /Source/Scotec.Revit/bin
 /Source/Scotec.Revit/obj
+obj
+bin
+/Source/Scotec.Revit.Test/bin
+/Source/Scotec.Revit.Test/obj
