@@ -10,6 +10,9 @@ using Autofac.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
+/// <summary>
+/// 
+/// </summary>
 public abstract class CommandAvailability : IExternalCommandAvailability
 {
     /// <inheritdoc/>
