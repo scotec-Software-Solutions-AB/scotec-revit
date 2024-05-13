@@ -8,17 +8,17 @@ using Autodesk.Revit.DB;
 namespace Scotec.Revit;
 
 /// <summary>
-/// Base class for Revit updaters.
+///     Base class for Revit updaters.
 /// </summary>
-public abstract class UpdaterBase : IUpdater, IDisposable
+public abstract class RevitUpdater : IUpdater, IDisposable
 {
     private bool _disposed;
 
     /// <summary>
-    /// Protected constructor, needs to be overridden in derrived classes.
+    ///     Protected constructor, needs to be overridden in derrived classes.
     /// </summary>
     /// <param name="addInId">The add-in id.</param>
-    protected UpdaterBase(AddInId addInId)
+    protected RevitUpdater(AddInId addInId)
     {
         AddInId = addInId;
 
@@ -26,11 +26,11 @@ public abstract class UpdaterBase : IUpdater, IDisposable
     }
 
     /// <summary>
-    /// Returns the add-in id.
+    ///     Returns the add-in id.
     /// </summary>
     protected AddInId AddInId { get; }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed)
@@ -43,30 +43,30 @@ public abstract class UpdaterBase : IUpdater, IDisposable
         UpdaterRegistry.UnregisterUpdater(GetUpdaterId());
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Execute(UpdaterData data)
     {
         OnExecute(data);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public abstract UpdaterId GetUpdaterId();
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public abstract ChangePriority GetChangePriority();
-    
-    /// <inheritdoc/>
+
+    /// <inheritdoc />
     public abstract string GetUpdaterName();
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public abstract string GetAdditionalInformation();
 
     /// <summary>The method that will be invoked to perform an update.</summary>
-    /// <see cref="Execute"/>
+    /// <see cref="Execute" />
     protected abstract void OnExecute(UpdaterData data);
 
     /// <summary>
-    /// Registers an updater instance to the updater registry.
+    ///     Registers an updater instance to the updater registry.
     /// </summary>
     protected void RegisterUpdater()
     {
@@ -75,8 +75,8 @@ public abstract class UpdaterBase : IUpdater, IDisposable
     }
 
     /// <summary>
-    /// Called after an updater instance has been registerd.
-    /// This method needs to be overridden by a derrived class to register update triggers.
+    ///     Called after an updater instance has been registerd.
+    ///     This method needs to be overridden by a derrived class to register update triggers.
     /// </summary>
     protected abstract void OnRegisterUpdater();
 }

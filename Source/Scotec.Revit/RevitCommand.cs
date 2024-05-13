@@ -2,11 +2,11 @@
 // Copyright © 2023 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
+using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using System;
 
 namespace Scotec.Revit;
 
