@@ -82,7 +82,7 @@ public abstract class RevitApp : IExternalApplication
             var result = OnShutdown();
 
             ServiceProviders.Remove(application.ActiveAddInId.GetGUID());
-            Host.StopAsync().GetAwaiter().GetResult();
+            Host?.StopAsync().GetAwaiter().GetResult();
             Host?.Dispose();
             Host = null;
 
