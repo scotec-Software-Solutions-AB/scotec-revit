@@ -11,7 +11,7 @@
 		<Authors>$(CompanyName)</Authors>
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
-		<Description>Revit application and command base classes with service localiser support.</Description>
+		<Description>Revit application and command base classes that support Inversion of Control (IoC).</Description>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IsPublishable>True</IsPublishable>
 		<PackageIcon>Logo.png</PackageIcon>
