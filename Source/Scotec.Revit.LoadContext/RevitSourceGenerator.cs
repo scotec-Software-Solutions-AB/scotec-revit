@@ -1,0 +1,114 @@
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
+using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
+
+namespace Scotec.Revit.LoadContext
+{
+    [Generator]
+    public class RevitSourceGenerator : IIncrementalGenerator
+    {
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+            var provider = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (node, _) => node is ClassDeclarationSyntax,
+                transform: static (ctx, _) => (ClassDeclarationSyntax)ctx.Node)
+                .Where(m => m.AttributeLists
+                             .Any(list => list.Attributes
+                                              .Any(a => a.ToString() is "RevitApp" or "RevitCommand")));
+
+            var compilation = context.CompilationProvider.Combine(provider.Collect());
+
+            context.RegisterSourceOutput(compilation, Execute);
+
+        }
+
+        private void Execute(SourceProductionContext context,
+            (Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) tuple)
+        {
+            //Debugger.Launch();
+            var (compilation, syntaxList) = tuple;
+            var nameList = new List<string>();
+
+            var treesWithClassWithAttributes = compilation.SyntaxTrees
+                .Where(st => st.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>()
+                .Any(p => p.DescendantNodes().OfType<AttributeSyntax>().Any())).ToList();
+
+            
+            //foreach (var tree in treesWithClassWithAttributes)
+            //{
+            //    if (!tree.GetRoot().DescendantNodes()
+            //            .OfType<AttributeSyntax>()
+            //            .Any(a => a.DescendantTokens().Any(t => t.Text == "RevitApp")))
+            //    {
+            //        continue;
+            //    }
+            //}
+            
+
+            foreach (var syntax in syntaxList)
+            {
+                var symbol = compilation.GetSemanticModel(syntax.SyntaxTree)
+                    .GetDeclaredSymbol(syntax) as INamedTypeSymbol;
+
+                nameList.Add($"\"{symbol.ToDisplayString()}\"");
+            }
+
+            var names = string.Join(",\n", nameList);
+
+            //var theCode = $$"""
+            //    using System.Collections.Generic;
+               
+            //    namespace ClassListGenerator
+            //    {
+            //        public static partial class ClassNames
+            //        {
+            //            public static List<string> Names = new()
+            //            {
+            //                {{names}}
+            //            };
+            //        }
+            //    }
+            //    """;
+            var theCode = $$"""
+                public class RevitTutorialAppFactory : IExternalApplication
+                {
+                    public static AddinLoadContext Context { get; }
+                    private IExternalApplication _instance;
+                    private static Assembly s_assembly;
+                
+                    static RevitTutorialAppFactory()
+                    {
+                        var path = Path.GetDirectoryName(typeof(RevitTutorialAppFactory).Assembly.Location)!;
+                
+                        Context = new AddinLoadContext(path);
+                        s_assembly = Context.LoadFromAssemblyPath(typeof(RevitTutorialAppFactory).Assembly.Location);
+                
+                    }
+                    
+                    public RevitTutorialAppFactory()
+                    {
+                        var types = s_assembly.GetTypes();
+                        var t = types.First(type => type.Name == "RevitTutorialApp");
+                        _instance = (IExternalApplication)Activator.CreateInstance(t);
+                    }
+                
+                    public Result OnStartup(UIControlledApplication application)
+                    {
+                        return _instance.OnStartup(application);
+                    }
+                
+                    public Result OnShutdown(UIControlledApplication application)
+                    {
+                        return _instance.OnShutdown(application);
+                    }
+                }
+                
+                """;
+
+            context.AddSource("YourClassList.g.cs", theCode);
+        }
+    }
+
+}

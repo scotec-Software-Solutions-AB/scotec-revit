@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Scotec.Revit.LoadContext": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\Scotec.Revit.Test\\Scotec.Revit.Test.csproj"
+    }
+  }
+}
