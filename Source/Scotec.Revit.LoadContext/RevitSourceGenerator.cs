@@ -4,7 +4,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
-using Scotec.Extensions.Utilities;
+//using Scotec.Extensions.Utilities;
 
 namespace Scotec.Revit.LoadContext
 {
@@ -33,7 +33,7 @@ namespace Scotec.Revit.LoadContext
             var template = LoadTemplate("AddinLoadContext");
             if (!string.IsNullOrEmpty(template))
             {
-                context.AddSource("AddinLoadContext.g.cs", template);
+                context.AddSource("AddinLoadContext.g.cs", template!);
             }
         }
 
@@ -79,6 +79,11 @@ namespace Scotec.Revit.LoadContext
                 var symbol = compilation.GetSemanticModel(syntax.SyntaxTree)
                     .GetDeclaredSymbol(syntax) as INamedTypeSymbol;
 
+                if (symbol == null)
+                {
+                    continue;
+                }
+
                 var from = symbol.ConstructedFrom;
                 var className = symbol.Name;
                 var @namespace = from.ContainingNamespace.ToDisplayString();
@@ -87,7 +92,8 @@ namespace Scotec.Revit.LoadContext
                 var template = LoadTemplate("RevitAppFactory");
                 if (!string.IsNullOrEmpty(template))
                 {
-                    var content = template.Format(NAMESPACE => @namespace, CLASSNAME => className);
+                    //var content = template!.Format(NAMESPACE => @namespace, CLASSNAME => className);
+                    var content = string.Format(@namespace, className);
                     context.AddSource($"className.g.cs", content);
                 }
             }

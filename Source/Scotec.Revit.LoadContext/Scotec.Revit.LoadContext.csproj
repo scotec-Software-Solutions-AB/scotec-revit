@@ -11,11 +11,13 @@
 
 	<ItemGroup>
 	  <Compile Remove="Resources\AddinLoadContext.template.cs" />
+	  <Compile Remove="Resources\RevitAppFactory - Copy.template.cs" />
 	  <Compile Remove="Resources\RevitAppFactory.template.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <EmbeddedResource Include="Resources\AddinLoadContext.template.cs" />
+	  <None Include="Resources\RevitAppFactory - Copy.template.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -28,7 +30,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
-		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.0.1-dev.1" />
+		<!--<PackageReference Include="Scotec.Extensions.Utilities" Version="1.0.1-dev.1"  OutputItemType="Analyzer" ReferenceOutputAssembly="true" />-->
 	</ItemGroup>
 
 </Project>
