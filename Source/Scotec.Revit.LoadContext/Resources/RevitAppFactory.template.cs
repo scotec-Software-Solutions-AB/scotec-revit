@@ -5,15 +5,15 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using Scotec.Revit.LoadContext;
 
-namespace {@namespace}
+namespace {NAMESPACE}
 {
-    public class {{className}}Factory : IExternalApplication
+    public class {CLASSNAME}Factory : IExternalApplication
     {
         public static AddinLoadContext Context { get; }
         private IExternalApplication _instance;
         private static Assembly s_assembly;
                                     
-        static {className}Factory()
+        static {CLASSNAME}Factory()
         {
             var location = Assembly.GetExecutingAssembly().Location;
             var path = Path.GetDirectoryName(location)!;
@@ -22,10 +22,10 @@ namespace {@namespace}
             s_assembly = Context.LoadFromAssemblyPath(location);
         }
                                         
-        public {{className}}Factory()
+        public {CLASSNAME}Factory()
         {
             var types = s_assembly.GetTypes();
-            var t = types.First(type => type.Name == "{className}");
+            var t = types.First(type => type.Name == "{CLASSNAME}");
             _instance = (IExternalApplication)Activator.CreateInstance(t);
         }
                                     
