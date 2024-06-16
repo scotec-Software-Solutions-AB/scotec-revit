@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Scotec.Revit.LoadContext
 {
@@ -11,6 +12,8 @@ namespace Scotec.Revit.LoadContext
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            context.RegisterPostInitializationOutput(ctx => GenerateLoadContext(ctx));
+
             var provider = context.SyntaxProvider.CreateSyntaxProvider(
                 predicate: static (node, _) => node is ClassDeclarationSyntax,
                 transform: static (ctx, _) => (ClassDeclarationSyntax)ctx.Node)
@@ -24,17 +27,41 @@ namespace Scotec.Revit.LoadContext
 
         }
 
+        private void GenerateLoadContext(IncrementalGeneratorPostInitializationContext context)
+        {
+            var template = LoadTemplate("AddinLoadContext");
+            if (!string.IsNullOrEmpty(template))
+            {
+                context.AddSource("AddinLoadContext.g.cs", template);
+            }
+        }
+
+        private static string? LoadTemplate(string templateName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourcePath = assembly
+                               .GetManifestResourceNames()
+                               .FirstOrDefault(name => name.Contains(templateName));
+
+            if (resourcePath == null)
+            {
+                return null;
+            }
+
+            using var stream = assembly.GetManifestResourceStream(resourcePath)!;
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+
         private void Execute(SourceProductionContext context,
-            (Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) tuple)
+                             (Compilation Left, ImmutableArray<ClassDeclarationSyntax> Right) tuple)
         {
             //Debugger.Launch();
             var (compilation, syntaxList) = tuple;
-            var nameList = new List<string>();
 
-            var treesWithClassWithAttributes = compilation.SyntaxTrees
-                .Where(st => st.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>()
-                .Any(p => p.DescendantNodes().OfType<AttributeSyntax>().Any())).ToList();
-
+            //var treesWithClassWithAttributes = compilation.SyntaxTrees
+            //    .Where(st => st.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>()
+            //    .Any(p => p.DescendantNodes().OfType<AttributeSyntax>().Any())).ToList();
             
             //foreach (var tree in treesWithClassWithAttributes)
             //{
@@ -46,68 +73,65 @@ namespace Scotec.Revit.LoadContext
             //    }
             //}
             
-
             foreach (var syntax in syntaxList)
             {
                 var symbol = compilation.GetSemanticModel(syntax.SyntaxTree)
                     .GetDeclaredSymbol(syntax) as INamedTypeSymbol;
 
-                nameList.Add($"\"{symbol.ToDisplayString()}\"");
+                var from = symbol.ConstructedFrom;
+                var className = symbol.Name;
+                var @namespace = from.ContainingNamespace.ToDisplayString();
+
+                var theCode = $$"""
+                                using System;
+                                using System.IO;
+                                using System.Linq;
+                                using System.Reflection;
+                                using Autodesk.Revit.UI;
+                                using Scotec.Revit.LoadContext;
+                                namespace {{@namespace}}
+                                {
+                                    public class {{className}}Factory : IExternalApplication
+                                    {
+                                        public static AddinLoadContext Context { get; }
+                                        private IExternalApplication _instance;
+                                        private static Assembly s_assembly;
+                                    
+                                        static {{className}}Factory()
+                                        {
+                                            var location = Assembly.GetExecutingAssembly().Location;
+                                            var path = Path.GetDirectoryName(location)!;
+                                    
+                                            Context = new AddinLoadContext(path);
+                                            s_assembly = Context.LoadFromAssemblyPath(location);
+                                        }
+                                        
+                                        public {{className}}Factory()
+                                        {
+                                            var types = s_assembly.GetTypes();
+                                            var t = types.First(type => type.Name == "{{className}}");
+                                            _instance = (IExternalApplication)Activator.CreateInstance(t);
+                                        }
+                                    
+                                        public Result OnStartup(UIControlledApplication application)
+                                        {
+                                            return _instance.OnStartup(application);
+                                        }
+                                    
+                                        public Result OnShutdown(UIControlledApplication application)
+                                        {
+                                            return _instance.OnShutdown(application);
+                                        }
+                                    }
+                                }
+
+                                """;
+
+                context.AddSource("YourClassList.g.cs", theCode);
+
             }
 
-            var names = string.Join(",\n", nameList);
 
-            //var theCode = $$"""
-            //    using System.Collections.Generic;
-               
-            //    namespace ClassListGenerator
-            //    {
-            //        public static partial class ClassNames
-            //        {
-            //            public static List<string> Names = new()
-            //            {
-            //                {{names}}
-            //            };
-            //        }
-            //    }
-            //    """;
-            var theCode = $$"""
-                public class RevitTutorialAppFactory : IExternalApplication
-                {
-                    public static AddinLoadContext Context { get; }
-                    private IExternalApplication _instance;
-                    private static Assembly s_assembly;
-                
-                    static RevitTutorialAppFactory()
-                    {
-                        var path = Path.GetDirectoryName(typeof(RevitTutorialAppFactory).Assembly.Location)!;
-                
-                        Context = new AddinLoadContext(path);
-                        s_assembly = Context.LoadFromAssemblyPath(typeof(RevitTutorialAppFactory).Assembly.Location);
-                
-                    }
-                    
-                    public RevitTutorialAppFactory()
-                    {
-                        var types = s_assembly.GetTypes();
-                        var t = types.First(type => type.Name == "RevitTutorialApp");
-                        _instance = (IExternalApplication)Activator.CreateInstance(t);
-                    }
-                
-                    public Result OnStartup(UIControlledApplication application)
-                    {
-                        return _instance.OnStartup(application);
-                    }
-                
-                    public Result OnShutdown(UIControlledApplication application)
-                    {
-                        return _instance.OnShutdown(application);
-                    }
-                }
-                
-                """;
-
-            context.AddSource("YourClassList.g.cs", theCode);
         }
     }
 
