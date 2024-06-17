@@ -9,4 +9,6 @@ namespace Scotec.Revit;
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitCommandAttribute : Attribute
 {
+    public Type RevitAppType { get; set; }
 }
+

@@ -20,7 +20,7 @@ namespace Scotec.Revit.LoadContext
                 transform: static (ctx, _) => (ClassDeclarationSyntax)ctx.Node)
                 .Where(m => m.AttributeLists
                              .Any(list => list.Attributes
-                                              .Any(a => a.ToString() is "RevitApp" or "RevitCommand")));
+                                              .Any(a => a.ToString() is "RevitApp" /*or "RevitCommand"*/)));
 
             var compilation = context.CompilationProvider.Combine(provider.Collect());
 
@@ -93,8 +93,8 @@ namespace Scotec.Revit.LoadContext
                 if (!string.IsNullOrEmpty(template))
                 {
                     //var content = template!.Format(NAMESPACE => @namespace, CLASSNAME => className);
-                    var content = string.Format(@namespace, className);
-                    context.AddSource($"className.g.cs", content);
+                    var content = string.Format(template, @namespace, className);
+                    context.AddSource($"{className}.g.cs", content);
                 }
             }
         }

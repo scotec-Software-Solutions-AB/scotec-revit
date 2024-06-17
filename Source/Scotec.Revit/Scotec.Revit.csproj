@@ -44,8 +44,4 @@
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.0.2" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Properties\" />
-	</ItemGroup>
-
 </Project>
