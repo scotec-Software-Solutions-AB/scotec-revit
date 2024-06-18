@@ -6,9 +6,11 @@ using System;
 
 namespace Scotec.Revit;
 
+/// <summary>
+/// 
+/// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitCommandAttribute : Attribute
 {
-    public Type RevitAppType { get; set; }
 }
 

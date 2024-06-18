@@ -1,43 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright © 2023 - 2024 Olaf Meyer
+// Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+// This file is licensed to you under the MIT license.
+
+using System;
 using Autodesk.Revit.Attributes;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
-namespace Scotec.Revit.Test
+namespace Scotec.Revit.Test;
+
+[RevitCommand]
+[Transaction(TransactionMode.Manual)]
+public class RevitTestCommand : RevitCommand
 {
-    [RevitCommand(RevitAppType = typeof(RevitTestApp))]
-    [Transaction(TransactionMode.Manual)]
+    protected override string CommandName => "TestCommand";
 
-    public class RevitTestCommand : RevitCommand
+    protected override Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
     {
-        protected override string CommandName => "TestCommand";
-        protected override Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
-        {
-            return Result.Succeeded;
-        }
+        return Result.Succeeded;
     }
-
-    [Transaction(TransactionMode.Manual)]
-    public class RevitTestCommandFactory : IExternalCommand
-    {
-        private readonly IExternalCommand _instance;
-
-        public RevitTestCommandFactory()
-        {
-            var assembly = RevitTestAppFactory.Context.LoadFromAssemblyPath(typeof(RevitTestCommandFactory).Assembly.Location);
-            var types = assembly.GetTypes();
-            var t = types.First(type => type.Name == "RevitTestCommand");
-            _instance = (IExternalCommand)Activator.CreateInstance(t);
-        }
-
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {
-            return _instance.Execute(commandData, ref message, elements);
-        }
-    }
-
 }

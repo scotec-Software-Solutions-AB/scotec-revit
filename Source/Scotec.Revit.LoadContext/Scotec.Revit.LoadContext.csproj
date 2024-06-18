@@ -7,21 +7,22 @@
 		<LangVersion>Preview</LangVersion>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<IsRoslynComponent>true</IsRoslynComponent>
+
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Resources\AddinLoadContext.template.cs" />
-	  <Compile Remove="Resources\RevitAppFactory - Copy.template.cs" />
-	  <Compile Remove="Resources\RevitAppFactory.template.cs" />
+	  <None Remove="Resources\AddinLoadContext.template" />
+	  <None Remove="Resources\RevitAppFactory.template" />
+	  <None Remove="Resources\RevitCommandFactory.template" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\AddinLoadContext.template.cs" />
-	  <None Include="Resources\RevitAppFactory - Copy.template.cs" />
+	  <EmbeddedResource Include="Resources\AddinLoadContext.template" />
+	  <EmbeddedResource Include="Resources\RevitCommandFactory.template" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\RevitAppFactory.template.cs" />
+	  <EmbeddedResource Include="Resources\RevitAppFactory.template" />
 	</ItemGroup>
 
 	<ItemGroup>

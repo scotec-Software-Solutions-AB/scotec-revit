@@ -1,0 +1,29 @@
+﻿using System;
+using System.Linq;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using {2};
+
+namespace {0}
+{{
+    [Transaction(TransactionMode.Manual)]
+    internal class {1}Factory : IExternalCommand
+    {{
+        private readonly IExternalCommand _instance;
+
+        public {1}Factory()
+        {{  
+            //var assembly = RevitTestAppFactory.Context.LoadFromAssemblyPath(typeof({1}Factory).Assembly.Location);
+            var assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(typeof({1}Factory).Assembly.Location);
+            var types = assembly.GetTypes();
+            var type = types.First(type => type.Name == "{1}");
+            _instance = (IExternalCommand)Activator.CreateInstance(type);
+        }}
+
+        Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {{
+                return _instance.Execute(commandData, ref message, elements);
+        }}
+    }}
+}}

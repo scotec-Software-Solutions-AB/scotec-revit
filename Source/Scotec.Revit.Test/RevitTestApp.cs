@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.Test
 {
-    [RevitApp]
+    [RevitAppAttribute]
     public class RevitTestApp : RevitApp
     {
         public RevitTestApp()
@@ -30,11 +30,11 @@ namespace Scotec.Revit.Test
                 TabManager.CreateTab(Application, "scotec");
                 var panel = TabManager.GetPanel(Application, "Test", "scotec");
 
-                var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
-                    "Test", "Test",
-                    typeof(RevitTestCommandFactory)));
+                //var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
+                //    "Test", "Test",
+                //    typeof(RevitTestCommandFactory)));
 
-                button.Enabled = true;
+                //button.Enabled = true;
 
             }
             catch (Exception)
