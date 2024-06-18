@@ -17,7 +17,6 @@
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
 		<Description>Source generator to support assembly load context in Revit add-ins.</Description>
-		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IsPublishable>True</IsPublishable>
 		<PackageIcon>Logo.png</PackageIcon>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -31,6 +30,7 @@
 
 	<ItemGroup>
 	  <EmbeddedResource Include="Resources\AddinLoadContext.template" />
+	  <EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
 	  <EmbeddedResource Include="Resources\RevitCommandFactory.template" />
 	  <EmbeddedResource Include="Resources\RevitAppFactory.template" />
 	</ItemGroup>
@@ -47,7 +47,8 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<None Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="" />
-	    <None Include="Tools\*.ps1"  PackagePath="tools" Pack="true" />
+	    <None Include="Tools\*.ps1" PackagePath="tools" Pack="true" />
+	    <None Remove="Resources\RevitCommandAvailabilityFactory.template" />
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
