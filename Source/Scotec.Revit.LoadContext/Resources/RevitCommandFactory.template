@@ -8,7 +8,7 @@ using {2};
 namespace {0}
 {{
     [Transaction(TransactionMode.Manual)]
-    internal class {1}Factory : IExternalCommand
+    public class {1}Factory : IExternalCommand
     {{
         private readonly IExternalCommand _instance;
 

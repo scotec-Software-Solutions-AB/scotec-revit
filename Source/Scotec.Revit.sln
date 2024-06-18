@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Scotec.Revit", "Scotec.Revi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Scotec.Revit.Test", "Scotec.Revit.Test\Scotec.Revit.Test.csproj", "{FD4503E6-5BE3-4A52-870F-1AE169C03F99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scotec.Revit.LoadContext", "Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj", "{DC461909-360A-4B94-B894-B14A7410300A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Scotec.Revit.LoadContext", "Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj", "{DC461909-360A-4B94-B894-B14A7410300A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

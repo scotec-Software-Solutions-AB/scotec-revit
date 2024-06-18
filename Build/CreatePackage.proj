@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="$(MSBuildThisFileDirectory)\Properties.proj" />
+
+	<PropertyGroup>
+		<NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>
+	</PropertyGroup>
+
+	<Target Name="CustomBeforeGenerateNuspec" BeforeTargets="GenerateNuspec">
+		<PropertyGroup>
+			<NuspecProperties>Authors=$(Authors);Configuration=$(Configuration);Copyright=$(Copyright);Description=$(Description);License=$(License);ImagePath=$(ImagePath);PackageIcon=$(PackageIcon);PackageReadmeFile=$(PackageReadmeFile);PackageReadmePath=$(PackageReadmePath);PackageVersion=$(PackageVersion);ProjectName=$(MSBuildProjectName);ProjectUrl=$(ProjectUrl);RepositoryType=$(RepositoryType);RepositoryUrl=$(RepositoryUrl);RequireLicenseAcceptance=$(RequireLicenseAcceptance);</NuspecProperties>
+		</PropertyGroup>
+    </Target>
+
+
+</Project>

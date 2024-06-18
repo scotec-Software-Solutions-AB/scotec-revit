@@ -7,7 +7,7 @@ using {2};
 
 namespace {0}
 {{
-    internal class {1}Factory : IExternalApplication
+    public class {1}Factory : IExternalApplication
     {{
         //public static  Context {{ get; }}
         private IExternalApplication _instance;

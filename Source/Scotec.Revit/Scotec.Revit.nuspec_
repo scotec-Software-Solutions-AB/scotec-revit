@@ -15,12 +15,18 @@
 		<copyright>$Copyright$</copyright>
 		<tags></tags>
 		<readme>$PackageReadmeFile$</readme>
+		<frameworkAssemblies>
+			<frameworkAssembly assemblyName="System" targetFramework="" />
+		</frameworkAssemblies>
 		<dependencies>
 			<!-- <group targetFramework="netstandard2.1"> -->
 				<!-- <dependency id="SignalF.Datamodel.Abstractions" version="$PackageVersion$" /> -->
 				<!-- <dependency id="Scotec.Math.Units" version="1.0.0" /> -->
 				<!-- <dependency id="Scotec.XmlDatabase" version="1.0.0" /> -->
 			<!-- </group> -->
+			 <group targetFramework="net8.0-windows7.0"> 
+				 <dependency id="Scotec.Revit.LoadContext.dll" version="$PackageVersion$" /> 
+			 </group> 
 		</dependencies>
 		<contentFiles>
 			<!-- <files include="**\Schemas\*.*" buildAction="Content" copyToOutput="true" /> -->
@@ -29,6 +35,8 @@
 	<files>
 		<file src="$ImagePath$\$PackageIcon$" target="" />
 		<file src="$PackageReadmePath$\$PackageReadmeFile$"  target="" />
-		<file src="bin\$Configuration$\netstandard2.1\Scotec.Revit.LoadContext.dll" target="analyzers\dotnet\cs" />
+		<file src="bin\$Configuration$\net8.0-windows\Scotec.Revit.dll" target="lib\net8.0-windows7.0\" />
+		<file src="bin\$Configuration$\net8.0-windows\Scotec.Revit.LoadContext.dll" target="analyzers\dotnet\cs" />
+		<file src="..\Scotec.Revit.LoadContext\Tools\*.ps1" target="tools" />
 	</files>
 </package>
