@@ -7,7 +7,6 @@ using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-
 namespace Scotec.Revit.Test
 {
     [RevitAppAttribute]
