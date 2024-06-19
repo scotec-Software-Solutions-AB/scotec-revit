@@ -25,6 +25,7 @@
 	  <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.0.2" />
 	  <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.0.2" />
 	  <PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="2025.0.2" />
+	  <PackageReference Include="Scotec.Revit" Version="1.0.0" />
 
 	</ItemGroup>
 

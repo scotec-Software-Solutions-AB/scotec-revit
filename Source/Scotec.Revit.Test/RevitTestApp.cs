@@ -6,15 +6,18 @@ using System.Windows.Media;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.Loader;
 
 namespace Scotec.Revit.Test
 {
-    [RevitApp]
+ //   [RevitApp]
     public class RevitTestApp : RevitApp
     {
         public RevitTestApp()
         {
-            
+            var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+
+
         }
         protected override Result OnShutdown()
         {
@@ -29,11 +32,11 @@ namespace Scotec.Revit.Test
                 TabManager.CreateTab(Application, "scotec");
                 var panel = TabManager.GetPanel(Application, "Test", "scotec");
 
-                //var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
-                //    "Test", "Test",
-                //    typeof(RevitTestCommandFactory)));
+                var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
+                    "Test", "Test",
+                    typeof(RevitTestCommand)));
 
-                //button.Enabled = true;
+                button.Enabled = true;
 
             }
             catch (Exception)
@@ -52,7 +55,7 @@ namespace Scotec.Revit.Test
                 Image = CreateImageSource("Information_16.png"),
                 LargeImage = CreateImageSource("Information_32.png"),
                 ToolTip = description,
-                //AvailabilityClassName = typeof(TestCommandAvailability).FullName
+                AvailabilityClassName = typeof(RevitTestCommandAvailability).FullName
             };
         }
 

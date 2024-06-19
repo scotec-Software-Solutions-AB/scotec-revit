@@ -3,18 +3,16 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Scotec.Revit;
 
 namespace Scotec.Revit.Test;
 
-[RevitCommandAvailabilityAttribute]
+//[RevitCommandAvailability]
 public class RevitTestCommandAvailability : RevitCommandAvailability
 {
     protected override bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
-                                             IServiceProvider services)
+                                               IServiceProvider services)
     {
         return true;
     }
