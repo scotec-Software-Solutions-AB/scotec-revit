@@ -9,7 +9,7 @@ using Scotec.Revit;
 
 namespace Scotec.Revit.Test;
 
-//[RevitCommand]
+[RevitCommand]
 [Transaction(TransactionMode.Manual)]
 public class RevitTestCommand : RevitCommand
 {

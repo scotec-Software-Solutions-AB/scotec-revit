@@ -7,18 +7,17 @@ using {2};
 
 namespace {0}
 {{
+    /// <summary>
+    /// Auto-generated factory to create instances of type <see RevitTestApp/>.
+    /// </summary>
     public class {1}Factory : IExternalApplication
     {{
-        //public static  Context {{ get; }}
         private IExternalApplication _instance;
         private static Assembly s_assembly;
                                         
         static {1}Factory()
         {{
             var location = Assembly.GetExecutingAssembly().Location;
-            //var path = Path.GetDirectoryName(location)!;
-            //Context = new AddinLoadContext(path);
-            //s_assembly = Context.LoadFromAssemblyPath(location);
             s_assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(location);
         }}
                                         

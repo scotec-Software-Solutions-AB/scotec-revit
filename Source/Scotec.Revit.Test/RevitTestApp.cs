@@ -10,13 +10,13 @@ using System.Runtime.Loader;
 
 namespace Scotec.Revit.Test
 {
- //   [RevitApp]
+    [RevitApp]
     public class RevitTestApp : RevitApp
     {
         public RevitTestApp()
         {
             var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-
+            RevitTestAppFactory f;
 
         }
         protected override Result OnShutdown()
@@ -34,7 +34,7 @@ namespace Scotec.Revit.Test
 
                 var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
                     "Test", "Test",
-                    typeof(RevitTestCommand)));
+                    typeof(RevitTestCommandFactory)));
 
                 button.Enabled = true;
 
@@ -55,7 +55,7 @@ namespace Scotec.Revit.Test
                 Image = CreateImageSource("Information_16.png"),
                 LargeImage = CreateImageSource("Information_32.png"),
                 ToolTip = description,
-                AvailabilityClassName = typeof(RevitTestCommandAvailability).FullName
+                AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
             };
         }
 
