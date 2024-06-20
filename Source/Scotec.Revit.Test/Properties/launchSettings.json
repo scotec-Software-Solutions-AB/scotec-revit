@@ -2,7 +2,7 @@
   "profiles": {
     "BI.Revit.Test": {
       "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2023\\Revit.exe",
+      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2025\\Revit.exe",
       "environmentVariables": {
         "REVIT_ENVIRONMENT": "Development"
       }

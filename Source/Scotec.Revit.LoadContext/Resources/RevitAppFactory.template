@@ -1,0 +1,41 @@
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Autodesk.Revit.UI;
+using {2};
+
+namespace {0}
+{{
+    /// <summary>
+    /// Auto-generated factory to create instances of type <see RevitTestApp/>.
+    /// </summary>
+    public class {1}Factory : IExternalApplication
+    {{
+        private IExternalApplication _instance;
+        private static Assembly s_assembly;
+                                        
+        static {1}Factory()
+        {{
+            var location = Assembly.GetExecutingAssembly().Location;
+            s_assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(location);
+        }}
+                                        
+        public {1}Factory()
+        {{
+            var types = s_assembly.GetTypes();
+            var type = types.First(type => type.Name == "{1}");
+            _instance = (IExternalApplication)Activator.CreateInstance(type);
+        }}
+                                    
+        public Result OnStartup(UIControlledApplication application)
+        {{
+            return _instance.OnStartup(application);
+        }}
+                                    
+        public Result OnShutdown(UIControlledApplication application)
+        {{
+            return _instance.OnShutdown(application);
+        }}
+    }}
+}}
