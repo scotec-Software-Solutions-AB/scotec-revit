@@ -16,8 +16,6 @@ namespace Scotec.Revit.Test
         public RevitTestApp()
         {
             var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-            RevitTestAppFactory f;
-
         }
         protected override Result OnShutdown()
         {
