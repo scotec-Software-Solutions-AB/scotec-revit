@@ -7,9 +7,25 @@ using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.Loader;
+using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.DB;
 
 namespace Scotec.Revit.Test
 {
+    [RevitDbApplication]
+    public class DbApp : IExternalDBApplication
+    {
+        public ExternalDBApplicationResult OnStartup(ControlledApplication application)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     [RevitApplication]
     public class RevitTestApp : RevitApp
     {

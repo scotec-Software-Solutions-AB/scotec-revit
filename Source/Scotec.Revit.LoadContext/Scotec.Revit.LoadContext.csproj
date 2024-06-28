@@ -30,9 +30,10 @@
 
 	<ItemGroup>
 	  <EmbeddedResource Include="Resources\AddinLoadContext.template" />
+	  <EmbeddedResource Include="Resources\RevitDbApplicationFactory.template" />
 	  <EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
 	  <EmbeddedResource Include="Resources\RevitCommandFactory.template" />
-	  <EmbeddedResource Include="Resources\RevitAppFactory.template" />
+	  <EmbeddedResource Include="Resources\RevitApplicationFactory.template" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -49,6 +50,7 @@
 		<None Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="" />
 	    <None Include="Tools\*.ps1" PackagePath="tools" Pack="true" />
 	    <None Remove="Resources\RevitCommandAvailabilityFactory.template" />
+	    <None Remove="Resources\RevitDbApplicationFactory.template" />
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

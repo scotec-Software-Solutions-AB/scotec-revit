@@ -3,28 +3,16 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 
 namespace Scotec.Revit;
 
 /// <summary>
-/// 
+///     The RevitDbApplicationAttribute can be used to mark implementations
+///     of <see cref="IExternalDBApplication" /> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitDbApplicationAttribute : Attribute
 {
 }
 
-public class test : IExternalDBApplication
-{
-    public ExternalDBApplicationResult OnStartup(ControlledApplication application)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
-    {
-        throw new NotImplementedException();
-    }
-}

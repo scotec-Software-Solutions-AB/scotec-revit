@@ -1,0 +1,42 @@
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.ApplicationServices;
+using {2};
+
+namespace {0}
+{{
+    /// <summary>
+    /// Auto-generated factory to create instances of type <see RevitTestApp/>.
+    /// </summary>
+    public class {1}Factory : IExternalDBApplication
+    {{
+        private IExternalDBApplication _instance;
+        private static Assembly s_assembly;
+                                        
+        static {1}Factory()
+        {{
+            var location = Assembly.GetExecutingAssembly().Location;
+            s_assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(location);
+        }}
+                                        
+        public {1}Factory()
+        {{
+            var types = s_assembly.GetTypes();
+            var type = types.First(type => type.Name == "{1}");
+            _instance = (IExternalDBApplication)Activator.CreateInstance(type);
+        }}
+                                    
+        public ExternalDBApplicationResult OnStartup(ControlledApplication application)
+        {{
+            return _instance.OnStartup(application);
+        }}
+                                    
+        public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
+        {{
+            return _instance.OnShutdown(application);
+        }}
+    }}
+}}
