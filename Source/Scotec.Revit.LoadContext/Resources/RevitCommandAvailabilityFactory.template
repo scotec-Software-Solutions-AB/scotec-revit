@@ -1,0 +1,28 @@
+﻿using System;
+using System.Linq;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using {2};
+
+namespace {0}
+{{
+    [Transaction(TransactionMode.Manual)]
+    public class {1}Factory : IExternalCommandAvailability
+    {{
+        private readonly IExternalCommandAvailability _instance;
+
+        public {1}Factory()
+        {{  
+            var assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(typeof({1}Factory).Assembly.Location);
+            var types = assembly.GetTypes();
+            var type = types.First(type => type.Name == "{1}");
+            _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);
+        }}
+
+        bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+        {{
+                return _instance.IsCommandAvailable(applicationData, selectedCategories);
+        }}
+    }}
+}}

@@ -75,8 +75,8 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     }
 
     /// <summary>
-    ///     Called after an updater instance has been registerd.
-    ///     This method needs to be overridden by a derrived class to register update triggers.
+    ///     Called after an updater instance has been registered.
+    ///     This method needs to be overridden by a derived class to register update triggers.
     /// </summary>
     protected abstract void OnRegisterUpdater();
 }

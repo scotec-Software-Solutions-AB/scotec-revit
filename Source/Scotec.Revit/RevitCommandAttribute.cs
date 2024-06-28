@@ -3,16 +3,15 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
 /// <summary>
+///     The RevitCommandAttribute can be used to mark implementations
+///     of <see cref="IExternalCommand" /> for execution in an isolated context.
 /// </summary>
-[Obsolete("This class is deprecated and will be removed in future versions. Please use RevitCommandAvailability instead.")]
-public abstract class CommandAvailability : RevitCommandAvailability
+[AttributeUsage(AttributeTargets.Class)]
+public class RevitCommandAttribute : Attribute
 {
 }

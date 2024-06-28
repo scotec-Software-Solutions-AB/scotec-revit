@@ -15,7 +15,7 @@ namespace Scotec.Revit;
 public class RevitWindow : Window
 {
     /// <summary>
-    ///     The constructor. Sets the main window as the oxner of this window.
+    ///     The constructor. Sets the main window as the owner of this window.
     /// </summary>
     public RevitWindow(UIApplication revitApplication)
     {

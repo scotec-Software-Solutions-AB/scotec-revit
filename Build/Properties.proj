@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<Company Condition="'$(CompanyName)' == ''">scotec Software Solutions AB</Company>
+		<Authors Condition="'$(Authors)' == ''">Olaf Meyer,scotec Software Solutions AB</Authors>
+		<Copyright Condition="'$(Copyright)' == ''">2024 scotec Software Solutions AB</Copyright>
+		<Description Condition="'$(Description)' == ''">Description</Description>
+		<InformationalVersion Condition="'$(InformationalVersion)' == ''">0.0.0</InformationalVersion>
+		<Version Condition="'$(Version)' == ''">0.0.0</Version>
+		<ImagePath>..\..\..\Images</ImagePath>
+		<PackageReadmePath>..\..</PackageReadmePath>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<License>MIT</License>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageOutputPath>..\..\..\LocalPackages</PackageOutputPath>
+		<PackageProjectUrl>https://github.com/Signal-F</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<RepositoryUrl>https://github.com/Signal-F/SignalF.Controller</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageVersion Condition="'$(PackageVersion)' == ''">0.0.0</PackageVersion>
+		<ProjectUrl>https://github.com/SignalF</ProjectUrl>
+		<RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	    <IsPackable>true</IsPackable>
+		<DebugType>embedded</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
+
+</Project>
