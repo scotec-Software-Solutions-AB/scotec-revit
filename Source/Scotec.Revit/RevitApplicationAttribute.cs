@@ -10,6 +10,6 @@ namespace Scotec.Revit;
 /// 
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitAppAttribute : Attribute
+public class RevitApplicationAttribute : Attribute
 {
 }

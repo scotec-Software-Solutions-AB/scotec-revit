@@ -10,7 +10,7 @@ using System.Runtime.Loader;
 
 namespace Scotec.Revit.Test
 {
-    [RevitApp]
+    [RevitApplication]
     public class RevitTestApp : RevitApp
     {
         public RevitTestApp()
