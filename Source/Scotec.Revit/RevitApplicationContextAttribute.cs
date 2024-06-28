@@ -8,10 +8,10 @@ using Autodesk.Revit.UI;
 namespace Scotec.Revit;
 
 /// <summary>
-/// The RevitApplicationAttribute can be used to mark implementations
-/// of <see cref="IExternalApplication"/> for execution in an isolated context.
+///     This attribute can be used to mark implementations
+///     of <see cref="IExternalApplication" /> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitApplicationAttribute : Attribute
+public class RevitApplicationContextAttribute : Attribute
 {
 }

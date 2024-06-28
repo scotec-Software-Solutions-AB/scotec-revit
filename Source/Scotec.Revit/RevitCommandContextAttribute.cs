@@ -8,10 +8,10 @@ using Autodesk.Revit.UI;
 namespace Scotec.Revit;
 
 /// <summary>
-///     The RevitCommandAvailabilityAttribute can be used to mark implementations
-///     of <see cref="IExternalCommandAvailability" /> for execution in an isolated context.
+///     This attribute can be used to mark implementations
+///     of <see cref="IExternalCommand" /> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitCommandAvailabilityAttribute : Attribute
+public class RevitCommandContextAttribute : Attribute
 {
 }
