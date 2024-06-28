@@ -3,10 +3,6 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.DB;
-using Autodesk.Revit.UI;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
