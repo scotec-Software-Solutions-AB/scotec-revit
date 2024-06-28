@@ -8,12 +8,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Scotec.Revit.LoadContext;
 
 [Generator]
-internal class RevitAppFactoryGenerator : IncrementalGeneratorBase
+internal class RevitDbApplicationFactoryGenerator : IncrementalGeneratorBase
 {
     public override void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Scotec.Revit.RevitAppAttribute",
+            "Scotec.Revit.RevitDbApplicationAttribute",
             static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
             static (context, _) => context);
 
@@ -27,7 +27,7 @@ internal class RevitAppFactoryGenerator : IncrementalGeneratorBase
         var @namespace = symbol.ContainingNamespace.ToDisplayString();
         var globalNamespace = syntaxContext.SemanticModel.Compilation.Assembly.Name;
 
-        var template = LoadTemplate("RevitAppFactory");
+        var template = LoadTemplate("RevitDbApplicationFactory");
         if (!string.IsNullOrEmpty(template))
         {
             var content = string.Format(template, @namespace, className, globalNamespace);
