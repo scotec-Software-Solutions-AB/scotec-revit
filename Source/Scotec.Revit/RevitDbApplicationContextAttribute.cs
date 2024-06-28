@@ -8,11 +8,10 @@ using Autodesk.Revit.DB;
 namespace Scotec.Revit;
 
 /// <summary>
-///     The RevitDbApplicationAttribute can be used to mark implementations
+///     This attribute can be used to mark implementations
 ///     of <see cref="IExternalDBApplication" /> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitDbApplicationAttribute : Attribute
+public class RevitDbApplicationContextAttribute : Attribute
 {
 }
-
