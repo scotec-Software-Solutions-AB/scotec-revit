@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.Test;
 
-[RevitDbApplicationContext]
+[RevitDbApplicationIsolation]
 public class DbApp : IExternalDBApplication
 {
     public ExternalDBApplicationResult OnStartup(ControlledApplication application)
@@ -29,7 +29,7 @@ public class DbApp : IExternalDBApplication
     }
 }
 
-[RevitApplicationContext]
+[RevitApplicationIsolation]
 public class RevitTestApp : RevitApp
 {
     public RevitTestApp()
