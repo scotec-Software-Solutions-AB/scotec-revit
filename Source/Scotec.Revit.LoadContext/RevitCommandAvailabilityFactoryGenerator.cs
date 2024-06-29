@@ -13,7 +13,7 @@ internal class RevitCommandAvailabilityFactoryGenerator : IncrementalGeneratorBa
     public override void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Scotec.Revit.RevitCommandAvailabilityContextAttribute",
+            "Scotec.Revit.RevitCommandAvailabilityIsolationAttribute",
             static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
             static (context, _) => context);
 
