@@ -12,6 +12,6 @@ namespace Scotec.Revit;
 ///     of <see cref="IExternalApplication" /> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitApplicationContextAttribute : Attribute
+public class RevitApplicationIsolationAttribute : Attribute
 {
 }
