@@ -41,21 +41,21 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<!--<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<None Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="" />
-		<!--<None Remove="Resources\RevitDbApplicationFactory.template" />-->
+		--><!--<None Remove="Resources\RevitDbApplicationFactory.template" />--><!--
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="bin/netstandard2.0" />
-	</ItemGroup>
+	</ItemGroup>-->
 
 	<PropertyGroup>
 		<!--<NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>-->
-		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
+		<!--<PackageOutputPath>..\..\localPackages</PackageOutputPath>-->
 	</PropertyGroup>
 
 </Project>
