@@ -2,11 +2,14 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-namespace Scotec.Revit.LoadContext;
+using System;
+using Autodesk.Revit.UI;
+
+namespace Scotec.Revit;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of Autodesk.Revit.UI.IExternalApplication for execution in an isolated context.
+///     of <see cref="IExternalApplication"/> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitApplicationIsolationAttribute : Attribute

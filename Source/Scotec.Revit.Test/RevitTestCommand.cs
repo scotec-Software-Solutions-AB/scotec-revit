@@ -5,7 +5,6 @@
 using System;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
-using Scotec.Revit.LoadContext;
 
 namespace Scotec.Revit.Test;
 
