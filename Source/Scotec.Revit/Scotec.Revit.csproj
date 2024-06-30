@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<LangVersion>latest</LangVersion>
 		<PlatformTarget>x64</PlatformTarget>
-		<UseWpf>True</UseWpf>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 
@@ -40,7 +39,7 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
-		<None Remove="bin\Debug\net8.0-windows\\Scotec.Revit.LoadContext.dll" />
+		<None Remove="bin\Debug\net8.0-windows\Scotec.Revit.LoadContext.dll" />
 		<None Include="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

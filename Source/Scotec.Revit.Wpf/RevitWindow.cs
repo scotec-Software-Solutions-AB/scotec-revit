@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Interop;
 using Autodesk.Revit.UI;
 
-namespace Scotec.Revit;
+namespace Scotec.Revit.Wpf;
 
 /// <summary>
 /// </summary>
