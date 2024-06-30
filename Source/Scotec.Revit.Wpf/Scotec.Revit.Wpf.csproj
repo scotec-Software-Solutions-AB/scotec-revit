@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
+		<ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
@@ -17,13 +17,11 @@
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
 		<Description>Adds WPF support to Scotec.Revit.</Description>
-		<!--<ImagePath>..</ImagePath>-->
 		<IsPublishable>True</IsPublishable>
 		<PackageIcon>Logo.png</PackageIcon>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://www.scotec-software.com</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<!--<PackageReadmePath>..</PackageReadmePath>-->
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/scotec-Software-Solutions-AB/scotec-revit</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -48,6 +46,5 @@
 	<PropertyGroup>
 		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
 	</PropertyGroup>
-
 
 </Project>
