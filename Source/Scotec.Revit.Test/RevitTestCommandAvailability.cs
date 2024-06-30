@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Scotec.Revit.LoadContext;
 
 namespace Scotec.Revit.Test;
 
