@@ -13,7 +13,7 @@ internal class RevitApplicationFactoryGenerator : IncrementalGeneratorBase
     public override void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Scotec.Revit.LoadContext.RevitApplicationIsolationAttribute",
+            "Scotec.Revit.RevitApplicationIsolationAttribute",
             static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
             static (context, _) => context);
 
