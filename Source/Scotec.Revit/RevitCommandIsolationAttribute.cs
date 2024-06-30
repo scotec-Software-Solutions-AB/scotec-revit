@@ -9,7 +9,7 @@ namespace Scotec.Revit;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of <see cref="IExternalCommand" /> for execution in an isolated context.
+///     of <see cref="IExternalCommand"/> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitCommandIsolationAttribute : Attribute

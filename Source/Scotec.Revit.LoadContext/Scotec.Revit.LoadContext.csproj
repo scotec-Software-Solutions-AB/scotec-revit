@@ -7,7 +7,7 @@
 		<LangVersion>Preview</LangVersion>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<IsRoslynComponent>true</IsRoslynComponent>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<NoPackageAnalysis>true</NoPackageAnalysis>
 	</PropertyGroup>
@@ -29,11 +29,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\AddinLoadContext.template" />
-	  <EmbeddedResource Include="Resources\RevitDbApplicationFactory.template" />
-	  <EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
-	  <EmbeddedResource Include="Resources\RevitCommandFactory.template" />
-	  <EmbeddedResource Include="Resources\RevitApplicationFactory.template" />
+		<EmbeddedResource Include="Resources\AddinLoadContext.template" />
+		<EmbeddedResource Include="Resources\RevitDbApplicationFactory.template" />
+		<EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
+		<EmbeddedResource Include="Resources\RevitCommandFactory.template" />
+		<EmbeddedResource Include="Resources\RevitApplicationFactory.template" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -41,22 +41,21 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<!--<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<None Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="" />
-	    <None Include="Tools\*.ps1" PackagePath="tools" Pack="true" />
-	    <None Remove="Resources\RevitCommandAvailabilityFactory.template" />
-	    <None Remove="Resources\RevitDbApplicationFactory.template" />
+		--><!--<None Remove="Resources\RevitDbApplicationFactory.template" />--><!--
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-	</ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="bin/netstandard2.0" />
+	</ItemGroup>-->
 
 	<PropertyGroup>
 		<!--<NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>-->
-		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
+		<!--<PackageOutputPath>..\..\localPackages</PackageOutputPath>-->
 	</PropertyGroup>
 
 </Project>
