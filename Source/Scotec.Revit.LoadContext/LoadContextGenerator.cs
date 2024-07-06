@@ -16,12 +16,12 @@ internal class LoadContextGenerator : IncrementalGeneratorBase
 
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
-        var template = LoadTemplate("AddinLoadContext");
+        var template = LoadTemplate("AddInLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
             var @namespace = compilation.Assembly.Name;
             var content = string.Format(template, @namespace);
-            context.AddSource("AddinLoadContext.g.cs", content);
+            context.AddSource("AddInLoadContext.g.cs", content);
         }
     }
 }

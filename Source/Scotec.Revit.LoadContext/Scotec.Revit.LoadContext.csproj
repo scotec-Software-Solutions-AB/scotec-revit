@@ -29,7 +29,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Resources\AddinLoadContext.template" />
+		<EmbeddedResource Include="Resources\AddInLoadContext.template" />
 		<EmbeddedResource Include="Resources\RevitDbApplicationFactory.template" />
 		<EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
 		<EmbeddedResource Include="Resources\RevitCommandFactory.template" />
