@@ -91,7 +91,7 @@ public abstract class RevitAppBase
 
     /// <summary>
     /// </summary>
-    protected bool OnStartup(AddInId addInId, Action<IServiceCollection> configureServices)
+    protected bool OnStartup(AddInId addInId)
     {
         GetAssemblyLoadContext().Resolving += OnResolving;
         AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
@@ -100,7 +100,7 @@ public abstract class RevitAppBase
 
         try
         {
-            var builder = CreateRevitHostBuilder(configureServices);
+            var builder = CreateRevitHostBuilder();
             OnConfigure(builder);
 
             Host = builder.Build();
@@ -161,9 +161,9 @@ public abstract class RevitAppBase
         ServiceProviders.Add(AddInId, services);
     }
 
-    private IHostBuilder CreateRevitHostBuilder(Action<IServiceCollection> configureServices)
+    private IHostBuilder CreateRevitHostBuilder()
     {
-        return new RevitHostBuilder(this, configureServices);
+        return new RevitHostBuilder(this);
     }
 
     private Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)

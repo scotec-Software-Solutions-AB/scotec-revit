@@ -5,20 +5,19 @@
 using System;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
 
 internal sealed class RevitHostBuilder : HostBuilder
 {
-    public RevitHostBuilder(RevitAppBase app, Action<IServiceCollection> configureServices)
+    public RevitHostBuilder(RevitAppBase app)
     {
         // Add required services.
         UseServiceProviderFactory(new AutofacServiceProviderFactory())
 
             // Add required services.
-            .ConfigureServices(configureServices)
+            //.ConfigureServices(services => { })
 
             // Add AppSettings.
             .ConfigureAppConfiguration(builder => { ConfigureApp(app.GetAddInPath(), builder); });

@@ -5,6 +5,7 @@
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 
 namespace Scotec.Revit;
@@ -23,15 +24,8 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     ExternalDBApplicationResult IExternalDBApplication.OnStartup(ControlledApplication application)
     {
         Application = application;
-
-        var configureServices = new Action<IServiceCollection>(services =>
-        {
-            services.AddSingleton(application);
-            services.AddSingleton(application.ActiveAddInId);
-
-        });
-
-        return OnStartup(application.ActiveAddInId, configureServices) 
+        
+        return OnStartup(application.ActiveAddInId) 
             ? ExternalDBApplicationResult.Succeeded 
             : ExternalDBApplicationResult.Failed;
     }
@@ -41,4 +35,17 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     {
         return OnShutdown(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
     }
+
+    /// <inheritdoc />
+    protected override void OnConfigure(IHostBuilder builder)
+    {
+        base.OnConfigure(builder);
+
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton(Application);
+            services.AddSingleton(Application.ActiveAddInId);
+        });
+    }
+
 }

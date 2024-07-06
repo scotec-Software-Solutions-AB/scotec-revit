@@ -5,6 +5,7 @@
 using System;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
 
@@ -22,15 +23,8 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     Result IExternalApplication.OnStartup(UIControlledApplication application)
     {
         Application = application;
-        var configureServices = new Action<IServiceCollection>(services =>
-        {
-            services.AddSingleton(application);
-            services.AddSingleton(application.ActiveAddInId);
-            services.AddSingleton(application.ControlledApplication);
 
-        });
-
-        return OnStartup(application.ActiveAddInId, configureServices) 
+        return OnStartup(application.ActiveAddInId) 
             ? Result.Succeeded 
             : Result.Failed;
     }
@@ -39,5 +33,19 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     Result IExternalApplication.OnShutdown(UIControlledApplication application)
     {
         return OnShutdown(application.ControlledApplication) ? Result.Succeeded : Result.Failed;
+    }
+
+    /// <inheritdoc />
+    protected override void OnConfigure(IHostBuilder builder)
+    {
+        base.OnConfigure(builder);
+
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton(Application);
+            services.AddSingleton(Application.ActiveAddInId);
+            services.AddSingleton(Application.ControlledApplication);
+
+        });
     }
 }
