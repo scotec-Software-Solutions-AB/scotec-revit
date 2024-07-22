@@ -3,35 +3,23 @@
 // This file is licensed to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Scotec.Revit.LoadContext;
 
 [Generator]
-internal class RevitCommandFactoryGenerator : IncrementalGeneratorBase
+internal class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
 {
-    public override void Initialize(IncrementalGeneratorInitializationContext context)
+    protected override void OnInitialize()
     {
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Scotec.Revit.RevitCommandIsolationAttribute",
-            static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
-            static (context, _) => context);
-
-        context.RegisterSourceOutput(pipeline, Execute);
+#if USE_OLD_ISOLATION_ATTRIBUTE
+        RegisterSourceOutputForAttribute("Scotec.Revit.RevitCommandIsolationAttribute");
+#else
+        RegisterSourceOutputForAttribute("Scotec.Revit.Isolation.RevitCommandIsolationAttribute");
+#endif
     }
 
-    private static void Execute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
+    protected override string GetTemplateName()
     {
-        var symbol = syntaxContext.TargetSymbol;
-        var className = syntaxContext.TargetSymbol.Name;
-        var @namespace = symbol.ContainingNamespace.ToDisplayString();
-        var globalNamespace = syntaxContext.SemanticModel.Compilation.Assembly.Name;
-
-        var template = LoadTemplate("RevitCommandFactory");
-        if (!string.IsNullOrEmpty(template))
-        {
-            var content = string.Format(template, @namespace, className, globalNamespace);
-            sourceContext.AddSource($"{className}Factory.g.cs", content);
-        }
+        return "RevitCommandFactory";
     }
 }

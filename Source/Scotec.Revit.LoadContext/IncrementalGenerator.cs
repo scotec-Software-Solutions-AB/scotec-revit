@@ -7,9 +7,15 @@ using Microsoft.CodeAnalysis;
 
 namespace Scotec.Revit.LoadContext;
 
-internal abstract class IncrementalGeneratorBase : IIncrementalGenerator
+internal abstract class IncrementalGenerator : IIncrementalGenerator
 {
-    public abstract void Initialize(IncrementalGeneratorInitializationContext context);
+    protected IncrementalGeneratorInitializationContext Context { get; private set; }
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        Context = context;
+        OnInitialize();
+    }
 
     protected static string? LoadTemplate(string templateName)
     {
@@ -27,4 +33,6 @@ internal abstract class IncrementalGeneratorBase : IIncrementalGenerator
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
+
+    protected abstract void OnInitialize();
 }

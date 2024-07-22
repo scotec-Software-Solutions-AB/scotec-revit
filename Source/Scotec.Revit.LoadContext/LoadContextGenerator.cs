@@ -7,11 +7,11 @@ using Microsoft.CodeAnalysis;
 namespace Scotec.Revit.LoadContext;
 
 [Generator]
-internal class LoadContextGenerator : IncrementalGeneratorBase
+internal class LoadContextGenerator : IncrementalGenerator
 {
-    public override void Initialize(IncrementalGeneratorInitializationContext context)
+    protected override void OnInitialize()
     {
-        context.RegisterSourceOutput(context.CompilationProvider, Execute);
+        Context.RegisterSourceOutput(Context.CompilationProvider, Execute);
     }
 
     private void Execute(SourceProductionContext context, Compilation compilation)
@@ -24,4 +24,5 @@ internal class LoadContextGenerator : IncrementalGeneratorBase
             context.AddSource("AddinLoadContext.g.cs", content);
         }
     }
+
 }
