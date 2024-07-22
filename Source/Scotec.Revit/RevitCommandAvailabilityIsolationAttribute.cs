@@ -4,7 +4,6 @@
 
 using System;
 using Autodesk.Revit.UI;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Scotec.Revit;
 

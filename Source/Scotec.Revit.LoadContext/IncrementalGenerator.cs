@@ -21,8 +21,8 @@ internal abstract class IncrementalGenerator : IIncrementalGenerator
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resourcePath = assembly
-                           .GetManifestResourceNames()
-                           .FirstOrDefault(name => name.Contains(templateName));
+            .GetManifestResourceNames()
+            .FirstOrDefault(name => name.Contains(templateName));
 
         if (resourcePath == null)
         {

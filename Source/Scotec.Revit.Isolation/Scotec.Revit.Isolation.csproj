@@ -12,7 +12,7 @@
 		<Authors>$(CompanyName)</Authors>
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
-		<Description>Revit application and command base classes that support Inversion of Control (IoC).</Description>
+		<Description>Support for Revit add-in isolation.</Description>
 		<!--<ImagePath>..</ImagePath>-->
 		<IsPublishable>True</IsPublishable>
 		<PackageIcon>Logo.png</PackageIcon>
@@ -24,7 +24,7 @@
 		<RepositoryUrl>https://github.com/scotec-Software-Solutions-AB/scotec-revit</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<SignAssembly>False</SignAssembly>
-		<Title>Scotec.Revit</Title>
+		<Title>Scotec.Revit.Isolation</Title>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -39,11 +39,13 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
-		<None Include="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="true" PackagePath="analyzers/dotnet/cs"
+		      Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
+		<ProjectReference Include="..\Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj" OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="true" PrivateAssets="All" />
 	</ItemGroup>
 
 	<PropertyGroup>

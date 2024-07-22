@@ -24,5 +24,4 @@ internal class LoadContextGenerator : IncrementalGenerator
             context.AddSource("AddinLoadContext.g.cs", content);
         }
     }
-
 }

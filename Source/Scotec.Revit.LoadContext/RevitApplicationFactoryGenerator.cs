@@ -9,17 +9,17 @@ namespace Scotec.Revit.LoadContext;
 [Generator]
 internal class RevitApplicationFactoryGenerator : RevitFactoryGeneratorBase
 {
-    protected override void OnInitialize()
-    {
-#if USE_OLD_ISOLATION_ATTRIBUTE
-        RegisterSourceOutputForAttribute("Scotec.Revit.RevitApplicationIsolationAttribute");
-#else
-        RegisterSourceOutputForAttribute("Scotec.Revit.Isolation.RevitApplicationIsolationAttribute");
-#endif
-    }
-
     protected override string GetTemplateName()
     {
         return "RevitApplicationFactory";
+    }
+
+    protected override string[] GetAttributes()
+    {
+        return new[]
+        {
+            "Scotec.Revit.Isolation.RevitApplicationIsolationAttribute", 
+            "Scotec.Revit.RevitApplicationIsolationAttribute"
+        };
     }
 }

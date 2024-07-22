@@ -9,17 +9,17 @@ namespace Scotec.Revit.LoadContext;
 [Generator]
 internal class RevitCommandAvailabilityFactoryGenerator : RevitFactoryGeneratorBase
 {
-    protected override void OnInitialize()
-    {
-#if USE_OLD_ISOLATION_ATTRIBUTE
-        RegisterSourceOutputForAttribute("Scotec.Revit.RevitCommandAvailabilityIsolationAttribute");
-#else
-        RegisterSourceOutputForAttribute("Scotec.Revit.Isolation.RevitCommandAvailabilityIsolationAttribute");
-#endif
-    }
-
     protected override string GetTemplateName()
     {
         return "RevitCommandAvailabilityFactory";
+    }
+
+    protected override string[] GetAttributes()
+    {
+        return new[]
+        {
+            "Scotec.Revit.Isolation.RevitCommandAvailabilityIsolationAttribute",
+            "Scotec.Revit.RevitCommandAvailabilityIsolationAttribute"
+        };
     }
 }

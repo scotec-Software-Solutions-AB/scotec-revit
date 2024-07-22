@@ -2,7 +2,6 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -10,7 +9,16 @@ namespace Scotec.Revit.LoadContext;
 
 internal abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 {
-    protected void RegisterSourceOutputForAttribute(string attributeTypeName)
+    protected override void OnInitialize()
+    {
+        var attributes = GetAttributes();
+        foreach (var attribute in attributes)
+        {
+            RegisterSourceOutputForAttribute(attribute);
+        }
+    }
+
+    private void RegisterSourceOutputForAttribute(string attributeTypeName)
     {
         var pipeline = Context.SyntaxProvider.ForAttributeWithMetadataName(
             attributeTypeName,
@@ -36,4 +44,6 @@ internal abstract class RevitFactoryGeneratorBase : IncrementalGenerator
     }
 
     protected abstract string GetTemplateName();
+
+    protected abstract string[] GetAttributes();
 }
