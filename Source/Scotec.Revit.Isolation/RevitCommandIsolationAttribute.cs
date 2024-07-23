@@ -3,17 +3,14 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.UI;
 
-namespace Scotec.Revit;
+namespace Scotec.Revit.Isolation;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of <see cref="IExternalCommand"/> for execution in an isolated context.
+///     of IExternalCommand for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-[Obsolete("This attribute is marked as deprecated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitCommandIsolation attribute instead.")]
-
 public class RevitCommandIsolationAttribute : Attribute
 {
 }

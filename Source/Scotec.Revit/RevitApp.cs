@@ -3,6 +3,7 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Runtime.Loader;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

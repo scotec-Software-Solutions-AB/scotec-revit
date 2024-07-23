@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Runtime.Loader;
 
 namespace Scotec.Revit;
 

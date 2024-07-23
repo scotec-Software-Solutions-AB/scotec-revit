@@ -9,8 +9,6 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
-using Autofac.Core;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
@@ -41,6 +39,12 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Returns the ID of the add-in.
     /// </summary>
+    [Obsolete("This property has been marked as deprecated and will be removed in a future version. Use the 'AddInId' property instead. ")]
+    protected Guid AddinId => AddInId;
+
+    /// <summary>
+    ///     Returns the ID of the add-in.
+    /// </summary>
     protected Guid AddInId { get; private set; }
 
     /// <summary>
@@ -51,13 +55,21 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Returns the location of the add-in.
     /// </summary>
+    [Obsolete("This method has been marked as deprecated and will be removed in a future version. Use the 'GetAddInPath' method instead. ")]
+    public string GetAddinPath()
+    {
+        return GetAddInPath();
+    }
+
+    /// <summary>
+    ///     Returns the location of the add-in.
+    /// </summary>
     public string GetAddInPath()
     {
         // Do not use Assembly.GetExecutingAssembly().Location. This assembly might be used in multiple add-ins but will be loaded into the
         // process only once. Therefore, do not use Assembly.GetExecutingAssembly().Location because this might not return the path of
-        // the current add-in. Use GetType().Assembly-Location instead. This will return the path to the assembly that contains the derived RevitApp.
-        //var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        return Path.GetDirectoryName(GetType().Assembly.Location);
+        // the current add-in. Use GetAssembly().Location instead. This will return the path to the assembly that contains the derived RevitApp.
+        return Path.GetDirectoryName(GetAssembly().Location);
     }
 
     /// <summary>
@@ -65,6 +77,11 @@ public abstract class RevitAppBase
     /// </summary>
     protected virtual void OnConfigure(IHostBuilder builder)
     {
+    }
+
+    protected Assembly GetAssembly()
+    {
+        return GetType().Assembly;
     }
 
     /// <summary>
@@ -81,20 +98,44 @@ public abstract class RevitAppBase
     ///     Can be overridden to implement a custom assembly resolver.
     /// </summary>
     /// <returns>Returns the path assembly or null if the assembly could not be found.</returns>
-    protected virtual string OnAssemblyResolve(AssemblyName assemblyName)
+    protected virtual Assembly OnAssemblyResolve(ResolveEventArgs args)
     {
         var currentPath = GetAddInPath();
+        var assemblyName = new AssemblyName(args.Name);
 
         var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
-        return File.Exists(assemblyPath) ? assemblyPath : null;
+        return File.Exists(assemblyPath)
+            ? Assembly.LoadFrom(assemblyPath)
+            : null;
+    }
+
+    /// <summary>
+    ///     Can be overridden to implement a custom assembly resolver.
+    /// </summary>
+    /// <returns>Returns the loaded assembly or null if the assembly could not be loaded.</returns>
+    /// <remarks>Loads the assembly into the current load context.</remarks>
+    protected virtual Assembly OnAssemblyResolve(AssemblyLoadContext context, AssemblyName assemblyName)
+    {
+        var currentPath = GetAddInPath();
+        var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
+        var currentContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+
+        return currentContext != null && File.Exists(assemblyPath)
+            ? currentContext.LoadFromAssemblyPath(assemblyPath)
+            : null;
     }
 
     /// <summary>
     /// </summary>
     protected bool OnStartup(AddInId addInId)
     {
-        GetAssemblyLoadContext().Resolving += OnResolving;
-        AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+        var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+        if (loadContext != null)
+        {
+            loadContext.Resolving += LoadContextOnResolving;
+        }
+
+        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
 
         AddInId = addInId.GetGUID();
 
@@ -128,7 +169,13 @@ public abstract class RevitAppBase
             Host?.Dispose();
             Host = null;
 
-            AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
+            AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomainOnAssemblyResolve;
+
+            var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+            if (loadContext != null)
+            {
+                loadContext.Resolving -= LoadContextOnResolving;
+            }
 
             return result;
         }
@@ -143,17 +190,9 @@ public abstract class RevitAppBase
         return ServiceProviders[addInId];
     }
 
-    private AssemblyLoadContext GetAssemblyLoadContext()
+    private Assembly LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
     {
-        return AssemblyLoadContext.GetLoadContext(GetType().Assembly);
-    }
-
-    private Assembly OnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
-    {
-        var assemblyPath = OnAssemblyResolve(assemblyName);
-        return assemblyPath != null && File.Exists(assemblyPath)
-            ? context.LoadFromAssemblyPath(assemblyPath)
-            : null;
+        return OnAssemblyResolve(context, assemblyName);
     }
 
     private void AddServiceProvider(IServiceProvider services)
@@ -166,11 +205,8 @@ public abstract class RevitAppBase
         return new RevitHostBuilder(this);
     }
 
-    private Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
+    private Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
     {
-        var assemblyPath = OnAssemblyResolve(new AssemblyName(args.Name));
-        return assemblyPath != null && File.Exists(assemblyPath)
-            ? Assembly.LoadFrom(assemblyPath)
-            : null;
+        return OnAssemblyResolve(args);
     }
 }
