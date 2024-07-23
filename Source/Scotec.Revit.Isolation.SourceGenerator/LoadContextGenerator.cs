@@ -4,14 +4,14 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Scotec.Revit.LoadContext;
+namespace Scotec.Revit.Isolation.SourceGenerator;
 
-[Generator]
-internal class LoadContextGenerator : IncrementalGeneratorBase
+[Generator(LanguageNames.CSharp)]
+public sealed class LoadContextGenerator : IncrementalGenerator
 {
-    public override void Initialize(IncrementalGeneratorInitializationContext context)
+    protected override void OnInitialize()
     {
-        context.RegisterSourceOutput(context.CompilationProvider, Execute);
+        Context.RegisterSourceOutput(Context.CompilationProvider, Execute);
     }
 
     private void Execute(SourceProductionContext context, Compilation compilation)

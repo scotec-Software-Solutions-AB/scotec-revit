@@ -5,18 +5,24 @@
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace Scotec.Revit.LoadContext;
+namespace Scotec.Revit.Isolation.SourceGenerator;
 
-internal abstract class IncrementalGeneratorBase : IIncrementalGenerator
+public abstract class IncrementalGenerator : IIncrementalGenerator
 {
-    public abstract void Initialize(IncrementalGeneratorInitializationContext context);
+    protected IncrementalGeneratorInitializationContext Context { get; private set; }
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        Context = context;
+        OnInitialize();
+    }
 
     protected static string? LoadTemplate(string templateName)
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resourcePath = assembly
-                           .GetManifestResourceNames()
-                           .FirstOrDefault(name => name.Contains(templateName));
+            .GetManifestResourceNames()
+            .FirstOrDefault(name => name.Contains(templateName));
 
         if (resourcePath == null)
         {
@@ -27,4 +33,6 @@ internal abstract class IncrementalGeneratorBase : IIncrementalGenerator
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
+
+    protected abstract void OnInitialize();
 }
