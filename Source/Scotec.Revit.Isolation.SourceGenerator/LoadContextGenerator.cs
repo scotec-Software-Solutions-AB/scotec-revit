@@ -6,8 +6,8 @@ using Microsoft.CodeAnalysis;
 
 namespace Scotec.Revit.LoadContext;
 
-[Generator]
-internal class LoadContextGenerator : IncrementalGenerator
+[Generator(LanguageNames.CSharp)]
+public sealed class LoadContextGenerator : IncrementalGenerator
 {
     protected override void OnInitialize()
     {

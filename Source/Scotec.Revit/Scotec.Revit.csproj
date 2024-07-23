@@ -37,8 +37,6 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
-		<!--<None Remove="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="false" />
-		<None Include="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />-->
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,7 +48,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>

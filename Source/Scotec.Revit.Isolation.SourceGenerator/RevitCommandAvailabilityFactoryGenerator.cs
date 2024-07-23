@@ -6,20 +6,20 @@ using Microsoft.CodeAnalysis;
 
 namespace Scotec.Revit.LoadContext;
 
-[Generator]
-internal class RevitApplicationFactoryGenerator : RevitFactoryGeneratorBase
+[Generator(LanguageNames.CSharp)]
+public sealed class RevitCommandAvailabilityFactoryGenerator : RevitFactoryGeneratorBase
 {
     protected override string GetTemplateName()
     {
-        return "RevitApplicationFactory";
+        return "RevitCommandAvailabilityFactory";
     }
 
     protected override string[] GetAttributes()
     {
         return new[]
         {
-            "Scotec.Revit.Isolation.RevitApplicationIsolationAttribute", 
-            "Scotec.Revit.RevitApplicationIsolationAttribute"
+            "Scotec.Revit.Isolation.RevitCommandAvailabilityIsolationAttribute",
+            "Scotec.Revit.RevitCommandAvailabilityIsolationAttribute"
         };
     }
 }

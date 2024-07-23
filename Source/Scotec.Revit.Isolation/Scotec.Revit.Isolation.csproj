@@ -39,13 +39,18 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
-		<None Include="$(OutputPath)\Scotec.Revit.LoadContext.dll" Pack="true" PackagePath="analyzers/dotnet/cs"
-		      Visible="false" />
+		<None Include="$(OutputPath)\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj" OutputItemType="Analyzer"
-		                  ReferenceOutputAssembly="true" PrivateAssets="All" />
+		<!-- References required for source generator. -->
+		<!-- TODO: This should come from a shared file. -->
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" 
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
 	</ItemGroup>
 
 	<PropertyGroup>

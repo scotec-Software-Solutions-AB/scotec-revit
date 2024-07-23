@@ -2,12 +2,13 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Scotec.Revit.LoadContext;
 
-internal abstract class RevitFactoryGeneratorBase : IncrementalGenerator
+public abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 {
     protected override void OnInitialize()
     {
@@ -20,6 +21,7 @@ internal abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 
     private void RegisterSourceOutputForAttribute(string attributeTypeName)
     {
+        //Debugger.Launch();
         var pipeline = Context.SyntaxProvider.ForAttributeWithMetadataName(
             attributeTypeName,
             static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
@@ -30,6 +32,7 @@ internal abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 
     private void Execute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
     {
+        //Debugger.Launch();
         var symbol = syntaxContext.TargetSymbol;
         var className = syntaxContext.TargetSymbol.Name;
         var @namespace = symbol.ContainingNamespace.ToDisplayString();
