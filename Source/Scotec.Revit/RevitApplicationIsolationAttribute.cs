@@ -9,9 +9,11 @@ namespace Scotec.Revit;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of <see cref="IExternalApplication" /> for execution in an isolated context.
+///     of <see cref="IExternalApplication"/> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitApplicationContextAttribute : Attribute
+[Obsolete("This attribute is marked as depricated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitApplicationIsolation attribute instead.")]
+
+public class RevitApplicationIsolationAttribute : Attribute
 {
 }

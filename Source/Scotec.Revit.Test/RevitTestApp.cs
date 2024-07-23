@@ -12,10 +12,11 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.Test;
 
-[RevitDbApplicationContext]
+[Isolation.RevitDbApplicationIsolation]
 public class DbApp : IExternalDBApplication
 {
     public ExternalDBApplicationResult OnStartup(ControlledApplication application)
@@ -29,7 +30,7 @@ public class DbApp : IExternalDBApplication
     }
 }
 
-[RevitApplicationContext]
+[Isolation.RevitApplicationIsolation]
 public class RevitTestApp : RevitApp
 {
     public RevitTestApp()

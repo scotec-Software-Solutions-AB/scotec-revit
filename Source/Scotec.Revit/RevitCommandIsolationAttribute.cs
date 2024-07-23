@@ -9,9 +9,11 @@ namespace Scotec.Revit;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of <see cref="IExternalCommandAvailability" /> for execution in an isolated context.
+///     of <see cref="IExternalCommand"/> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitCommandAvailabilityContextAttribute : Attribute
+[Obsolete("This attribute is marked as depricated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitCommandIsolation attribute instead.")]
+
+public class RevitCommandIsolationAttribute : Attribute
 {
 }

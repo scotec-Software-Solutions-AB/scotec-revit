@@ -3,15 +3,14 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.DB;
 
-namespace Scotec.Revit;
+namespace Scotec.Revit.Isolation;
 
 /// <summary>
 ///     This attribute can be used to mark implementations
-///     of <see cref="IExternalDBApplication" /> for execution in an isolated context.
+///     of IExternalCommandAvailability" for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitDbApplicationContextAttribute : Attribute
+public class RevitCommandAvailabilityIsolationAttribute : Attribute
 {
 }

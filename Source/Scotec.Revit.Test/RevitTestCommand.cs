@@ -8,7 +8,7 @@ using Autodesk.Revit.UI;
 
 namespace Scotec.Revit.Test;
 
-[RevitCommandContext]
+[Isolation.RevitCommandIsolation]
 [Transaction(TransactionMode.Manual)]
 public class RevitTestCommand : RevitCommand
 {
