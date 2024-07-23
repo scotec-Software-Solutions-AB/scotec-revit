@@ -79,6 +79,10 @@ public abstract class RevitAppBase
     {
     }
 
+    /// <summary>
+    /// Gets the assembly from the current type.
+    /// </summary>
+    /// <returns></returns>
     protected Assembly GetAssembly()
     {
         return GetType().Assembly;
