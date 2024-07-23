@@ -43,14 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- References required for source generator. -->
-		<!-- TODO: This should come from a shared file. -->
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" 
-		                  OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
 	</ItemGroup>
 
 	<PropertyGroup>
