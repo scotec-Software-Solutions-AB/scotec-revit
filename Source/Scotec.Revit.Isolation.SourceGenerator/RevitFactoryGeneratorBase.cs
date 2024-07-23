@@ -2,11 +2,10 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Scotec.Revit.LoadContext;
+namespace Scotec.Revit.Isolation.SourceGenerator;
 
 public abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 {
