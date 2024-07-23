@@ -4,7 +4,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Scotec.Revit.LoadContext;
+namespace Scotec.Revit.Isolation.SourceGenerator;
 
 [Generator(LanguageNames.CSharp)]
 public sealed class RevitApplicationFactoryGenerator : RevitFactoryGeneratorBase

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Hosting;
 
@@ -52,6 +53,12 @@ public abstract class RevitApp : IExternalApplication
     /// <inheritdoc />
     Result IExternalApplication.OnStartup(UIControlledApplication application)
     {
+        var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+        if (loadContext != null)
+        {
+            loadContext.Resolving += LoadContextOnResolving;
+        }
+
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
 
         AddinId = application.ActiveAddInId.GetGUID();
@@ -88,6 +95,12 @@ public abstract class RevitApp : IExternalApplication
 
             AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomainOnAssemblyResolve;
 
+            var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+            if (loadContext != null)
+            {
+                loadContext.Resolving -= LoadContextOnResolving;
+            }
+
             return result;
         }
         catch (Exception)
@@ -103,9 +116,8 @@ public abstract class RevitApp : IExternalApplication
     {
         // Do not use Assembly.GetExecutingAssembly().Location. This assembly might be used in multiple addins but will be loaded into the
         // process only once. Therefore do not use Assembly.GetExecutingAssembly().Location because this might not return the path of
-        // the current addin. Use GetType().Assembly-Location instead. This will return the path to the assembly that contains the derived RevitApp.
-        //var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        return Path.GetDirectoryName(GetType().Assembly.Location);
+        // the current addin. Use GetAssembly().Location instead. This will return the path to the assembly that contains the derived RevitApp.
+        return Path.GetDirectoryName(GetAssembly().Location);
     }
 
     /// <summary>
@@ -129,6 +141,7 @@ public abstract class RevitApp : IExternalApplication
     ///     Can be overridden to implement a custom assembly resolver.
     /// </summary>
     /// <returns>Returns the loaded assembly or null if the assembly could not be loaded.</returns>
+    /// <remarks>Loads the assembly into the default load context.</remarks>
     protected virtual Assembly OnAssemblyResolve(ResolveEventArgs args)
     {
         var currentPath = GetAddinPath();
@@ -140,9 +153,35 @@ public abstract class RevitApp : IExternalApplication
             : null;
     }
 
+    /// <summary>
+    ///     Can be overridden to implement a custom assembly resolver.
+    /// </summary>
+    /// <returns>Returns the loaded assembly or null if the assembly could not be loaded.</returns>
+    /// <remarks>Loads the assembly into the current load context.</remarks>
+    protected virtual Assembly OnAssemblyResolve(AssemblyLoadContext context, AssemblyName assemblyName)
+    {
+        var currentPath = GetAddinPath();
+        var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
+        var currentContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
+
+        return currentContext != null && File.Exists(assemblyPath)
+            ? currentContext.LoadFromAssemblyPath(assemblyPath)
+            : null;
+    }
+
     internal static IServiceProvider GetServiceProvider(Guid addinId)
     {
         return ServiceProviders[addinId];
+    }
+
+    private Assembly LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
+    {
+        return OnAssemblyResolve(context, assemblyName);
+    }
+
+    private Assembly GetAssembly()
+    {
+        return GetType().Assembly;
     }
 
     private void AddServiceProvider(IServiceProvider services)
