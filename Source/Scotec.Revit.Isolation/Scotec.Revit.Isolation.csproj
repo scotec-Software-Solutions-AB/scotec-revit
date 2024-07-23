@@ -12,17 +12,19 @@
 		<Authors>$(CompanyName)</Authors>
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
-		<Description>Revit application and command base classes that support Inversion of Control (IoC).</Description>
+		<Description>Support for Revit add-in isolation.</Description>
+		<!--<ImagePath>..</ImagePath>-->
 		<IsPublishable>True</IsPublishable>
 		<PackageIcon>Logo.png</PackageIcon>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://www.scotec-software.com</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<!--<PackageReadmePath>..</PackageReadmePath>-->
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/scotec-Software-Solutions-AB/scotec-revit</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<SignAssembly>False</SignAssembly>
-		<Title>Scotec.Revit</Title>
+		<Title>Scotec.Revit.Isolation</Title>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -37,18 +39,18 @@
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
+		<None Include="$(OutputPath)\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Autofac" Version="8.0.0" />
-		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.0.2" />
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.0.2" />
+		<!-- References required for source generator. -->
+		<!-- TODO: This should come from a shared file. -->
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" 
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
 	</ItemGroup>
 
 	<PropertyGroup>

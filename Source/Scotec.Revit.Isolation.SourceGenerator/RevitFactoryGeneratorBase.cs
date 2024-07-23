@@ -2,36 +2,51 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Scotec.Revit.LoadContext;
 
-[Generator]
-internal class RevitDbApplicationFactoryGenerator : IncrementalGeneratorBase
+public abstract class RevitFactoryGeneratorBase : IncrementalGenerator
 {
-    public override void Initialize(IncrementalGeneratorInitializationContext context)
+    protected override void OnInitialize()
     {
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Scotec.Revit.RevitDbApplicationIsolationAttribute",
+        var attributes = GetAttributes();
+        foreach (var attribute in attributes)
+        {
+            RegisterSourceOutputForAttribute(attribute);
+        }
+    }
+
+    private void RegisterSourceOutputForAttribute(string attributeTypeName)
+    {
+        //Debugger.Launch();
+        var pipeline = Context.SyntaxProvider.ForAttributeWithMetadataName(
+            attributeTypeName,
             static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
             static (context, _) => context);
 
-        context.RegisterSourceOutput(pipeline, Execute);
+        Context.RegisterSourceOutput(pipeline, Execute);
     }
 
-    private static void Execute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
+    private void Execute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
     {
+        //Debugger.Launch();
         var symbol = syntaxContext.TargetSymbol;
         var className = syntaxContext.TargetSymbol.Name;
         var @namespace = symbol.ContainingNamespace.ToDisplayString();
         var globalNamespace = syntaxContext.SemanticModel.Compilation.Assembly.Name;
 
-        var template = LoadTemplate("RevitDbApplicationFactory");
+        var template = LoadTemplate(GetTemplateName());
         if (!string.IsNullOrEmpty(template))
         {
             var content = string.Format(template, @namespace, className, globalNamespace);
             sourceContext.AddSource($"{className}Factory.g.cs", content);
         }
     }
+
+    protected abstract string GetTemplateName();
+
+    protected abstract string[] GetAttributes();
 }

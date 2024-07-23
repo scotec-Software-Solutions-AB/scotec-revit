@@ -17,15 +17,7 @@
 		<Company>$(CompanyName)</Company>
 		<Copyright>$(CompanyName)</Copyright>
 		<Description>Source generator to support assembly load context in Revit add-ins.</Description>
-		<IsPublishable>True</IsPublishable>
-		<PackageIcon>Logo.png</PackageIcon>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://www.scotec-software.com</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<RepositoryUrl>https://github.com/scotec-Software-Solutions-AB/scotec-revit</RepositoryUrl>
-		<RepositoryType>git</RepositoryType>
-		<SignAssembly>False</SignAssembly>
-		<Title>Scotec.Revit.LoadContext</Title>
+		<Title>Scotec.Revit.Isolation.SourceGenerator</Title>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -41,21 +33,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
 	</ItemGroup>
-
-	<!--<ItemGroup>
-		<None Include="..\Logo.png" Pack="true" PackagePath="" />
-		<None Include="..\README.md" Pack="true" PackagePath="" />
-		<None Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="" />
-		--><!--<None Remove="Resources\RevitDbApplicationFactory.template" />--><!--
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="bin/netstandard2.0" />
-	</ItemGroup>-->
-
-	<PropertyGroup>
-		<!--<NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>-->
-		<!--<PackageOutputPath>..\..\localPackages</PackageOutputPath>-->
-	</PropertyGroup>
 
 </Project>
