@@ -5,36 +5,32 @@
 using System;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
 
 internal sealed class RevitHostBuilder : HostBuilder
 {
-    public RevitHostBuilder(RevitApp app)
+    public RevitHostBuilder(RevitAppBase app)
     {
         // Add required services.
         UseServiceProviderFactory(new AutofacServiceProviderFactory())
 
             // Add required services.
-            .ConfigureServices(services =>
-            {
-                services.AddSingleton(app.Application);
-                services.AddSingleton(app.Application.ActiveAddInId);
-                services.AddSingleton(app.Application.ControlledApplication);
-            })
+            //.ConfigureServices(services => { })
 
-            // Add Appsettings.
-            .ConfigureAppConfiguration(builder =>
-            {
-                builder.SetBasePath(app.GetAddinPath());
-                builder.AddJsonFile("appsettings.json", true, false);
-                var environment = Environment.GetEnvironmentVariable("REVIT_ENVIRONMENT");
-                if (!string.IsNullOrEmpty(environment))
-                {
-                    builder.AddJsonFile($"appsettings.{environment}.json", true, false);
-                }
-            });
+            // Add AppSettings.
+            .ConfigureAppConfiguration(builder => { ConfigureApp(app.GetAddInPath(), builder); });
+    }
+
+    private static void ConfigureApp(string addInPath, IConfigurationBuilder builder)
+    {
+        builder.SetBasePath(addInPath);
+        builder.AddJsonFile("appsettings.json", true, false);
+        var environment = Environment.GetEnvironmentVariable("REVIT_ENVIRONMENT");
+        if (!string.IsNullOrEmpty(environment))
+        {
+            builder.AddJsonFile($"appsettings.{environment}.json", true, false);
+        }
     }
 }
