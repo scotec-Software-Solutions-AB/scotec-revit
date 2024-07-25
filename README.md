@@ -1,7 +1,7 @@
 # scotec-revit
 
 ## scotec.revit.isolation
-Version conflicts occur when two or more add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from the newer version, a TypeLoadException will be thrown. Similar errors can occur if methods are not found, or their parameters have changed. 
+Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from the newer version, a TypeLoadException will be thrown. Similar errors can occur if methods are not found, or their parameters have changed. 
 
 Isolating Revit add-ins using ```AssemblyLoadContext``` provides an elegant and straightforward solution to avoiding DLL hell. The ```Scotec.Revit.Isolation``` library assists you in this process by automatically generating the required code when compiling your add-in. The factories created in this process then generate instances of your apps or commands in the add-in specific load context and ensure that Revit calls are forwarded accordingly.
 
