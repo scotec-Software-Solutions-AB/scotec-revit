@@ -12,7 +12,7 @@ namespace Scotec.Revit;
 ///     of <see cref="IExternalCommandAvailability"/> for execution in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-[Obsolete("This attribute is marked as depricated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitCommandAvailabilityIsolation attribute instead.")]
+[Obsolete("This attribute is marked as deprecated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitCommandAvailabilityIsolation attribute instead.")]
 public class RevitCommandAvailabilityIsolationAttribute : Attribute
 {
 }

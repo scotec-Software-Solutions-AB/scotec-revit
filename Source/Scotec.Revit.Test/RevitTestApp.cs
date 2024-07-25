@@ -38,12 +38,12 @@ public class RevitTestApp : RevitApp
         var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
     }
 
-    protected override Result OnShutdown()
+    protected override bool OnShutdown()
     {
-        return Result.Succeeded;
+        return true;
     }
 
-    protected override Result OnStartup()
+    protected override bool OnStartup()
     {
         try
         {
@@ -59,10 +59,10 @@ public class RevitTestApp : RevitApp
         }
         catch (Exception)
         {
-            return Result.Failed;
+            return false;
         }
 
-        return Result.Succeeded;
+        return true;
     }
 
     private static PushButtonData CreateButtonData(string name, string text, string description, Type commandType)

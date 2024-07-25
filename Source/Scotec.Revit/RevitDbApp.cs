@@ -2,11 +2,12 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-using System;
-using System.Runtime.Loader;
-using Autodesk.Revit.UI;
+using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.DB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Runtime.Loader;
 
 namespace Scotec.Revit;
 
@@ -14,26 +15,26 @@ namespace Scotec.Revit;
 ///     Basic implementation for a Revit app. Derive from this class to use services like logging, dependency injection, or
 ///     hosted services.
 /// </summary>
-public abstract class RevitApp : RevitAppBase, IExternalApplication
+public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
 {
     /// <summary>
     /// </summary>
-    public UIControlledApplication Application { get; private set; }
+    public ControlledApplication Application { get; private set; }
 
     /// <inheritdoc />
-    Result IExternalApplication.OnStartup(UIControlledApplication application)
+    ExternalDBApplicationResult IExternalDBApplication.OnStartup(ControlledApplication application)
     {
         Application = application;
-
+        
         return OnStartup(application.ActiveAddInId) 
-            ? Result.Succeeded 
-            : Result.Failed;
+            ? ExternalDBApplicationResult.Succeeded 
+            : ExternalDBApplicationResult.Failed;
     }
 
     /// <inheritdoc />
-    Result IExternalApplication.OnShutdown(UIControlledApplication application)
+    ExternalDBApplicationResult IExternalDBApplication.OnShutdown(ControlledApplication application)
     {
-        return OnShutdown(application.ControlledApplication) ? Result.Succeeded : Result.Failed;
+        return OnShutdown(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
     }
 
     /// <inheritdoc />
@@ -45,8 +46,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
         {
             services.AddSingleton(Application);
             services.AddSingleton(Application.ActiveAddInId);
-            services.AddSingleton(Application.ControlledApplication);
-
         });
     }
+
 }
