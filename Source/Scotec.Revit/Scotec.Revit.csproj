@@ -40,11 +40,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
 		<PackageReference Include="Autofac" Version="8.0.0" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.1.0" />
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
