@@ -8,9 +8,14 @@ using Autodesk.Revit.UI;
 namespace Scotec.Revit;
 
 /// <summary>
-///     This attribute can be used to mark implementations
-///     of <see cref="IExternalCommand"/> for execution in an isolated context.
+/// Represents an attribute that marks implementations of <see cref="IExternalCommand"/>
+/// for execution in an isolated context.
 /// </summary>
+/// <remarks>
+/// This attribute is marked as deprecated and will be removed in a future version.
+/// It is recommended to reference the Scotec.Revit.Isolation package and use the
+/// <c>Scotec.Revit.Isolation.RevitCommandIsolation</c> attribute instead.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
 [Obsolete("This attribute is marked as deprecated and will be removed in a future version. Reference package Scotec.Revit.Isolation and use the Scotec.Revit.Isolation.RevitCommandIsolation attribute instead.")]
 

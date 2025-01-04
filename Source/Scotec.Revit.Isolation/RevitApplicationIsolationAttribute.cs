@@ -7,8 +7,9 @@ using System;
 namespace Scotec.Revit.Isolation;
 
 /// <summary>
-///     This attribute can be used to mark implementations
-///     of IExternalApplication" for execution in an isolated context.
+/// Represents an attribute that can be applied to classes implementing 
+/// <c>IExternalApplication</c> to indicate that they should be executed 
+/// in an isolated context.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitApplicationIsolationAttribute : Attribute
