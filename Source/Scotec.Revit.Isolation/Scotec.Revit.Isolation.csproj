@@ -43,6 +43,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
+	</ItemGroup>
+
+
+	<ItemGroup>
 		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
 	</ItemGroup>
 

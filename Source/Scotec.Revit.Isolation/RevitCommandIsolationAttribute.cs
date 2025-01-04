@@ -3,12 +3,13 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using Autodesk.Revit.UI;
 
 namespace Scotec.Revit.Isolation;
 
 /// <summary>
-///     This attribute can be used to mark implementations
-///     of IExternalCommand for execution in an isolated context.
+/// Represents an attribute used to mark implementations of <see cref="IExternalCommand"/>
+/// for execution within an isolated context in Revit.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitCommandIsolationAttribute : Attribute
