@@ -31,6 +31,24 @@ public class RevitWindow : Window
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="RevitWindow"/> class and sets the main Revit window as its owner.
+    /// </summary>
+    /// <param name="application">
+    /// An instance of <see cref="UIControlledApplication"/> representing the controlled application in Autodesk Revit.
+    /// </param>
+    /// <remarks>
+    /// This constructor retrieves the main Revit window handle from the provided <see cref="UIControlledApplication"/> 
+    /// and sets it as the owner of this WPF window. This ensures proper integration and behavior within the Revit environment.
+    /// </remarks>
+    public RevitWindow(UIControlledApplication application)
+    {
+        var hwndSource = HwndSource.FromHwnd(application.MainWindowHandle);
+        var mainWindow = hwndSource!.RootVisual as Window;
+        Owner = mainWindow;
+
+    }
+
+    /// <summary>
     /// Hides the minimize and maximize buttons of the current window.
     /// </summary>
     /// <remarks>
