@@ -46,7 +46,7 @@ public abstract class RevitAppBase
     /// This property is intended for internal use and provides access to the host instance
     /// that facilitates dependency injection, logging, and hosted services.
     /// </remarks>
-    protected internal IHost Host { get; internal set; }
+    protected internal IHost? Host { get; internal set; }
 
     /// <summary>
     ///     Returns the ID of the add-in.
@@ -105,7 +105,7 @@ public abstract class RevitAppBase
         // Do not use Assembly.GetExecutingAssembly().Location. This assembly might be used in multiple add-ins but will be loaded into the
         // process only once. Therefore, do not use Assembly.GetExecutingAssembly().Location because this might not return the path of
         // the current add-in. Use GetAssembly().Location instead. This will return the path to the assembly that contains the derived RevitApp.
-        return Path.GetDirectoryName(GetAssembly().Location);
+        return Path.GetDirectoryName(GetAssembly().Location)!;
     }
 
     /// <summary>
@@ -372,7 +372,7 @@ public abstract class RevitAppBase
     /// This method delegates the resolution logic to the <see cref="OnAssemblyResolve(ResolveEventArgs)"/> method.
     /// It is automatically attached to the <see cref="AppDomain.AssemblyResolve"/> event during application startup.
     /// </remarks>
-    private Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
+    private Assembly CurrentDomainOnAssemblyResolve(object? sender, ResolveEventArgs args)
     {
         return OnAssemblyResolve(args);
     }

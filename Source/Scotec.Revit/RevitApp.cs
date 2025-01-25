@@ -32,7 +32,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// This property is initialized during the startup process of the Revit application and provides access to 
     /// Revit's API for managing add-ins, events, and other application-level functionalities.
     /// </remarks>
-    public UIControlledApplication Application { get; private set; }
+    public UIControlledApplication? Application { get; private set; }
 
     /// <summary>
     /// Invoked by Revit during the startup of the external application.
@@ -114,6 +114,11 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     {
         base.OnConfigure(builder);
 
+        if(Application == null)
+        {
+            throw new InvalidOperationException("The Revit application instance is not available.");
+        };
+        
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(Application);
