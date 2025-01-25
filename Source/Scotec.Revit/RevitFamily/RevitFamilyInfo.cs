@@ -213,7 +213,7 @@ public class RevitFamilyInfo
     {
         try
         {
-            if (!compoundFile.RootStorage.TryGetStream("PartAtom\"", out var stream))
+            if (!compoundFile.RootStorage.TryGetStream("PartAtom", out var stream))
             {
                 throw new Exception("The 'PartAtom' stream could not be found in the family file.");
             }
