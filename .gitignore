@@ -1,5 +1,6 @@
 /packages
-/Source/.vs
+/Source
+/.vs
 obj
 bin
 /localPackages
