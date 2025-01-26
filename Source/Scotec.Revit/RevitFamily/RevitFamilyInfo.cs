@@ -69,15 +69,20 @@ public class RevitFamilyInfo
     /// <exception cref="System.InvalidOperationException">
     /// Thrown if the preview stream is not available or has not been properly initialized.
     /// </exception>
-    public Stream Preview
+    public Stream? Preview
     {
         get
         {
             Initialize();
 
+            if (_preview is null)
+            {
+                return null;
+            }
+            
             // Create a copy and return it.
             var stream = new MemoryStream();
-            _preview!.Position = 0;
+            _preview.Position = 0;
             _preview.CopyTo(stream);
 
             return stream;
@@ -242,6 +247,7 @@ public class RevitFamilyInfo
         catch (Exception)
         {
             //TODO: Logging
+            FamilySymbolInfos = new List<RevitFamilySymbolInfo>();
         }
     }
 }
