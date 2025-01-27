@@ -22,38 +22,26 @@ public class RevitFamilyInfo
     private static readonly XNamespace AtomNamespace = "http://www.w3.org/2005/Atom";
     private static readonly XNamespace AutodeskNamespace = "urn:schemas-autodesk-com:partatom";
 
-    private readonly string _filePath;
+    private readonly Func<Stream> _familyStreamLoader;
     private IList<RevitFamilySymbolInfo> _familySymbols = [];
     private bool _isInitialized;
     private Stream? _preview;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RevitFamilyInfo"/> class with the specified file path and family stream.
+    /// Initializes a new instance of the <see cref="RevitFamilyInfo"/> class with the specified family stream loader.
     /// </summary>
-    /// <param name="filePath">The file path of the Revit family.</param>
-    /// <param name="familyStream">The stream containing the Revit family data.</param>
-    /// <param name="disposeStream">
-    /// A boolean value indicating whether the provided <paramref name="familyStream"/> should be disposed after use.
-    /// Defaults to <c>true</c>.
+    /// <param name="familyStreamLoader">
+    /// A function that provides a <see cref="Stream"/> containing the Revit family data.
     /// </param>
-    /// <remarks>
-    /// This constructor copies the provided family stream into memory and optionally disposes of the original stream.
-    /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="filePath"/> or <paramref name="familyStream"/> is <c>null</c>.
+    /// Thrown if <paramref name="familyStreamLoader"/> is <c>null</c>.
     /// </exception>
-    public RevitFamilyInfo(string filePath, Stream familyStream, bool disposeStream = true)
+    /// <remarks>
+    /// This constructor allows deferred loading of the Revit family data using the provided stream loader function.
+    /// </remarks>
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader)
     {
-        _filePath = filePath;
-        var stream = new MemoryStream();
-        familyStream.CopyTo(stream);
-
-        Family = stream;
-
-        if (disposeStream)
-        {
-            familyStream.Dispose();
-        }
+        _familyStreamLoader = familyStreamLoader;
     }
 
     /// <summary>
@@ -118,7 +106,7 @@ public class RevitFamilyInfo
     /// The stream is initialized during the construction of the <see cref="RevitFamilyInfo"/> instance
     /// and can be used to read or process the family data.
     /// </remarks>
-    public Stream Family { get; }
+    public Stream Family => GetFamilyStream();
 
     /// <summary>
     /// Gets the title of the Revit family.
@@ -143,8 +131,7 @@ public class RevitFamilyInfo
     /// </remarks>
     private Stream GetFamilyStream()
     {
-        Family.Position = 0;
-        return Family;
+        return _familyStreamLoader();
     }
 
     /// <summary>
