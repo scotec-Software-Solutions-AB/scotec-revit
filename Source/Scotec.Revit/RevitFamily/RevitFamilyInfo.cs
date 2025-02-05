@@ -170,11 +170,14 @@ public class RevitFamilyInfo
     /// <remarks>
     /// This method ensures that the Revit family data is fully loaded and ready for use. 
     /// It processes the family stream to extract relevant information, such as symbols and the preview image.
+    /// 
+    /// Although this method is called internally on first use, it can also be invoked externally to force loading, 
+    /// for example, in a background thread to improve performance or pre-load data.
     /// </remarks>
     /// <exception cref="System.Exception">
     /// Thrown if there is an error while loading the Revit family data or its associated components.
     /// </exception>
-    private void Initialize()
+    public void Initialize()
     {
         if (_isInitialized)
         {
