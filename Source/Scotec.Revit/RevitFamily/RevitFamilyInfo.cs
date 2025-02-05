@@ -26,7 +26,8 @@ public class RevitFamilyInfo
     private IList<RevitFamilySymbolInfo> _familySymbols = [];
     private bool _isInitialized;
     private Stream? _preview;
-
+    private readonly object _initializationLock = new();
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="RevitFamilyInfo"/> class with the specified family stream loader.
     /// </summary>
@@ -183,15 +184,19 @@ public class RevitFamilyInfo
         {
             return;
         }
-
-        using var stream = new CompoundFile(GetFamilyStream());
-
-        LoadPartAtom(stream);
-        LoadImage(stream);
-
-        _isInitialized = true;
+        lock (_initializationLock)
+        {
+            if (_isInitialized) // Double-check to prevent reinitialization.
+            {
+                return;
+            }
+            using var stream = new CompoundFile(GetFamilyStream());
+            LoadPartAtom(stream);
+            LoadImage(stream);
+            _isInitialized = true;
+        }
     }
-
+    
     /// <summary>
     /// Loads and processes the "PartAtom" stream from the specified compound file.
     /// </summary>
