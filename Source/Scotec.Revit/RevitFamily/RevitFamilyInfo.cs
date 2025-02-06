@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using Microsoft.Extensions.Logging;
 using OpenMcdf;
 using Scotec.Extensions.Utilities;
 
@@ -27,25 +28,34 @@ public class RevitFamilyInfo
     private static readonly XNamespace AutodeskNamespace = "urn:schemas-autodesk-com:partatom";
 
     private readonly Func<Stream> _familyStreamLoader;
+    private readonly ILogger? _logger;
     private readonly object _initializationLock = new();
-    private IList<RevitFamilySymbolInfo> _familySymbols = [];
     private Stream? _preview;
 
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader) : this(familyStreamLoader, null)
+    {
+    }
+
     /// <summary>
-    ///     Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader.
+    /// Initializes a new instance of the <see cref="RevitFamilyInfo"/> class with the specified family stream loader and logger.
     /// </summary>
     /// <param name="familyStreamLoader">
-    ///     A function that provides a <see cref="Stream" /> containing the Revit family data.
+    /// A function that provides a <see cref="Stream"/> containing the Revit family data.
+    /// </param>
+    /// <param name="logger">
+    /// An instance of <see cref="ILogger"/> used for logging operations.
     /// </param>
     /// <exception cref="System.ArgumentNullException">
-    ///     Thrown if <paramref name="familyStreamLoader" /> is <c>null</c>.
+    /// Thrown when <paramref name="familyStreamLoader"/> is <c>null</c>.
     /// </exception>
     /// <remarks>
-    ///     This constructor allows deferred loading of the Revit family data using the provided stream loader function.
+    /// This constructor enables deferred loading of the Revit family data using the provided stream loader function.
+    /// The logger is utilized to record diagnostic and error information during the processing of the family data.
     /// </remarks>
-    public RevitFamilyInfo(Func<Stream> familyStreamLoader)
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader, ILogger? logger)
     {
         _familyStreamLoader = familyStreamLoader;
+        _logger = logger;
     }
 
     /// <summary>
@@ -61,25 +71,21 @@ public class RevitFamilyInfo
     public bool IsInitialized { get; private set; }
 
     /// <summary>
-    ///     Gets a stream containing the preview image of the Revit family.
+    ///     Gets a stream containing the preview image of the Revit family, if available.
     /// </summary>
+    /// <value>
+    ///     A <see cref="Stream" /> representing the preview image of the Revit family, or <c>null</c> if the preview
+    ///     image is not initialized or unavailable.
+    /// </value>
     /// <remarks>
-    ///     This property initializes the Revit family data if it has not been initialized yet.
-    ///     The returned stream is a copy of the internal preview stream, ensuring the original stream remains unaltered.
+    ///     The returned stream is a copy of the original preview stream, ensuring that the original data remains
+    ///     unaltered. The caller is responsible for disposing of the returned stream after use.
     /// </remarks>
-    /// <returns>
-    ///     A <see cref="Stream" /> object containing the preview image of the Revit family.
-    /// </returns>
-    /// <exception cref="System.InvalidOperationException">
-    ///     Thrown if the preview stream is not available or has not been properly initialized.
-    /// </exception>
     public Stream? Preview
     {
         get
         {
-            Initialize();
-
-            if (_preview is null)
+            if (!IsInitialized || _preview is null)
             {
                 return null;
             }
@@ -94,25 +100,18 @@ public class RevitFamilyInfo
     }
 
     /// <summary>
-    ///     Gets the collection of family symbol information associated with the Revit family.
+    ///     Gets the collection of symbols associated with the Revit family.
     /// </summary>
     /// <remarks>
-    ///     This property provides access to the list of <see cref="RevitFamilySymbolInfo" /> objects,
-    ///     representing the symbols defined within the Revit family. The symbols are initialized
-    ///     and loaded from the family data during the first access.
+    ///     Each symbol in the collection represents a specific type or variation of the Revit family.
+    ///     The collection is populated during the initialization process by extracting symbol data
+    ///     from the family file.
     /// </remarks>
     /// <value>
-    ///     A list of <see cref="RevitFamilySymbolInfo" /> objects containing details about the family symbols.
+    ///     A list of <see cref="RevitFamilySymbolInfo" /> objects, where each object contains
+    ///     information about a specific Revit family symbol.
     /// </value>
-    public IList<RevitFamilySymbolInfo> FamilySymbolInfos
-    {
-        get
-        {
-            Initialize();
-            return _familySymbols;
-        }
-        private set => _familySymbols = value;
-    }
+    public IList<RevitFamilySymbolInfo> FamilySymbolInfos { get; private set; } = [];
 
     /// <summary>
     ///     Gets the stream containing the Revit family data.
@@ -162,10 +161,18 @@ public class RevitFamilyInfo
                 return;
             }
 
-            using var stream = new CompoundFile(GetFamilyStream());
-            LoadPartAtom(stream);
-            LoadImage(stream);
-            IsInitialized = true;
+            try
+            {
+                using var stream = new CompoundFile(GetFamilyStream());
+                LoadPartAtom(stream);
+                LoadImage(stream);
+                IsInitialized = true;
+            }
+            catch (Exception e)
+            {
+                _logger?.LogError(e, "Error while initializing the family info.");
+                throw;
+            }
         }
     }
 
@@ -186,13 +193,16 @@ public class RevitFamilyInfo
     /// <summary>
     ///     Loads the preview image from the specified compound file.
     /// </summary>
-    /// <param name="compoundFile">The <see cref="CompoundFile" /> containing the Revit family data.</param>
+    /// <param name="compoundFile">
+    ///     The <see cref="CompoundFile" /> containing the Revit family data.
+    /// </param>
     /// <remarks>
     ///     This method attempts to locate and extract the "RevitPreview4.0" stream from the provided compound file.
     ///     If successful, it processes the stream to extract a PNG image and stores it in memory.
+    ///     If the stream is not found or the extraction fails, the method logs the issue and continues without throwing an exception.
     /// </remarks>
     /// <exception cref="System.Exception">
-    ///     Thrown if the "RevitPreview4.0" stream cannot be found in the compound file.
+    ///     Thrown if an unexpected error occurs during the image extraction process.
     /// </exception>
     private void LoadImage(CompoundFile compoundFile)
     {
@@ -200,16 +210,18 @@ public class RevitFamilyInfo
         {
             if (!compoundFile.RootStorage.TryGetStream("RevitPreview4.0", out var stream))
             {
-                throw new Exception("The 'RevitPreview4.0' stream could not be found in the family file.");
+                _logger?.LogDebug("The 'RevitPreview4.0' stream could not be found in the family file.");
+                return;
             }
 
             var data = stream.GetData();
             var image = PngExtractor.ExtractPng(data);
             _preview = new MemoryStream(image);
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            //TODO: Log error;
+            // We don't want the user prevent from using the family if the image is missing.
+            _logger?.LogDebug(e, "The image could not be extracted from the family file.");
         }
     }
 
@@ -219,10 +231,8 @@ public class RevitFamilyInfo
     /// <param name="compoundFile">The compound file containing the "PartAtom" stream.</param>
     /// <remarks>
     ///     This method extracts and parses the "PartAtom" stream to retrieve family metadata, such as the title and family
-    ///     types.
-    ///     It updates the <see cref="Title" /> property with the family name and populates the
-    ///     <see cref="FamilySymbolInfos" /> collection
-    ///     with the family symbols extracted from the stream.
+    ///     types. It updates the <see cref="Title" /> property with the family name and populates the
+    ///     <see cref="FamilySymbolInfos" /> collection with the family symbols extracted from the stream.
     /// </remarks>
     /// <exception cref="System.Exception">
     ///     Thrown if the "PartAtom" stream is not found in the compound file or if the family description cannot be loaded.
@@ -243,11 +253,11 @@ public class RevitFamilyInfo
             var root = document.Root;
             if (root is null)
             {
-                throw new Exception("Could not load family description.");
+                throw new Exception("Could not extract the family description from the 'PartAtom' stream.");
             }
 
             // Extract the title
-            Title = root.Element(AtomNamespace + "title")?.Value ?? "Missing family name";
+            Title = root.Element(AtomNamespace + "title")?.Value ?? string.Empty;
 
             // Extract the product version
             //var productVersion = document.Descendants(autodeskNs + "product-version").FirstOrDefault()?.Value;
@@ -257,10 +267,10 @@ public class RevitFamilyInfo
                                         .Where(part => part.Attribute("type")?.Value == "user")
                                         .Select(part => new RevitFamilySymbolInfo(part)).ToList();
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            //TODO: Logging
-            FamilySymbolInfos = new List<RevitFamilySymbolInfo>();
+            _logger?.LogError(e, "Error while reading the family description from the 'PartAtom' stream.");
+            throw;
         }
     }
 }
