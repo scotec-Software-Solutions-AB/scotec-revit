@@ -22,8 +22,10 @@ namespace {0}
         {{
             var location = Assembly.GetExecutingAssembly().Location;
             var path = Path.GetDirectoryName(location)!;
-
-            Instance = new AddinLoadContext(path);
+            if(AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()) == AssemblyLoadContext.Default)
+            {{
+                Instance = new AddinLoadContext(path);
+            }}
         }}
 
         protected override Assembly Load(AssemblyName assemblyName)
