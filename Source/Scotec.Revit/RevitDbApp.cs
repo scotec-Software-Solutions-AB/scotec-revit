@@ -43,7 +43,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// };
     /// </code>
     /// </example>
-    public ControlledApplication Application { get; private set; }
+    public ControlledApplication? Application { get; private set; }
 
     /// <inheritdoc />
     ExternalDBApplicationResult IExternalDBApplication.OnStartup(ControlledApplication application)
@@ -93,6 +93,11 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     {
         base.OnConfigure(builder);
 
+        if (Application == null)
+        {
+            throw new InvalidOperationException("The Revit application instance is not available.");
+        }
+        
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(Application);

@@ -3,9 +3,12 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.IO;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Scotec.Revit;
 
@@ -38,11 +41,19 @@ internal sealed class RevitHostBuilder : HostBuilder
         // Add required services.
         UseServiceProviderFactory(new AutofacServiceProviderFactory())
 
-            // Add required services.
-            //.ConfigureServices(services => { })
-
             // Add AppSettings.
-            .ConfigureAppConfiguration(builder => { ConfigureApp(app.GetAddInPath(), builder); });
+            .ConfigureAppConfiguration((context, builder) => { ConfigureApp(app.GetAddInPath(), builder); })
+
+            // Add required services.
+            .ConfigureServices((context, services) =>
+            {
+                services.AddLogging(loggingBuilder =>
+                {
+                    loggingBuilder.AddConfiguration(context.Configuration.GetSection("Logging"));
+                });
+            });
+
+
     }
 
     /// <summary>
