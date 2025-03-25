@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.Loader;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -15,6 +16,7 @@ namespace {0}
         public {1}Factory()
         {{  
             var assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(typeof({1}Factory).Assembly.Location);
+            using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);

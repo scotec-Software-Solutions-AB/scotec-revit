@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 using {2};
@@ -24,6 +25,7 @@ namespace {0}
                                         
         public {1}Factory()
         {{
+            using var context = AssemblyLoadContext.EnterContextualReflection(s_assembly);
             var types = s_assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalDBApplication)Activator.CreateInstance(type);
