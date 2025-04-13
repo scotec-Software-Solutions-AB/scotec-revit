@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Scotec.Revit.Isolation;
 using {2};
 
 namespace {0}
@@ -15,8 +17,20 @@ namespace {0}
 
         public {1}Factory()
         {{  
-            var assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(typeof({1}Factory).Assembly.Location);
-            using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
+            var contextName = "{3}";
+            if(string.IsNullOrEmpty(contextName))
+            {{
+				contextName = Assembly.GetExecutingAssembly().GetName().Name;
+			}}
+            var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
+            if (context == null)
+			{{
+                var resolver = new AssemblyDependencyResolver(Assembly.GetExecutingAssembly().Location);
+                context = new RevitAssemblyLoadContext(contextName, resolver);
+			}}
+
+            var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);

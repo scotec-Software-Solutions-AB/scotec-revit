@@ -48,7 +48,6 @@ public sealed class RevitCommandAvailabilityFactoryGenerator : RevitFactoryGener
         return
         [
             "Scotec.Revit.Isolation.RevitCommandAvailabilityIsolationAttribute",
-            "Scotec.Revit.RevitCommandAvailabilityIsolationAttribute"
         ];
     }
 }

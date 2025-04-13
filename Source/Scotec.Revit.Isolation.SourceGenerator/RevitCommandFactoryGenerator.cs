@@ -49,7 +49,6 @@ public sealed class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
         return
         [
             "Scotec.Revit.Isolation.RevitCommandIsolationAttribute",
-            "Scotec.Revit.RevitCommandIsolationAttribute"
         ];
     }
 }

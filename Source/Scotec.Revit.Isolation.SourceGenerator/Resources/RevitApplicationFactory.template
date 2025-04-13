@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.UI;
+using Scotec.Revit.Isolation;
 using {2};
 
 namespace {0}
@@ -14,18 +15,24 @@ namespace {0}
     public class {1}Factory : IExternalApplication
     {{
         private IExternalApplication _instance;
-        private static Assembly s_assembly;
-                                        
-        static {1}Factory()
-        {{
-            var location = Assembly.GetExecutingAssembly().Location;
-            s_assembly = AddinLoadContext.Instance.LoadFromAssemblyPath(location);
-        }}
                                         
         public {1}Factory()
         {{
-            using var context = AssemblyLoadContext.EnterContextualReflection(s_assembly);
-            var types = s_assembly.GetTypes();
+            var contextName = "{3}";
+            if(string.IsNullOrEmpty(contextName))
+            {{
+				contextName = Assembly.GetExecutingAssembly().GetName().Name;
+			}}
+            var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
+            if (context == null)
+			{{
+                var resolver = new AssemblyDependencyResolver(Assembly.GetExecutingAssembly().Location);
+                context = new RevitAssemblyLoadContext(contextName, resolver);
+			}}
+
+            var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+            var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalApplication)Activator.CreateInstance(type);
         }}
