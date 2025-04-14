@@ -1,0 +1,141 @@
+﻿// // Copyright © 2023 - 2024 Olaf Meyer
+// // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+// // This file is licensed to you under the MIT license.
+
+using System;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using Scotec.Revit.Isolation;
+
+namespace Scotec.Revit.DynamicCommands;
+
+/// <summary>
+/// Represents an abstract factory class for creating dynamic Revit commands of a specified type.
+/// </summary>
+/// <typeparam name="TCommand">
+/// The type of the dynamic Revit command that this factory creates. Must implement <see cref="IExternalCommand"/>.
+/// </typeparam>
+/// <remarks>
+/// This factory class provides functionality to dynamically create instances of Revit commands within a specific
+/// assembly load context. It ensures proper initialization of the command instances and enforces the use of a
+/// specific command type and context.
+/// </remarks>
+public abstract class RevitDynamicCommandFactory<TCommand> : IExternalCommand where TCommand : IExternalCommand
+{
+    /// <summary>
+    /// Gets the fully qualified name of the command type that this factory is responsible for creating.
+    /// </summary>
+    /// <value>
+    /// A <see cref="string"/> representing the fully qualified name of the command type.
+    /// </value>
+    /// <remarks>
+    /// This property is used to dynamically locate and instantiate the command type within the appropriate
+    /// assembly load context. The specified type must implement <see cref="IExternalCommand"/>.
+    /// </remarks>
+    protected abstract string CommandTypeName { get; }
+
+    /// <summary>
+    /// Gets the name of the assembly load context associated with this factory.
+    /// </summary>
+    /// <remarks>
+    /// This property is used to identify the specific assembly load context where the dynamic Revit command
+    /// instances are created. The context name must match the name of an existing <see cref="System.Runtime.Loader.AssemblyLoadContext"/>.
+    /// </remarks>
+    protected abstract string ContextName { get; }
+
+    /// <summary>
+    /// Executes the external command within the Revit environment.
+    /// </summary>
+    /// <param name="commandData">
+    /// An <see cref="ExternalCommandData"/> object that provides access to the Revit application, 
+    /// active document, and other related data required to execute the command.
+    /// </param>
+    /// <param name="message">
+    /// A string that can be set by the command to provide a message to the user in case of failure.
+    /// </param>
+    /// <param name="elements">
+    /// An <see cref="ElementSet"/> that can be populated with elements related to the failure, 
+    /// if the command does not succeed.
+    /// </param>
+    /// <returns>
+    /// A <see cref="Result"/> value indicating the outcome of the command execution. 
+    /// Possible values include <see cref="Result.Succeeded"/>, <see cref="Result.Failed"/>, 
+    /// and <see cref="Result.Cancelled"/>.
+    /// </returns>
+    /// <remarks>
+    /// This method is part of the <see cref="IExternalCommand"/> implementation and serves as the entry point 
+    /// for executing the dynamic Revit command. It delegates the execution to an instance of the command type 
+    /// created by the factory, ensuring proper initialization and context handling.
+    /// </remarks>
+    Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {
+        var instance = CreateInstance();
+
+        return ((IExternalCommand)instance).Execute(commandData, ref message, elements);
+    }
+
+    /// <summary>
+    /// Creates an instance of the dynamic Revit command of type <typeparamref name="TCommand"/>.
+    /// </summary>
+    /// <returns>
+    /// An instance of <typeparamref name="TCommand"/> that implements <see cref="IExternalCommand"/>.
+    /// </returns>
+    /// <exception cref="System.InvalidOperationException">
+    /// Thrown when the assembly load context specified by <see cref="ContextName"/> is not found,
+    /// the type specified by <see cref="CommandTypeName"/> cannot be located, or an instance of the type
+    /// cannot be created.
+    /// </exception>
+    /// <remarks>
+    /// This method dynamically creates an instance of the specified command type within the assembly load context
+    /// identified by <see cref="ContextName"/>. It ensures proper initialization of the command instance
+    /// by invoking the <see cref="InitializeCommand(TCommand)"/> method.
+    /// </remarks>
+    private IExternalCommand CreateInstance()
+    {
+        var loadContext = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == ContextName);
+        if (loadContext is null)
+        {
+            throw new InvalidOperationException($"Load context '{ContextName}' not found.");
+        }
+
+        var assembly = loadContext.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+        using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
+
+        // Get the type associated to the assembly load context.
+        var type = assembly.GetType(CommandTypeName);
+
+        if (type is null)
+        {
+            throw new InvalidOperationException($"Could not find type '{CommandTypeName}'.");
+        }
+
+        var instance = (TCommand?)Activator.CreateInstance(type);
+        if (instance is null)
+        {
+            throw new InvalidOperationException($"Could not create instance of type '{CommandTypeName}'.");
+        }
+
+        InitializeCommand(instance);
+
+        return instance;
+    }
+
+    /// <summary>
+    /// Initializes the specified dynamic Revit command instance of type <typeparamref name="TCommand"/>.
+    /// </summary>
+    /// <param name="command">
+    /// The command instance to initialize. This instance is of type <typeparamref name="TCommand"/> and must implement <see cref="IExternalCommand"/>.
+    /// </param>
+    /// <remarks>
+    /// This method is intended to be overridden in derived classes to provide specific initialization logic
+    /// for the dynamic Revit command instance. It is invoked during the creation of the command instance
+    /// to ensure it is properly configured before use.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">
+    /// Thrown if the <paramref name="command"/> parameter is <c>null</c>.
+    /// </exception>
+    protected abstract void InitializeCommand(TCommand command);
+}

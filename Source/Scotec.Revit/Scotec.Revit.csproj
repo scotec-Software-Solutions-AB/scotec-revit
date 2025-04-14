@@ -46,10 +46,12 @@
 		<PackageReference Include="Autofac" Version="8.0.0" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
 		<PackageReference Include="OpenMcdf" Version="2.4.1" />
 		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.0.8" />
 	</ItemGroup>
 	<ItemGroup>
+		<!--<PackageReference Include="Scotec.Revit.Isolation" Version="2025.0.8" />-->
 		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
 	</ItemGroup>
 
