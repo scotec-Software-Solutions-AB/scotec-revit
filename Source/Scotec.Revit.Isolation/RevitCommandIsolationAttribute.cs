@@ -8,15 +8,24 @@ using Autodesk.Revit.UI;
 namespace Scotec.Revit.Isolation;
 
 /// <summary>
-///     Represents an attribute used to mark implementations of <see cref="IExternalCommand" />
-///     for execution within an isolated context in Revit.
+/// Defines an attribute to configure isolation settings for Revit commands.
 /// </summary>
+/// <remarks>
+/// Apply this attribute to classes implementing the <see cref="IExternalCommand"/> interface
+/// to specify isolation behavior during Revit command execution.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitCommandIsolationAttribute : Attribute
 {
-    public RevitCommandIsolationAttribute()
-    {
-    }
-
+    /// <summary>
+    /// Gets or sets the name of the assembly load context used to execute the command.
+    /// </summary>
+    /// <value>
+    /// The name of the assembly load context. If left null or empty, the assembly name containing
+    /// the associated class will be used as the default context name.
+    /// </value>
+    /// <remarks>
+    /// A new assembly load context will be created if the specified one does not already exist.
+    /// </remarks>
     public string? ContextName { get; set; }
 }
