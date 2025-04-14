@@ -124,7 +124,7 @@ public abstract class RevitDynamicCommandGenerator
     public Assembly FinalizeAssembly()
     {
         using var stream = new MemoryStream();
-        Save(stream);
+        SaveAssembly(stream);
         stream.Seek(0, SeekOrigin.Begin);
 
         try
@@ -157,7 +157,7 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly(string path)
     {
-        Save(path);
+        SaveAssembly(path);
 
         try
         {
@@ -182,7 +182,7 @@ public abstract class RevitDynamicCommandGenerator
     /// This method writes the generated assembly to the specified file path. If the operation fails,
     /// an error is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
-    public void Save(string outputPath)
+    public void SaveAssembly(string outputPath)
     {
         try
         {
@@ -217,7 +217,7 @@ public abstract class RevitDynamicCommandGenerator
     /// After writing, the stream's position is reset to the beginning. If an error occurs during the
     /// save operation, it is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
-    public void Save(Stream outputStream)
+    public void SaveAssembly(Stream outputStream)
     {
         try
         {

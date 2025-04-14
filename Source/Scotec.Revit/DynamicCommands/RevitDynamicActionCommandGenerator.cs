@@ -39,7 +39,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     /// action-based command classes. It leverages the base class functionality to configure an assembly resolver,
     /// initialize the main module, and provide support for dynamic command generation within the Revit environment.
     /// </remarks>
-    public RevitDynamicActionCommandGenerator(string assemblyName, AssemblyLoadContext? context, ILogger<RevitDynamicActionCommandGenerator>? logger = null)
+    public RevitDynamicActionCommandGenerator(string assemblyName, AssemblyLoadContext? context = null, ILogger<RevitDynamicActionCommandGenerator>? logger = null)
         : base(assemblyName, context, logger)
     {
     }
