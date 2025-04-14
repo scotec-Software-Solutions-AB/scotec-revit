@@ -144,7 +144,7 @@ public class RevitFamilyInfo
     ///     Although this method is called internally on first use, it can also be invoked externally to force loading,
     ///     for example, in a background thread to improve performance or pre-load data.
     /// </remarks>
-    /// <exception cref="System.Exception">
+    /// <exception cref="Exception">
     ///     Thrown if there is an error while loading the Revit family data or its associated components.
     /// </exception>
     public void Initialize()
@@ -201,7 +201,7 @@ public class RevitFamilyInfo
     ///     If successful, it processes the stream to extract a PNG image and stores it in memory.
     ///     If the stream is not found or the extraction fails, the method logs the issue and continues without throwing an exception.
     /// </remarks>
-    /// <exception cref="System.Exception">
+    /// <exception cref="Exception">
     ///     Thrown if an unexpected error occurs during the image extraction process.
     /// </exception>
     private void LoadImage(CompoundFile compoundFile)
@@ -234,7 +234,7 @@ public class RevitFamilyInfo
     ///     types. It updates the <see cref="Title" /> property with the family name and populates the
     ///     <see cref="FamilySymbolInfos" /> collection with the family symbols extracted from the stream.
     /// </remarks>
-    /// <exception cref="System.Exception">
+    /// <exception cref="Exception">
     ///     Thrown if the "PartAtom" stream is not found in the compound file or if the family description cannot be loaded.
     /// </exception>
     private void LoadPartAtom(CompoundFile compoundFile)
