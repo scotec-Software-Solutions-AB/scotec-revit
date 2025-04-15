@@ -98,12 +98,14 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
             "ContextName",
             PropertyAttributes.None,
             derivedType.Module.TypeSystem.String
+            //derivedType.Module.ImportReference(typeof(string))
         );
         // Step 2: Define the getter method
         var getMethod = new MethodDefinition(
             "get_ContextName",
             MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.SpecialName,
             derivedType.Module.TypeSystem.String
+            //derivedType.Module.ImportReference(typeof(string))
         );
         // Step 3: Generate IL for the getter method
         var ilProcessor = getMethod.Body.GetILProcessor();
@@ -118,7 +120,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
         derivedType.Properties.Add(property);
         // Step 6: Ensure the method overrides the base class's abstract method
         var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_ContextName");
-        getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
+        getMethod.Overrides.Add(MainModuleDefinition.ImportReference(baseGetMethod));
     }
 
     /// <summary>

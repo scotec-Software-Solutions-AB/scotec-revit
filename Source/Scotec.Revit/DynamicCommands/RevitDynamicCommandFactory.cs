@@ -3,6 +3,7 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -11,6 +12,29 @@ using Autodesk.Revit.UI;
 using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.DynamicCommands;
+
+
+/// <summary>
+/// Introduces a base class for dynamic Revit command factories.
+/// Normally, it would be sufficient to define the property in RevitDynamicCommandFactory[TCommand].
+/// However, generating the implementation of the abstract property in the RevitDynamicCommandFactory[TCommand] class appears to be challenging with Mono.Cecil.
+/// This might be due to the class having generic type parameters.
+/// Even if the generic type parameters are not utilized in the property, the Mono.Cecil library might struggle to generate the property correctly, or at least I was unable to find a way to achieve this.
+/// As a workaround, this base class was created.
+/// Since it is not a generic class, everything functions as expected.
+/// TODO: Investigate a method to generate property overrides for generic classes using Mono.Cecil.
+/// /// </summary>
+public abstract class RevitDynamicFactoryBase
+{
+    /// <summary>
+    /// Gets the name of the assembly load context associated with this factory.
+    /// </summary>
+    /// <remarks>
+    /// This property is used to identify the specific assembly load context where the dynamic Revit command
+    /// instances are created. The context name must match the name of an existing <see cref="System.Runtime.Loader.AssemblyLoadContext"/>.
+    /// </remarks>
+    protected abstract string ContextName { get; }
+}
 
 /// <summary>
 /// Represents an abstract factory class for creating dynamic Revit commands of a specified type.
@@ -23,7 +47,7 @@ namespace Scotec.Revit.DynamicCommands;
 /// assembly load context. It ensures proper initialization of the command instances and enforces the use of a
 /// specific command type and context.
 /// </remarks>
-public abstract class RevitDynamicCommandFactory<TCommand> : IExternalCommand where TCommand : IExternalCommand
+public abstract class RevitDynamicCommandFactory<TCommand> : RevitDynamicFactoryBase, IExternalCommand where TCommand : IExternalCommand
 {
     /// <summary>
     /// Gets the fully qualified name of the command type that this factory is responsible for creating.
@@ -36,15 +60,6 @@ public abstract class RevitDynamicCommandFactory<TCommand> : IExternalCommand wh
     /// assembly load context. The specified type must implement <see cref="IExternalCommand"/>.
     /// </remarks>
     protected abstract string CommandTypeName { get; }
-
-    /// <summary>
-    /// Gets the name of the assembly load context associated with this factory.
-    /// </summary>
-    /// <remarks>
-    /// This property is used to identify the specific assembly load context where the dynamic Revit command
-    /// instances are created. The context name must match the name of an existing <see cref="System.Runtime.Loader.AssemblyLoadContext"/>.
-    /// </remarks>
-    protected abstract string ContextName { get; }
 
     /// <summary>
     /// Executes the external command within the Revit environment.
@@ -84,13 +99,13 @@ public abstract class RevitDynamicCommandFactory<TCommand> : IExternalCommand wh
     /// An instance of <typeparamref name="TCommand"/> that implements <see cref="IExternalCommand"/>.
     /// </returns>
     /// <exception cref="System.InvalidOperationException">
-    /// Thrown when the assembly load context specified by <see cref="ContextName"/> is not found,
+    /// Thrown when the assembly load context specified by <see cref="RevitDynamicFactoryBase.ContextName"/> is not found,
     /// the type specified by <see cref="CommandTypeName"/> cannot be located, or an instance of the type
     /// cannot be created.
     /// </exception>
     /// <remarks>
     /// This method dynamically creates an instance of the specified command type within the assembly load context
-    /// identified by <see cref="ContextName"/>. It ensures proper initialization of the command instance
+    /// identified by <see cref="RevitDynamicFactoryBase.ContextName"/>. It ensures proper initialization of the command instance
     /// by invoking the <see cref="InitializeCommand(TCommand)"/> method.
     /// </remarks>
     private IExternalCommand CreateInstance()

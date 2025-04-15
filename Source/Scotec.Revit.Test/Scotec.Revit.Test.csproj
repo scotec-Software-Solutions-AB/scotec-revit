@@ -6,12 +6,17 @@
 		<LangVersion>latest</LangVersion>
 		<PlatformTarget>x64</PlatformTarget>
 		<UseWpf>true</UseWpf>
+		<UseWindowsForms>true</UseWindowsForms>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<GenerateDocumentationFile>False</GenerateDocumentationFile>
 		<!--<CompilerGeneratedFilesOutputPath>GeneratedFiles</CompilerGeneratedFilesOutputPath>-->
 
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="TabManager.cs" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <None Remove="Resources\Images\Information_16.png" />
@@ -24,18 +29,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.1.0" />
-	  <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.1.0" />
-	  <PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="2025.1.0" />
-	  <PackageReference Include="Scotec.Revit" Version="2025.0.5" />
+	  <None Include="TabManager.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
+		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
+		<PackageReference Include="Scotec.Revit.Isolation" Version="2025.1.0-dev.7" />
+		<!--<PackageReference Include="Scotec.Revit" Version="2025.0.8" />-->
 
 	</ItemGroup>
 
-	<!--<ItemGroup>
-	  <ProjectReference Include="..\Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+	<ItemGroup>
+	  <ProjectReference Include="..\Scotec.Revit.Ui\Scotec.Revit.Ui.csproj" />
 	  <ProjectReference Include="..\Scotec.Revit.Wpf\Scotec.Revit.Wpf.csproj" />
 	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
-	</ItemGroup>-->
+	</ItemGroup>
 
 	<ItemGroup>
 	  <None Update="appsettings.json">

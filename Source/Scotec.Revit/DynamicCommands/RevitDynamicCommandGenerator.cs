@@ -11,6 +11,7 @@ using Autodesk.Revit.Attributes;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using AssemblyDefinition = Mono.Cecil.AssemblyDefinition;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
@@ -45,7 +46,7 @@ public abstract class RevitDynamicCommandGenerator
         Logger = logger;
         Context = context ?? AssemblyLoadContext.Default;
 
-        //using var scope = Context.EnterContextualReflection();
+        using var scope = Context.EnterContextualReflection();
 
         // Get the directories of all loaded assemblies and add these directories to the assembly resolver.
         var resolver = new DefaultAssemblyResolver();
@@ -129,7 +130,6 @@ public abstract class RevitDynamicCommandGenerator
 
         try
         {
-            
             var loadedAssembly = AssemblyLoadContext.Default.LoadFromStream(stream); ;
             return loadedAssembly;
         }
@@ -157,11 +157,20 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly(string path)
     {
-        SaveAssembly(path);
+        using var stream = new MemoryStream();
+        SaveAssembly(stream);
+        stream.Seek(0, SeekOrigin.Begin);
+
+        using (var file = File.OpenWrite(path))
+        {
+            stream.CopyTo(file);
+            file.Flush();
+        }
 
         try
         {
-            var loadedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+            var context = AssemblyLoadContext.GetLoadContext(GetType().Assembly)!;
+            var loadedAssembly = context.LoadFromAssemblyPath(path);
             return loadedAssembly;
         }
         catch (Exception e)
@@ -186,7 +195,9 @@ public abstract class RevitDynamicCommandGenerator
     {
         try
         {
-            AssemblyDefinition.Write(outputPath);
+            using var fileStream = File.OpenWrite(outputPath);
+            SaveAssembly(fileStream);
+            //AssemblyDefinition.Write(outputPath);
             Logger?.LogDebug($"Assembly saved to {outputPath}");
         }
         catch (Exception e)
@@ -221,6 +232,18 @@ public abstract class RevitDynamicCommandGenerator
     {
         try
         {
+            var mainModule = AssemblyDefinition.MainModule;
+            var references = mainModule.AssemblyReferences.Where(r => r.Name == "mscorlib").ToList();
+            
+            foreach (var reference in references)
+            {
+                mainModule.AssemblyReferences.Remove(reference);
+            }
+
+            //var coreLibPath = typeof(object).Assembly.Location;
+            //var coreLibAssembly = AssemblyDefinition.ReadAssembly(coreLibPath);
+            //mainModule.AssemblyReferences.Add(coreLibAssembly.Name);
+
             AssemblyDefinition.Write(outputStream);
             outputStream.Position = 0;
             Logger?.LogDebug("Assembly saved to stream.");
@@ -255,7 +278,7 @@ public abstract class RevitDynamicCommandGenerator
     /// </exception>
     protected TypeDefinition GenerateCommandClass(string fullTypeName, Type baseType)
     {
-        //using var scope = _context.EnterContextualReflection();
+        using var scope = Context.EnterContextualReflection();
 
         SplitTypeName(fullTypeName, out var namespacePart, out var classNamePart);
 
@@ -267,6 +290,11 @@ public abstract class RevitDynamicCommandGenerator
             classNamePart, // Class name
             TypeAttributes.Public | TypeAttributes.Class,
             baseTypeReference); // Base class
+
+        //// Load the base assembly
+        //var baseAssembly = AssemblyDefinition.ReadAssembly(baseType.Assembly.Location);
+        //// Add a reference to the base assembly
+        //MainModuleDefinition.AssemblyReferences.Add(baseAssembly.Name);
 
         // Add the derived class to the module
         MainModuleDefinition.Types.Add(derivedType);

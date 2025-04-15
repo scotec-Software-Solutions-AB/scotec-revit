@@ -13,6 +13,7 @@ using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Scotec.Revit.Isolation;
+using Scotec.Revit.Ui;
 
 namespace Scotec.Revit.Test;
 
@@ -35,7 +36,7 @@ public class RevitTestApp : RevitApp
 {
     public RevitTestApp()
     {
-        var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+        var context = AssemblyLoadContext.GetLoadContext(GetType().Assembly);
     }
 
     protected override bool OnShutdown()
@@ -47,9 +48,12 @@ public class RevitTestApp : RevitApp
     {
         try
         {
+
+            var c = AssemblyLoadContext.GetLoadContext(GetType().Assembly);
+
             var config = Services.GetService<IConfiguration>();
-            TabManager.CreateTab(Application, "scotec");
-            var panel = TabManager.GetPanel(Application, "Test", "scotec");
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
             var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
                 "Test", "Test",
@@ -79,7 +83,7 @@ public class RevitTestApp : RevitApp
 
     private static ImageSource CreateImageSource(string image)
     {
-        var resourcePath = $"Revit.Tutorial.Resources.Images.{image}";
+        var resourcePath = $"Scotec.Revit.Test.Resources.Images.{image}";
 
         var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath);
         if (stream == null)

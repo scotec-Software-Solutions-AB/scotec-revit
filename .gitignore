@@ -3,3 +3,5 @@
 obj
 bin
 /localPackages
+/GenerateTest
+/Source/Scotec.Revit.Test/*.user
