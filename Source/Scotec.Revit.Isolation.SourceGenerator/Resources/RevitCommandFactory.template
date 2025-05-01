@@ -30,7 +30,7 @@ namespace {0}
 			}}
 
             var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-            //using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalCommand)Activator.CreateInstance(type);
@@ -38,7 +38,7 @@ namespace {0}
 
         Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {{
-            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
             return _instance.Execute(commandData, ref message, elements);
         }}
     }}
