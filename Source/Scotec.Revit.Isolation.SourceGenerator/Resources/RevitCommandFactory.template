@@ -38,7 +38,7 @@ namespace {0}
 
         Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {{
-                using var scope = AssemblyLoadContext.EnterContextualReflection(Assembly.GetExecutingAssembly());
+                using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
                 return _instance.Execute(commandData, ref message, elements);
         }}
     }}
