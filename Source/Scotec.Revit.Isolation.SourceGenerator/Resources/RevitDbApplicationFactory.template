@@ -32,7 +32,7 @@ namespace {0}
 			}}
 
             var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalDBApplication)Activator.CreateInstance(type);
@@ -40,13 +40,13 @@ namespace {0}
                                     
         public ExternalDBApplicationResult OnStartup(ControlledApplication application)
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
             return _instance.OnStartup(application);
         }}
                                     
         public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
             return _instance.OnShutdown(application);
         }}
     }}

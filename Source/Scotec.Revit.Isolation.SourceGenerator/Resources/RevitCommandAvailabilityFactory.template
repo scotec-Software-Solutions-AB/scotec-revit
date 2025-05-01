@@ -30,7 +30,7 @@ namespace {0}
 			}}
 
             var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);
@@ -38,8 +38,8 @@ namespace {0}
 
         bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
         {{
-                using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
-                return _instance.IsCommandAvailable(applicationData, selectedCategories);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            return _instance.IsCommandAvailable(applicationData, selectedCategories);
         }}
     }}
 }}

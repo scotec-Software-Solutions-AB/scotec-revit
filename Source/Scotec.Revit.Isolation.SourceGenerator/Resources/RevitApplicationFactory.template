@@ -31,7 +31,7 @@ namespace {0}
 			}}
 
             var assembly = context.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
             var types = assembly.GetTypes();
             var type = types.First(type => type.Name == "{1}");
             _instance = (IExternalApplication)Activator.CreateInstance(type);
@@ -39,13 +39,13 @@ namespace {0}
                                     
         public Result OnStartup(UIControlledApplication application)
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
             return _instance.OnStartup(application);
         }}
                                     
         public Result OnShutdown(UIControlledApplication application)
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+            //using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
             return _instance.OnShutdown(application);
         }}
     }}
