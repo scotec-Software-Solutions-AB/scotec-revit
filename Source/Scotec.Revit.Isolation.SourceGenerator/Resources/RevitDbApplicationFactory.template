@@ -40,11 +40,13 @@ namespace {0}
                                     
         public ExternalDBApplicationResult OnStartup(ControlledApplication application)
         {{
+            using var scope = AssemblyLoadContext.EnterContextualReflection(Assembly.GetExecutingAssembly());
             return _instance.OnStartup(application);
         }}
                                     
         public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
         {{
+            using var scope = AssemblyLoadContext.EnterContextualReflection(Assembly.GetExecutingAssembly());
             return _instance.OnShutdown(application);
         }}
     }}

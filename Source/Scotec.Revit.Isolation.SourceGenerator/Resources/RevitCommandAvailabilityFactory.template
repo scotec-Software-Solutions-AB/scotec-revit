@@ -38,6 +38,7 @@ namespace {0}
 
         bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
         {{
+                using var scope = AssemblyLoadContext.EnterContextualReflection(Assembly.GetExecutingAssembly());
                 return _instance.IsCommandAvailable(applicationData, selectedCategories);
         }}
     }}
