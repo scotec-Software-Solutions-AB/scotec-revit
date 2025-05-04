@@ -3,6 +3,7 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Windows.Media;
@@ -47,14 +48,33 @@ public class RevitTestApp : RevitApp
 
     protected override bool OnStartup()
     {
-        var generator = new RevitDynamicActionCommandGenerator("TestCommands");
-        generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
-        {
-            
-        });
 
-        var assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
-        var types = assembly.GetTypes();
+        Assembly assembly = null;
+        try
+        {
+            var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+            var generator = new RevitDynamicActionCommandGenerator("TestCommands", loadContext);
+            generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
+            {
+                Debugger.Launch();
+            });
+            assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
+        }
+        catch (Exception e)
+        {
+            Debugger.Launch();
+            throw;
+        }
+
+        try
+        {
+           //var types = assembly.GetTypes();
+        }
+        catch (Exception e)
+        {
+            Debugger.Launch();
+            throw;
+        }
         try
         {
             var config = Services.GetService<IConfiguration>();
@@ -80,6 +100,7 @@ public class RevitTestApp : RevitApp
         }
         catch (Exception)
         {
+            Debugger.Launch();
             return false;
         }
 

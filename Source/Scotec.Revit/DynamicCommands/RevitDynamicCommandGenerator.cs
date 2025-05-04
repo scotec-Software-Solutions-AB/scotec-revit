@@ -3,6 +3,7 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -49,7 +50,10 @@ public abstract class RevitDynamicCommandGenerator
 
         // Get the directories of all loaded assemblies and add these directories to the assembly resolver.
         var resolver = new DefaultAssemblyResolver();
-        var searchDirectories = Context.Assemblies.Select(a => Path.GetDirectoryName(a.Location)).Distinct().ToList();
+        var searchDirectories = Context.Assemblies.Select(a => Path.GetDirectoryName(a.Location))
+            .Where(p => p != null)
+            .Distinct()
+            .ToList();
         searchDirectories.ForEach(resolver.AddSearchDirectory);
 
         var moduleParameters = new ModuleParameters
