@@ -91,32 +91,36 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     /// <exception cref="System.InvalidOperationException">
     /// Thrown if the base method <c>get_ContextName</c> cannot be found in the type hierarchy of the base type.
     /// </exception>
-    public void AddContextNamePropertyOverride(TypeDefinition derivedType, string contextName)
+    private void AddContextNamePropertyOverride(TypeDefinition derivedType, string contextName)
     {
-        // Step 1: Define the property
+        // Define the property
         var property = new PropertyDefinition(
             "ContextName",
             PropertyAttributes.None,
-            derivedType.Module.TypeSystem.String
+            derivedType.Module.ImportReference(typeof(string))
         );
-        // Step 2: Define the getter method
+        // Define the getter method
         var getMethod = new MethodDefinition(
             "get_ContextName",
             MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.SpecialName,
-            derivedType.Module.TypeSystem.String
+            derivedType.Module.ImportReference(typeof(string))
         );
-        // Step 3: Generate IL for the getter method
+        // Generate IL for the getter method
         var ilProcessor = getMethod.Body.GetILProcessor();
         // Load the constant string value onto the stack
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, contextName));
+        
         // Return the value
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
-        // Step 4: Add the getter method to the property
+        
+        // Add the getter method to the property
         property.GetMethod = getMethod;
-        // Step 5: Add the getter method and property to the derived type
+        
+        // Add the getter method and property to the derived type
         derivedType.Methods.Add(getMethod);
         derivedType.Properties.Add(property);
-        // Step 6: Ensure the method overrides the base class's abstract method
+        
+        // Ensure the method overrides the base class's abstract method
         var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_ContextName");
         getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
     }
@@ -133,7 +137,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     /// <exception cref="System.ArgumentNullException">
     /// Thrown if <paramref name="derivedType"/> is <c>null</c>.
     /// </exception>
-    public static void AddIdPropertyOverride(TypeDefinition derivedType, Guid commandId)
+    private void AddIdPropertyOverride(TypeDefinition derivedType, Guid commandId)
     {
         // Define the property
         var property = new PropertyDefinition("Id", PropertyAttributes.None, derivedType.Module.ImportReference(typeof(Guid)));
@@ -148,7 +152,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
         var ilProcessor = getMethod.Body.GetILProcessor();
 
         // Load the predefined Guid onto the stack
-        var guidConstructor = typeof(Guid).GetConstructor(new[] { typeof(string) });
+        var guidConstructor = typeof(Guid).GetConstructor([typeof(string)]);
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, commandId.ToString()));
         ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, derivedType.Module.ImportReference(guidConstructor)));
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
@@ -161,8 +165,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
         derivedType.Properties.Add(property);
 
         // Ensure the method overrides the base class's abstract method
-        var baseGetMethod = derivedType.BaseType.Resolve().Methods
-                                       .First(m => m.Name == "get_Id");
+        var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_Id");
         getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
     }
 

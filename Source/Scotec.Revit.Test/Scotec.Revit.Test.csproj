@@ -24,11 +24,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.1.0" />
-	  <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.1.0" />
-	  <PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="2025.1.0" />
-	  <PackageReference Include="Scotec.Revit" Version="2025.0.5" />
+	  <PackageReference Include="Scotec.Revit.Isolation" Version="2025.1.0-dev.11" />
+	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\Scotec.Revit.Ui\Scotec.Revit.Ui.csproj" />
+	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 
 	<!--<ItemGroup>

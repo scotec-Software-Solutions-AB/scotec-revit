@@ -73,8 +73,7 @@ public abstract class RevitDynamicCommandFactory<TCommand> : IExternalCommand wh
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
         var instance = CreateInstance();
-
-        return ((IExternalCommand)instance).Execute(commandData, ref message, elements);
+        return instance.Execute(commandData, ref message, elements);
     }
 
     /// <summary>

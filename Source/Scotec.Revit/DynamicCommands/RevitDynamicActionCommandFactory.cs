@@ -29,6 +29,18 @@ public abstract class RevitDynamicActionCommandFactory : RevitDynamicCommandFact
     public abstract Guid Id { get; }
 
     /// <summary>
+    /// This property is declared as abstract in the base class. It should not be implemented here but in the derived class.
+    /// However, the derived class and the replacement of this property will be generated with Mono.Cecil.
+    /// Since the property is declared in a generic class, it cannot be replaced at runtime, and retrieving the type will fail with the following error:
+    /// "System.Reflection.ReflectionTypeLoadException: 'Unable to load one or more of the requested types.
+    /// Method override 'get_ContextName' on type 'GENERATED_COMMAND' from assembly 'GENERATED_ASSEMBLY, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' cannot find a method to replace.".
+    /// Overriding abstract properties declared in a non-generic class works fine, so it is likely that I did not fully understand
+    /// how to use Mono.Cecil to replace the abstract property declared in a generic class.
+    /// Including this property here is a workaround to avoid the error. 
+    /// </summary>
+    protected override string ContextName { get; } = string.Empty;
+
+    /// <summary>
     /// Gets the fully qualified name of the command type associated with this factory.
     /// </summary>
     /// <remarks>
