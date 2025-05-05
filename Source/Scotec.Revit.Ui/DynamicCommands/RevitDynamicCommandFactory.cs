@@ -8,9 +8,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Scotec.Revit.Isolation;
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 /// Represents an abstract factory class for creating dynamic Revit commands of a specified type.

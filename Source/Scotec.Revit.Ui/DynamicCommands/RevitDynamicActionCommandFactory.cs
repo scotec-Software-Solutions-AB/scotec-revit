@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 /// Represents a factory for creating and initializing instances of <see cref="RevitDynamicActionCommand"/>.

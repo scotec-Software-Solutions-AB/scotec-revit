@@ -13,9 +13,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Scotec.Revit.DynamicCommands;
-using Scotec.Revit.Isolation;
-using Scotec.Revit.Ui;
+using Scotec.Revit.Ui.DynamicCommands;
 
 namespace Scotec.Revit.Test;
 

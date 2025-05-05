@@ -2,7 +2,7 @@
 // // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // // This file is licensed to you under the MIT license.
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 /// Represents an abstract base class for dynamic Revit commands, extending the functionality of the <see cref="Scotec.Revit.RevitCommand"/> class.

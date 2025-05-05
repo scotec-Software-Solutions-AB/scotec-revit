@@ -3,7 +3,6 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,7 +14,7 @@ using Mono.Cecil.Cil;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 ///     Provides an abstract base class for dynamically generating command classes in the Revit environment.
@@ -44,16 +43,21 @@ public abstract class RevitDynamicCommandGenerator
     protected RevitDynamicCommandGenerator(string assemblyName, AssemblyLoadContext? context, ILogger<RevitDynamicCommandGenerator>? logger)
     {
         Logger = logger;
-        Context = context ?? AssemblyLoadContext.Default;
+        Context = context ?? AssemblyLoadContext.GetLoadContext(GetType().Assembly)!;
 
-        //using var scope = Context.EnterContextualReflection();
-
-        // Get the directories of all loaded assemblies and add these directories to the assembly resolver.
+        // Retrieve the directories of all loaded assemblies and add them to the assembly resolver.
+        // Note: The order of directories is crucial. The resolver searches for assemblies in the directories
+        // in the sequence they are added. we always want to search first in the directory of the current load context.
         var resolver = new DefaultAssemblyResolver();
-        var searchDirectories = Context.Assemblies.Select(a => Path.GetDirectoryName(a.Location))
+      
+        var searchDirectories = Context.Assemblies
+            .Select(a => Path.GetDirectoryName(a.Location))
             .Where(p => p != null)
             .Distinct()
             .ToList();
+        
+        // Add the search path for Revit assemblies.
+        searchDirectories.Add(Path.GetDirectoryName(System.Windows.Application.Current.MainWindow!.GetType().Assembly.Location));
         searchDirectories.ForEach(resolver.AddSearchDirectory);
 
         var moduleParameters = new ModuleParameters
@@ -115,7 +119,7 @@ public abstract class RevitDynamicCommandGenerator
     /// Finalizes the dynamically generated assembly and loads it into the default <see cref="AssemblyLoadContext" />.
     /// </summary>
     /// <returns>
-    /// The <see cref="Assembly" /> instance representing the dynamically generated and loaded assembly.
+    /// The <see cref="System.Reflection.Assembly" /> instance representing the dynamically generated and loaded assembly.
     /// </returns>
     /// <exception cref="Exception">
     /// Thrown if the assembly fails to load from the memory stream.

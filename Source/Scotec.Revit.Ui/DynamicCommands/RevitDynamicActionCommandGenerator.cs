@@ -13,7 +13,7 @@ using Mono.Cecil.Cil;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 using PropertyAttributes = Mono.Cecil.PropertyAttributes;
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 /// Provides functionality to dynamically generate and register action-based commands for Autodesk Revit.
@@ -175,7 +175,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     /// <param name="type">The <see cref="TypeDefinition"/> representing the type to start the search from.</param>
     /// <param name="methodName">The name of the method to search for.</param>
     /// <returns>
-    /// A <see cref="MethodReference"/> representing the found method if it exists in the type hierarchy.
+    /// A <see cref="Mono.Cecil.MethodReference"/> representing the found method if it exists in the type hierarchy.
     /// </returns>
     /// <exception cref="System.InvalidOperationException">
     /// Thrown when a method with the specified name cannot be found in the type hierarchy.

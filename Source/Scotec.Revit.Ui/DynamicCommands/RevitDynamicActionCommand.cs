@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Logging;
 
-namespace Scotec.Revit.DynamicCommands;
+namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
 /// Represents a dynamic Revit command that executes a registered action based on a unique identifier.
 /// </summary>
 /// <remarks>
-/// This class extends the <see cref="Scotec.Revit.DynamicCommands.RevitDynamicCommand"/> base class and provides functionality
+/// This class extends the <see cref="RevitDynamicCommand"/> base class and provides functionality
 /// for registering and executing actions dynamically within the Revit environment. Each action is associated with a unique
 /// <see cref="System.Guid"/> identifier, allowing for flexible and reusable command implementations.
 /// </remarks>
@@ -23,7 +23,7 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     private static readonly Dictionary<Guid, Action<ExternalCommandData, IServiceProvider>> Actions = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Scotec.Revit.DynamicCommands.RevitDynamicActionCommand"/> class.
+    /// Initializes a new instance of the <see cref="RevitDynamicActionCommand"/> class.
     /// </summary>
     /// <remarks>
     /// This constructor creates a new instance of the <see cref="RevitDynamicActionCommand"/> class without initializing a logger.
@@ -35,7 +35,7 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Scotec.Revit.DynamicCommands.RevitDynamicActionCommand"/> class with a specified logger.
+    /// Initializes a new instance of the <see cref="RevitDynamicActionCommand"/> class with a specified logger.
     /// </summary>
     /// <param name="logger">
     /// An instance of <see cref="Microsoft.Extensions.Logging.ILogger{TCategoryName}"/> used for logging within the command.
