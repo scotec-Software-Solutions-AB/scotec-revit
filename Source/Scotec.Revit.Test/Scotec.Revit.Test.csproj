@@ -26,7 +26,7 @@
 
 	<ItemGroup>
 	  <!--<PackageReference Include="Scotec.Revit" Version="2025.1.0-dev.14" />-->
-	  <PackageReference Include="Scotec.Revit.Isolation" Version="2025.1.0-dev.16" />
+	  <PackageReference Include="Scotec.Revit.Isolation" Version="2025.1.0-dev.17" />
 	  <!--<PackageReference Include="Scotec.Revit.Ui" Version="2025.1.0-dev.14" />-->
 	</ItemGroup>
 
