@@ -52,12 +52,12 @@ public static class RevitTabManager
 
         if (HasTab(tabName))
         {
-            return GetTab(application, tabName)!;
+            return GetTab(tabName)!;
         }
 
         application.CreateRibbonTab(tabName);
 
-        var tab = GetTab(application, tabName);
+        var tab = GetTab(tabName);
         if (tab is null)
         {
             throw new Exception($"Failed to create ribbon tab '{tabName}'.");
@@ -89,13 +89,8 @@ public static class RevitTabManager
     ///     This method searches through the existing tabs in the Revit ribbon to locate a tab with the specified name.
     ///     If the tab does not exist, the method returns <c>null</c>.
     /// </remarks>
-    public static RibbonTab? GetTab(UIControlledApplication application, string tabName)
+    public static RibbonTab? GetTab(string tabName)
     {
-        if (application == null)
-        {
-            throw new ArgumentNullException(nameof(application));
-        }
-
         if (string.IsNullOrWhiteSpace(tabName))
         {
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(tabName));
