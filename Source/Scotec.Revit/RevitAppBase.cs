@@ -20,10 +20,14 @@ namespace Scotec.Revit;
 public abstract class RevitAppBase
 {
     /// <summary>
-    ///     Revit's assembly resolver loads assemblies used in multiple add-ins only once, causing static members to be shared
-    ///     across add-ins. To ensure each add-in uses its own service provider, service providers are stored in a static
-    ///     dictionary, keyed by the add-in ID. These add-in-specific service providers are utilized during the execution of
-    ///     Revit commands.
+    ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once, which causes static members to be
+    ///     shared across add-ins.
+    ///     To ensure that each add-in uses its own instance of a service provider, service providers are stored in a
+    ///     static dictionary, keyed by the add-in ID.
+    ///     These add-in-specific service providers are utilized during the execution of Revit commands.
+    ///     However, this behavior does not apply if each plugin runs — as recommended — in its own isolation context.
+    ///     In such cases, the Scotec.Revit assembly is loaded separately in each context.
+    ///     Nonetheless, it may be a valid use case to run a set of add-ins within the same context, which is well supported by this library.
     /// </summary>
     private static readonly Dictionary<Guid, IServiceProvider> ServiceProviders;
 

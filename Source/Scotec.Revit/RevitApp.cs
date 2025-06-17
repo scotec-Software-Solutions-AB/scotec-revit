@@ -121,8 +121,6 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
             throw new InvalidOperationException("The Revit application instance is not available.");
         }
 
-        ;
-
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(Application);

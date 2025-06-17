@@ -96,22 +96,6 @@ public abstract class RevitUpdater : IUpdater, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>
-    ///     Releases the resources used by the <see cref="RevitUpdater" /> instance and unregisters the updater from the Revit
-    ///     updater registry.
-    /// </summary>
-    /// <remarks>
-    ///     This method ensures that the updater is properly unregistered from the Revit updater registry
-    ///     and that any resources allocated by the updater are released. It is safe to call this method multiple times.
-    /// </remarks>
-    /// <example>
-    ///     To dispose of a <see cref="RevitUpdater" /> instance, call the <c>Dispose</c> method when the updater is no longer
-    ///     needed:
-    ///     <code>
-    /// var updater = new CustomUpdater(addInId);
-    /// updater.Dispose();
-    /// </code>
-    /// </example>
     /// <inheritdoc />
     public void Execute(UpdaterData data)
     {
