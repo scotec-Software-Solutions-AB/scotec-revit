@@ -1,31 +1,32 @@
-﻿// Copyright © 2023 - 2024 Olaf Meyer
-// Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
-// This file is licensed to you under the MIT license.
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
+// // This file is licensed to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
 
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
 /// <summary>
-/// Represents a source generator for creating Revit command factories.
+///     Represents a source generator for creating Revit command factories.
 /// </summary>
 /// <remarks>
-/// This generator is responsible for producing source code for Revit command factories
-/// by utilizing specific attributes and templates. It extends the functionality of 
-/// <see cref="RevitFactoryGeneratorBase"/> to provide Revit-specific command generation logic.
+///     This generator is responsible for producing source code for Revit command factories
+///     by utilizing specific attributes and templates. It extends the functionality of
+///     <see cref="RevitFactoryGeneratorBase" /> to provide Revit-specific command generation logic.
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
 {
     /// <summary>
-    /// Retrieves the name of the template associated with the Revit command factory generator.
+    ///     Retrieves the name of the template associated with the Revit command factory generator.
     /// </summary>
     /// <returns>
-    /// A <see cref="string"/> representing the name of the template, which is "RevitCommandFactory".
+    ///     A <see cref="string" /> representing the name of the template, which is "RevitCommandFactory".
     /// </returns>
     /// <remarks>
-    /// This method overrides the abstract <c>GetTemplateName</c> method from the <see cref="RevitFactoryGeneratorBase"/> class.
-    /// It provides the specific template name used for generating source code related to Revit command factories.
+    ///     This method overrides the abstract <c>GetTemplateName</c> method from the <see cref="RevitFactoryGeneratorBase" />
+    ///     class.
+    ///     It provides the specific template name used for generating source code related to Revit command factories.
     /// </remarks>
     protected override string GetTemplateName()
     {
@@ -33,22 +34,22 @@ public sealed class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
     }
 
     /// <summary>
-    /// Retrieves the attributes associated with the Revit command factory generator.
+    ///     Retrieves the attributes associated with the Revit command factory generator.
     /// </summary>
     /// <returns>
-    /// An array of <see cref="string"/> containing the fully qualified names of the attributes
-    /// used by the Revit command factory generator.
+    ///     An array of <see cref="string" /> containing the fully qualified names of the attributes
+    ///     used by the Revit command factory generator.
     /// </returns>
     /// <remarks>
-    /// This method overrides the abstract <c>GetAttributes</c> method from the 
-    /// <see cref="RevitFactoryGeneratorBase"/> class. It provides the specific attributes 
-    /// required for generating source code related to Revit command factories.
+    ///     This method overrides the abstract <c>GetAttributes</c> method from the
+    ///     <see cref="RevitFactoryGeneratorBase" /> class. It provides the specific attributes
+    ///     required for generating source code related to Revit command factories.
     /// </remarks>
     protected override string[] GetAttributes()
     {
         return
         [
-            "Scotec.Revit.Isolation.RevitCommandIsolationAttribute",
+            "Scotec.Revit.Isolation.RevitCommandIsolationAttribute"
         ];
     }
 }

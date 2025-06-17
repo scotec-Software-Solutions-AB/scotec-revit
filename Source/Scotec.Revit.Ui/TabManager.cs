@@ -1,9 +1,8 @@
-﻿// // Copyright © 2023 - 2024 Olaf Meyer
-// // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
 // // This file is licensed to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
@@ -75,7 +74,8 @@ public static class RevitTabManager
     ///     The name of the tab to retrieve. Must not be <c>null</c>, empty, or consist only of whitespace.
     /// </param>
     /// <returns>
-    ///     A <see cref="RibbonTab" /> instance representing the tab with the specified name, or <c>null</c> if no such tab exists.
+    ///     A <see cref="RibbonTab" /> instance representing the tab with the specified name, or <c>null</c> if no such tab
+    ///     exists.
     /// </returns>
     /// <exception cref="System.ArgumentException">
     ///     Thrown when the <paramref name="tabName" /> parameter is <c>null</c>, empty, or consists only of whitespace.

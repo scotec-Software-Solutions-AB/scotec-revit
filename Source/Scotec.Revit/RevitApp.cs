@@ -1,10 +1,9 @@
-﻿// Copyright © 2023 - 2024 Olaf Meyer
-// Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
-// This file is licensed to you under the MIT license.
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
+// // This file is licensed to you under the MIT license.
 
 using System;
 using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -23,33 +22,35 @@ namespace Scotec.Revit;
 public abstract class RevitApp : RevitAppBase, IExternalApplication
 {
     /// <summary>
-    /// Gets the <see cref="UIControlledApplication"/> instance associated with the Revit application.
+    ///     Gets the <see cref="UIControlledApplication" /> instance associated with the Revit application.
     /// </summary>
     /// <value>
-    /// The <see cref="UIControlledApplication"/> instance that provides access to Revit's controlled application features.
+    ///     The <see cref="UIControlledApplication" /> instance that provides access to Revit's controlled application
+    ///     features.
     /// </value>
     /// <remarks>
-    /// This property is initialized during the startup process of the Revit application and provides access to 
-    /// Revit's API for managing add-ins, events, and other application-level functionalities.
+    ///     This property is initialized during the startup process of the Revit application and provides access to
+    ///     Revit's API for managing add-ins, events, and other application-level functionalities.
     /// </remarks>
     public UIControlledApplication? Application { get; private set; }
 
     /// <summary>
-    /// Invoked by Revit during the startup of the external application.
+    ///     Invoked by Revit during the startup of the external application.
     /// </summary>
     /// <param name="application">
-    /// The <see cref="UIControlledApplication"/> instance provided by Revit.
+    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
-    /// A <see cref="Result"/> indicating the success or failure of the startup process.
+    ///     A <see cref="Result" /> indicating the success or failure of the startup process.
     /// </returns>
     /// <remarks>
-    /// This method initializes the <see cref="Application"/> property and delegates the startup logic
-    /// to the <see cref="RevitAppBase.OnStartup(Autodesk.Revit.DB.AddInId)"/> method. If the base class startup process
-    /// completes successfully, it returns <see cref="Result.Succeeded"/>; otherwise, it returns <see cref="Result.Failed"/>.
+    ///     This method initializes the <see cref="Application" /> property and delegates the startup logic
+    ///     to the <see cref="RevitAppBase.OnStartup(Autodesk.Revit.DB.AddInId)" /> method. If the base class startup process
+    ///     completes successfully, it returns <see cref="Result.Succeeded" />; otherwise, it returns
+    ///     <see cref="Result.Failed" />.
     /// </remarks>
     /// <exception cref="Exception">
-    /// Thrown if an error occurs during the startup process.
+    ///     Thrown if an error occurs during the startup process.
     /// </exception>
     Result IExternalApplication.OnStartup(UIControlledApplication application)
     {
@@ -61,22 +62,23 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     }
 
     /// <summary>
-    /// Handles the shutdown process for the Revit external application.
+    ///     Handles the shutdown process for the Revit external application.
     /// </summary>
     /// <param name="application">
-    /// The <see cref="Autodesk.Revit.UI.UIControlledApplication"/> instance representing the Revit application.
+    ///     The <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance representing the Revit application.
     /// </param>
     /// <returns>
-    /// A <see cref="Autodesk.Revit.UI.Result"/> value indicating whether the shutdown process was successful.
-    /// Returns <see cref="Autodesk.Revit.UI.Result.Succeeded"/> if the shutdown was successful; otherwise,
-    /// <see cref="Autodesk.Revit.UI.Result.Failed"/>.
+    ///     A <see cref="Autodesk.Revit.UI.Result" /> value indicating whether the shutdown process was successful.
+    ///     Returns <see cref="Autodesk.Revit.UI.Result.Succeeded" /> if the shutdown was successful; otherwise,
+    ///     <see cref="Autodesk.Revit.UI.Result.Failed" />.
     /// </returns>
     /// <remarks>
-    /// This method delegates the shutdown process to the <see cref="RevitAppBase.OnShutdown(ControlledApplication)"/> method
-    /// and performs additional cleanup tasks specific to the Revit external application.
+    ///     This method delegates the shutdown process to the <see cref="RevitAppBase.OnShutdown(ControlledApplication)" />
+    ///     method
+    ///     and performs additional cleanup tasks specific to the Revit external application.
     /// </remarks>
     /// <exception cref="System.Exception">
-    /// An exception may be thrown if an error occurs during the shutdown process.
+    ///     An exception may be thrown if an error occurs during the shutdown process.
     /// </exception>
     Result IExternalApplication.OnShutdown(UIControlledApplication application)
     {
@@ -84,20 +86,20 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     }
 
     /// <summary>
-    /// Configures the host builder for the Revit application.
+    ///     Configures the host builder for the Revit application.
     /// </summary>
     /// <param name="builder">
-    /// The <see cref="IHostBuilder"/> instance used to configure services and application settings.
+    ///     The <see cref="IHostBuilder" /> instance used to configure services and application settings.
     /// </param>
     /// <remarks>
-    /// This method is invoked during the initialization of the Revit application to configure
-    /// dependency injection and service registration. It adds essential Revit-specific services,
-    /// such as the <see cref="UIControlledApplication"/>, the active add-in ID, and the controlled application,
-    /// to the service collection.
+    ///     This method is invoked during the initialization of the Revit application to configure
+    ///     dependency injection and service registration. It adds essential Revit-specific services,
+    ///     such as the <see cref="UIControlledApplication" />, the active add-in ID, and the controlled application,
+    ///     to the service collection.
     /// </remarks>
     /// <example>
-    /// Example usage:
-    /// <code>
+    ///     Example usage:
+    ///     <code>
     /// protected override void OnConfigure(IHostBuilder builder)
     /// {
     ///     base.OnConfigure(builder);
@@ -114,11 +116,13 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     {
         base.OnConfigure(builder);
 
-        if(Application == null)
+        if (Application == null)
         {
             throw new InvalidOperationException("The Revit application instance is not available.");
-        };
-        
+        }
+
+        ;
+
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(Application);

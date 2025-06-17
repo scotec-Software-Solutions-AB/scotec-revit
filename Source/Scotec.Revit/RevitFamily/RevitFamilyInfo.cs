@@ -1,5 +1,5 @@
-﻿// // Copyright © 2023 - 2024 Olaf Meyer
-// // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
 // // This file is licensed to you under the MIT license.
 
 using System;
@@ -28,8 +28,8 @@ public class RevitFamilyInfo
     private static readonly XNamespace AutodeskNamespace = "urn:schemas-autodesk-com:partatom";
 
     private readonly Func<Stream> _familyStreamLoader;
-    private readonly ILogger? _logger;
     private readonly object _initializationLock = new();
+    private readonly ILogger? _logger;
     private Stream? _preview;
 
     public RevitFamilyInfo(Func<Stream> familyStreamLoader) : this(familyStreamLoader, null)
@@ -37,20 +37,21 @@ public class RevitFamilyInfo
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RevitFamilyInfo"/> class with the specified family stream loader and logger.
+    ///     Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader and
+    ///     logger.
     /// </summary>
     /// <param name="familyStreamLoader">
-    /// A function that provides a <see cref="Stream"/> containing the Revit family data.
+    ///     A function that provides a <see cref="Stream" /> containing the Revit family data.
     /// </param>
     /// <param name="logger">
-    /// An instance of <see cref="ILogger"/> used for logging operations.
+    ///     An instance of <see cref="ILogger" /> used for logging operations.
     /// </param>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown when <paramref name="familyStreamLoader"/> is <c>null</c>.
+    ///     Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
     /// </exception>
     /// <remarks>
-    /// This constructor enables deferred loading of the Revit family data using the provided stream loader function.
-    /// The logger is utilized to record diagnostic and error information during the processing of the family data.
+    ///     This constructor enables deferred loading of the Revit family data using the provided stream loader function.
+    ///     The logger is utilized to record diagnostic and error information during the processing of the family data.
     /// </remarks>
     public RevitFamilyInfo(Func<Stream> familyStreamLoader, ILogger? logger)
     {
@@ -65,7 +66,7 @@ public class RevitFamilyInfo
     ///     <c>true</c> if the Revit family information is initialized; otherwise, <c>false</c>.
     /// </value>
     /// <remarks>
-    ///     This property reflects the initialization state of the Revit family data. 
+    ///     This property reflects the initialization state of the Revit family data.
     ///     It is set to <c>true</c> after the <see cref="Initialize" /> method completes successfully.
     /// </remarks>
     public bool IsInitialized { get; private set; }
@@ -199,7 +200,8 @@ public class RevitFamilyInfo
     /// <remarks>
     ///     This method attempts to locate and extract the "RevitPreview4.0" stream from the provided compound file.
     ///     If successful, it processes the stream to extract a PNG image and stores it in memory.
-    ///     If the stream is not found or the extraction fails, the method logs the issue and continues without throwing an exception.
+    ///     If the stream is not found or the extraction fails, the method logs the issue and continues without throwing an
+    ///     exception.
     /// </remarks>
     /// <exception cref="Exception">
     ///     Thrown if an unexpected error occurs during the image extraction process.

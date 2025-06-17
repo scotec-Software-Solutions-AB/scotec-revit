@@ -1,5 +1,5 @@
-﻿// // Copyright © 2023 - 2024 Olaf Meyer
-// // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
 // // This file is licensed to you under the MIT license.
 
 using System;
@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Windows;
 using Autodesk.Revit.Attributes;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
@@ -49,15 +50,15 @@ public abstract class RevitDynamicCommandGenerator
         // Note: The order of directories is crucial. The resolver searches for assemblies in the directories
         // in the sequence they are added. we always want to search first in the directory of the current load context.
         var resolver = new DefaultAssemblyResolver();
-      
+
         var searchDirectories = Context.Assemblies
-            .Select(a => Path.GetDirectoryName(a.Location))
-            .Where(p => p != null)
-            .Distinct()
-            .ToList();
-        
+                                       .Select(a => Path.GetDirectoryName(a.Location))
+                                       .Where(p => p != null)
+                                       .Distinct()
+                                       .ToList();
+
         // Add the search path for Revit assemblies.
-        searchDirectories.Add(Path.GetDirectoryName(System.Windows.Application.Current.MainWindow!.GetType().Assembly.Location));
+        searchDirectories.Add(Path.GetDirectoryName(Application.Current.MainWindow!.GetType().Assembly.Location));
         searchDirectories.ForEach(resolver.AddSearchDirectory);
 
         var moduleParameters = new ModuleParameters
@@ -74,15 +75,15 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Gets the <see cref="AssemblyLoadContext" /> used for loading and resolving assemblies.
+    ///     Gets the <see cref="AssemblyLoadContext" /> used for loading and resolving assemblies.
     /// </summary>
     /// <value>
-    /// The <see cref="AssemblyLoadContext" /> instance associated with this generator. If no specific context
-    /// was provided during initialization, the default <see cref="AssemblyLoadContext.Default" /> is used.
+    ///     The <see cref="AssemblyLoadContext" /> instance associated with this generator. If no specific context
+    ///     was provided during initialization, the default <see cref="AssemblyLoadContext.Default" /> is used.
     /// </value>
     /// <remarks>
-    /// This property provides access to the assembly load context, which is used to manage the loading and
-    /// resolution of assemblies during the dynamic generation of command classes.
+    ///     This property provides access to the assembly load context, which is used to manage the loading and
+    ///     resolution of assemblies during the dynamic generation of command classes.
     /// </remarks>
     protected AssemblyLoadContext Context { get; }
 
@@ -107,27 +108,27 @@ public abstract class RevitDynamicCommandGenerator
     protected AssemblyDefinition AssemblyDefinition { get; }
 
     /// <summary>
-    /// Gets the main module definition of the dynamically generated assembly.
+    ///     Gets the main module definition of the dynamically generated assembly.
     /// </summary>
     /// <remarks>
-    /// This property provides access to the main module of the assembly being dynamically created.
-    /// It is used to define and manage types, methods, and other members within the assembly.
+    ///     This property provides access to the main module of the assembly being dynamically created.
+    ///     It is used to define and manage types, methods, and other members within the assembly.
     /// </remarks>
     protected ModuleDefinition MainModuleDefinition { get; }
 
     /// <summary>
-    /// Finalizes the dynamically generated assembly and loads it into the default <see cref="AssemblyLoadContext" />.
+    ///     Finalizes the dynamically generated assembly and loads it into the default <see cref="AssemblyLoadContext" />.
     /// </summary>
     /// <returns>
-    /// The <see cref="System.Reflection.Assembly" /> instance representing the dynamically generated and loaded assembly.
+    ///     The <see cref="System.Reflection.Assembly" /> instance representing the dynamically generated and loaded assembly.
     /// </returns>
     /// <exception cref="Exception">
-    /// Thrown if the assembly fails to load from the memory stream.
+    ///     Thrown if the assembly fails to load from the memory stream.
     /// </exception>
     /// <remarks>
-    /// This method saves the generated assembly to a memory stream, resets the stream position, and attempts to load
-    /// the assembly into the default <see cref="AssemblyLoadContext" />. If an error occurs during the loading process,
-    /// it logs the error (if a logger is available) and rethrows the exception.
+    ///     This method saves the generated assembly to a memory stream, resets the stream position, and attempts to load
+    ///     the assembly into the default <see cref="AssemblyLoadContext" />. If an error occurs during the loading process,
+    ///     it logs the error (if a logger is available) and rethrows the exception.
     /// </remarks>
     public Assembly FinalizeAssembly()
     {
@@ -137,8 +138,8 @@ public abstract class RevitDynamicCommandGenerator
 
         try
         {
-            
-            var loadedAssembly = AssemblyLoadContext.Default.LoadFromStream(stream); ;
+            var loadedAssembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+            ;
             return loadedAssembly;
         }
         catch (Exception e)
@@ -149,19 +150,19 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Finalizes the dynamically generated assembly and saves it to the specified file path.
+    ///     Finalizes the dynamically generated assembly and saves it to the specified file path.
     /// </summary>
     /// <param name="path">The file path where the assembly will be saved.</param>
     /// <returns>
-    /// The <see cref="Assembly"/> instance representing the loaded assembly from the specified file path.
+    ///     The <see cref="Assembly" /> instance representing the loaded assembly from the specified file path.
     /// </returns>
     /// <exception cref="Exception">
-    /// Thrown if the assembly fails to load from the specified file path.
+    ///     Thrown if the assembly fails to load from the specified file path.
     /// </exception>
     /// <remarks>
-    /// This method saves the dynamically generated assembly to the provided file path and attempts to load it
-    /// into the default <see cref="AssemblyLoadContext"/>. If the loading process fails, an error is logged
-    /// (if a logger is provided), and the exception is rethrown.
+    ///     This method saves the dynamically generated assembly to the provided file path and attempts to load it
+    ///     into the default <see cref="AssemblyLoadContext" />. If the loading process fails, an error is logged
+    ///     (if a logger is provided), and the exception is rethrown.
     /// </remarks>
     public Assembly FinalizeAssembly(string path)
     {
@@ -180,15 +181,15 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Saves the dynamically generated assembly to the specified file path.
+    ///     Saves the dynamically generated assembly to the specified file path.
     /// </summary>
     /// <param name="outputPath">The file path where the assembly will be saved.</param>
-    /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="outputPath"/> is <c>null</c> or empty.</exception>
+    /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="outputPath" /> is <c>null</c> or empty.</exception>
     /// <exception cref="System.IO.IOException">Thrown if an I/O error occurs during the save operation.</exception>
     /// <exception cref="Exception">Thrown if the assembly cannot be saved due to an unexpected error.</exception>
     /// <remarks>
-    /// This method writes the generated assembly to the specified file path. If the operation fails,
-    /// an error is logged using the provided logger, and the exception is rethrown.
+    ///     This method writes the generated assembly to the specified file path. If the operation fails,
+    ///     an error is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
     public void SaveAssembly(string outputPath)
     {
@@ -205,25 +206,25 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Saves the dynamically generated assembly to the specified output stream.
+    ///     Saves the dynamically generated assembly to the specified output stream.
     /// </summary>
     /// <param name="outputStream">
-    /// The <see cref="Stream"/> to which the assembly will be written. 
-    /// The stream must be writable and will be reset to the beginning after writing.
+    ///     The <see cref="Stream" /> to which the assembly will be written.
+    ///     The stream must be writable and will be reset to the beginning after writing.
     /// </param>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="outputStream"/> is <c>null</c>.
+    ///     Thrown if <paramref name="outputStream" /> is <c>null</c>.
     /// </exception>
     /// <exception cref="System.IO.IOException">
-    /// Thrown if an I/O error occurs while writing to the stream.
+    ///     Thrown if an I/O error occurs while writing to the stream.
     /// </exception>
     /// <exception cref="Exception">
-    /// Thrown if the assembly cannot be written to the stream for any other reason.
+    ///     Thrown if the assembly cannot be written to the stream for any other reason.
     /// </exception>
     /// <remarks>
-    /// This method writes the contents of the dynamically generated assembly to the provided stream.
-    /// After writing, the stream's position is reset to the beginning. If an error occurs during the
-    /// save operation, it is logged using the provided logger, and the exception is rethrown.
+    ///     This method writes the contents of the dynamically generated assembly to the provided stream.
+    ///     After writing, the stream's position is reset to the beginning. If an error occurs during the
+    ///     save operation, it is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
     public void SaveAssembly(Stream outputStream)
     {
@@ -241,25 +242,25 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Generates a new command class dynamically within the Revit environment.
+    ///     Generates a new command class dynamically within the Revit environment.
     /// </summary>
     /// <param name="fullTypeName">
-    /// The fully qualified name of the type to be generated, including its namespace and class name.
+    ///     The fully qualified name of the type to be generated, including its namespace and class name.
     /// </param>
     /// <param name="baseType">
-    /// The base type from which the generated command class will inherit.
+    ///     The base type from which the generated command class will inherit.
     /// </param>
     /// <returns>
-    /// A <see cref="Mono.Cecil.TypeDefinition"/> representing the dynamically generated command class.
+    ///     A <see cref="Mono.Cecil.TypeDefinition" /> representing the dynamically generated command class.
     /// </returns>
     /// <remarks>
-    /// This method is used to create a new command class at runtime. The generated class will inherit
-    /// from the specified base type and include necessary attributes and constructors required for
-    /// integration with the Revit environment. The method also ensures that the generated class is
-    /// added to the main module of the assembly.
+    ///     This method is used to create a new command class at runtime. The generated class will inherit
+    ///     from the specified base type and include necessary attributes and constructors required for
+    ///     integration with the Revit environment. The method also ensures that the generated class is
+    ///     added to the main module of the assembly.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="fullTypeName"/> or <paramref name="baseType"/> is <c>null</c>.
+    ///     Thrown if <paramref name="fullTypeName" /> or <paramref name="baseType" /> is <c>null</c>.
     /// </exception>
     protected TypeDefinition GenerateCommandClass(string fullTypeName, Type baseType)
     {
@@ -289,22 +290,23 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Splits a fully qualified type name into its namespace and class name components.
+    ///     Splits a fully qualified type name into its namespace and class name components.
     /// </summary>
     /// <param name="fullTypeName">
-    /// The fully qualified type name to split. This must include both the namespace and the class name.
+    ///     The fully qualified type name to split. This must include both the namespace and the class name.
     /// </param>
     /// <param name="namespacePart">
-    /// When this method returns, contains the namespace part of the type name, or <c>null</c> if the type name does not contain a namespace.
+    ///     When this method returns, contains the namespace part of the type name, or <c>null</c> if the type name does not
+    ///     contain a namespace.
     /// </param>
     /// <param name="classNamePart">
-    /// When this method returns, contains the class name part of the type name.
+    ///     When this method returns, contains the class name part of the type name.
     /// </param>
     /// <exception cref="System.ArgumentException">
-    /// Thrown when <paramref name="fullTypeName"/> is <c>null</c>, empty, or does not contain a namespace.
+    ///     Thrown when <paramref name="fullTypeName" /> is <c>null</c>, empty, or does not contain a namespace.
     /// </exception>
     /// <remarks>
-    /// This method is used internally to parse type names and separate their namespace and class name components.
+    ///     This method is used internally to parse type names and separate their namespace and class name components.
     /// </remarks>
     private void SplitTypeName(string fullTypeName, out string? namespacePart, out string classNamePart)
     {
@@ -328,20 +330,20 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Adds a default constructor to the specified derived class.
+    ///     Adds a default constructor to the specified derived class.
     /// </summary>
     /// <param name="module">
-    /// The <see cref="ModuleDefinition"/> representing the module where the derived class is defined.
+    ///     The <see cref="ModuleDefinition" /> representing the module where the derived class is defined.
     /// </param>
     /// <param name="derivedClass">
-    /// The <see cref="TypeDefinition"/> representing the derived class to which the default constructor will be added.
+    ///     The <see cref="TypeDefinition" /> representing the derived class to which the default constructor will be added.
     /// </param>
     /// <param name="baseType">
-    /// The <see cref="TypeReference"/> representing the base class of the derived class.
+    ///     The <see cref="TypeReference" /> representing the base class of the derived class.
     /// </param>
     /// <remarks>
-    /// This method defines a public default constructor for the derived class and ensures that it calls the default
-    /// constructor of the base class, if available. The constructor is added to the derived class's method collection.
+    ///     This method defines a public default constructor for the derived class and ensures that it calls the default
+    ///     constructor of the base class, if available. The constructor is added to the derived class's method collection.
     /// </remarks>
     private static void AddDefaultConstructor(ModuleDefinition module, TypeDefinition derivedClass, TypeReference baseType)
     {
@@ -368,20 +370,23 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Adds a <see cref="TransactionAttribute"/> with a specified <see cref="TransactionMode"/> to the given type definition.
+    ///     Adds a <see cref="TransactionAttribute" /> with a specified <see cref="TransactionMode" /> to the given type
+    ///     definition.
     /// </summary>
     /// <param name="module">
-    /// The <see cref="ModuleDefinition"/> where the type is defined. This is used to resolve and import required references.
+    ///     The <see cref="ModuleDefinition" /> where the type is defined. This is used to resolve and import required
+    ///     references.
     /// </param>
     /// <param name="type">
-    /// The <see cref="TypeDefinition"/> to which the <see cref="TransactionAttribute"/> will be added.
+    ///     The <see cref="TypeDefinition" /> to which the <see cref="TransactionAttribute" /> will be added.
     /// </param>
     /// <remarks>
-    /// This method dynamically applies the <see cref="TransactionAttribute"/> to a type, setting its mode to 
-    /// <see cref="TransactionMode.Manual"/>. This is typically used to mark Revit command classes as requiring manual transaction handling.
+    ///     This method dynamically applies the <see cref="TransactionAttribute" /> to a type, setting its mode to
+    ///     <see cref="TransactionMode.Manual" />. This is typically used to mark Revit command classes as requiring manual
+    ///     transaction handling.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="module"/> or <paramref name="type"/> is <c>null</c>.
+    ///     Thrown if <paramref name="module" /> or <paramref name="type" /> is <c>null</c>.
     /// </exception>
     private static void AddTransactionAttribute(ModuleDefinition module, TypeDefinition type)
     {

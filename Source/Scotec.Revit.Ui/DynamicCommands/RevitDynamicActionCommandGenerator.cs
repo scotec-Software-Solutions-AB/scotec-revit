@@ -1,5 +1,5 @@
-﻿// // Copyright © 2023 - 2024 Olaf Meyer
-// // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
+﻿// // Copyright © 2023 - 2025 Olaf Meyer
+// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
 // // This file is licensed to you under the MIT license.
 
 using System;
@@ -16,50 +16,53 @@ using PropertyAttributes = Mono.Cecil.PropertyAttributes;
 namespace Scotec.Revit.Ui.DynamicCommands;
 
 /// <summary>
-/// Provides functionality to dynamically generate and register action-based commands for Autodesk Revit.
+///     Provides functionality to dynamically generate and register action-based commands for Autodesk Revit.
 /// </summary>
 /// <remarks>
-/// This class builds upon the <see cref="RevitDynamicCommandGenerator"/> base class, enabling the creation of commands
-/// that can be dynamically loaded and executed within the Revit environment. It supports the registration of
-/// custom actions and the generation of command types with unique identifiers and context-specific properties.
+///     This class builds upon the <see cref="RevitDynamicCommandGenerator" /> base class, enabling the creation of
+///     commands
+///     that can be dynamically loaded and executed within the Revit environment. It supports the registration of
+///     custom actions and the generation of command types with unique identifiers and context-specific properties.
 /// </remarks>
 public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="RevitDynamicActionCommandGenerator"/> class.
+    ///     Initializes a new instance of the <see cref="RevitDynamicActionCommandGenerator" /> class.
     /// </summary>
     /// <param name="assemblyName">The name of the assembly to be dynamically generated.</param>
     /// <param name="context">
-    /// The <see cref="AssemblyLoadContext"/> used for loading and resolving assemblies.
-    /// If <c>null</c>, the default <see cref="AssemblyLoadContext"/> is used.
+    ///     The <see cref="AssemblyLoadContext" /> used for loading and resolving assemblies.
+    ///     If <c>null</c>, the default <see cref="AssemblyLoadContext" /> is used.
     /// </param>
     /// <param name="logger">An optional logger instance for logging diagnostic information.</param>
     /// <remarks>
-    /// This constructor sets up the necessary context and assembly definitions for dynamically generating
-    /// action-based command classes. It leverages the base class functionality to configure an assembly resolver,
-    /// initialize the main module, and provide support for dynamic command generation within the Revit environment.
+    ///     This constructor sets up the necessary context and assembly definitions for dynamically generating
+    ///     action-based command classes. It leverages the base class functionality to configure an assembly resolver,
+    ///     initialize the main module, and provide support for dynamic command generation within the Revit environment.
     /// </remarks>
-    public RevitDynamicActionCommandGenerator(string assemblyName, AssemblyLoadContext? context = null, ILogger<RevitDynamicActionCommandGenerator>? logger = null)
+    public RevitDynamicActionCommandGenerator(string assemblyName, AssemblyLoadContext? context = null,
+                                              ILogger<RevitDynamicActionCommandGenerator>? logger = null)
         : base(assemblyName, context, logger)
     {
     }
 
     /// <summary>
-    /// Dynamically generates and registers a Revit action command type with a specified name and associated action.
+    ///     Dynamically generates and registers a Revit action command type with a specified name and associated action.
     /// </summary>
     /// <param name="fullTypeName">
-    /// The fully qualified name of the command type to be generated, including its namespace.
+    ///     The fully qualified name of the command type to be generated, including its namespace.
     /// </param>
     /// <param name="action">
-    /// The action to be executed when the generated command is invoked. This action receives
-    /// <see cref="Autodesk.Revit.UI.ExternalCommandData"/> and an <see cref="IServiceProvider"/> as parameters.
+    ///     The action to be executed when the generated command is invoked. This action receives
+    ///     <see cref="Autodesk.Revit.UI.ExternalCommandData" /> and an <see cref="IServiceProvider" /> as parameters.
     /// </param>
     /// <remarks>
-    /// This method creates a new command type derived from <see cref="RevitDynamicActionCommandFactory"/>, assigns it a unique
-    /// identifier, and registers the provided action for execution within the Revit environment.
+    ///     This method creates a new command type derived from <see cref="RevitDynamicActionCommandFactory" />, assigns it a
+    ///     unique
+    ///     identifier, and registers the provided action for execution within the Revit environment.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="fullTypeName"/> or <paramref name="action"/> is <c>null</c>.
+    ///     Thrown if <paramref name="fullTypeName" /> or <paramref name="action" /> is <c>null</c>.
     /// </exception>
     public void GenerateActionCommandType(string fullTypeName, Action<ExternalCommandData, IServiceProvider> action)
     {
@@ -75,21 +78,21 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Adds an override for the <c>ContextName</c> property in the specified derived type.
+    ///     Adds an override for the <c>ContextName</c> property in the specified derived type.
     /// </summary>
     /// <param name="derivedType">
-    /// The <see cref="TypeDefinition"/> representing the derived type where the property override will be added.
+    ///     The <see cref="TypeDefinition" /> representing the derived type where the property override will be added.
     /// </param>
     /// <param name="contextName">
-    /// The context name value to be returned by the overridden <c>ContextName</c> property getter.
+    ///     The context name value to be returned by the overridden <c>ContextName</c> property getter.
     /// </param>
     /// <remarks>
-    /// This method dynamically generates a property named <c>ContextName</c> with a getter method that returns
-    /// the specified <paramref name="contextName"/>. The generated getter method overrides the corresponding
-    /// abstract or virtual method in the base type.
+    ///     This method dynamically generates a property named <c>ContextName</c> with a getter method that returns
+    ///     the specified <paramref name="contextName" />. The generated getter method overrides the corresponding
+    ///     abstract or virtual method in the base type.
     /// </remarks>
     /// <exception cref="System.InvalidOperationException">
-    /// Thrown if the base method <c>get_ContextName</c> cannot be found in the type hierarchy of the base type.
+    ///     Thrown if the base method <c>get_ContextName</c> cannot be found in the type hierarchy of the base type.
     /// </exception>
     private void AddContextNamePropertyOverride(TypeDefinition derivedType, string contextName)
     {
@@ -109,33 +112,38 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
         var ilProcessor = getMethod.Body.GetILProcessor();
         // Load the constant string value onto the stack
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, contextName));
-        
+
         // Return the value
         ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
-        
+
         // Add the getter method to the property
         property.GetMethod = getMethod;
-        
+
         // Add the getter method and property to the derived type
         derivedType.Methods.Add(getMethod);
         derivedType.Properties.Add(property);
-        
+
         // Ensure the method overrides the base class's abstract method
         var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_ContextName");
         getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
     }
 
     /// <summary>
-    /// Adds an override for the "Id" property in the specified derived type, assigning it a predefined <see cref="Guid"/> value.
+    ///     Adds an override for the "Id" property in the specified derived type, assigning it a predefined <see cref="Guid" />
+    ///     value.
     /// </summary>
-    /// <param name="derivedType">The <see cref="TypeDefinition"/> representing the derived type where the property override will be added.</param>
-    /// <param name="commandId">The <see cref="Guid"/> value to be assigned to the "Id" property.</param>
+    /// <param name="derivedType">
+    ///     The <see cref="TypeDefinition" /> representing the derived type where the property override
+    ///     will be added.
+    /// </param>
+    /// <param name="commandId">The <see cref="Guid" /> value to be assigned to the "Id" property.</param>
     /// <remarks>
-    /// This method dynamically defines a new "Id" property in the specified type, implements its getter method to return
-    /// the provided <paramref name="commandId"/>, and ensures that the method overrides the base class's abstract "get_Id" method.
+    ///     This method dynamically defines a new "Id" property in the specified type, implements its getter method to return
+    ///     the provided <paramref name="commandId" />, and ensures that the method overrides the base class's abstract
+    ///     "get_Id" method.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown if <paramref name="derivedType"/> is <c>null</c>.
+    ///     Thrown if <paramref name="derivedType" /> is <c>null</c>.
     /// </exception>
     private void AddIdPropertyOverride(TypeDefinition derivedType, Guid commandId)
     {
@@ -170,15 +178,15 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    /// Traverses the type hierarchy to locate a method with the specified name in the given type or its base types.
+    ///     Traverses the type hierarchy to locate a method with the specified name in the given type or its base types.
     /// </summary>
-    /// <param name="type">The <see cref="TypeDefinition"/> representing the type to start the search from.</param>
+    /// <param name="type">The <see cref="TypeDefinition" /> representing the type to start the search from.</param>
     /// <param name="methodName">The name of the method to search for.</param>
     /// <returns>
-    /// A <see cref="Mono.Cecil.MethodReference"/> representing the found method if it exists in the type hierarchy.
+    ///     A <see cref="Mono.Cecil.MethodReference" /> representing the found method if it exists in the type hierarchy.
     /// </returns>
     /// <exception cref="System.InvalidOperationException">
-    /// Thrown when a method with the specified name cannot be found in the type hierarchy.
+    ///     Thrown when a method with the specified name cannot be found in the type hierarchy.
     /// </exception>
     private MethodReference FindBaseMethod(TypeDefinition type, string methodName)
     {
@@ -200,6 +208,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
                 Logger?.LogError(message);
                 throw new InvalidOperationException(message);
             }
+
             type = baseType;
         }
     }
