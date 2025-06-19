@@ -3,6 +3,7 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Windows.Media;
@@ -12,7 +13,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Scotec.Revit.Isolation;
+using Scotec.Revit.Ui.DynamicCommands;
 
 namespace Scotec.Revit.Test;
 
@@ -45,37 +46,76 @@ public class RevitTestApp : RevitApp
 
     protected override bool OnStartup()
     {
+
+        Assembly assembly = null;
+        try
+        {
+            var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+            var generator = new RevitDynamicActionCommandGenerator("TestCommands", loadContext);
+            generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
+            {
+                Debugger.Launch();
+            });
+            assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
+        }
+        catch (Exception e)
+        {
+            Debugger.Launch();
+            throw;
+        }
+
+        try
+        {
+           //var types = assembly.GetTypes();
+        }
+        catch (Exception e)
+        {
+            Debugger.Launch();
+            throw;
+        }
         try
         {
             var config = Services.GetService<IConfiguration>();
             TabManager.CreateTab(Application, "scotec");
             var panel = TabManager.GetPanel(Application, "Test", "scotec");
 
-            var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
-                "Test", "Test",
-                typeof(RevitTestCommandFactory)));
+            //var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
+            //    "Test", "Test",
+            //    typeof(RevitTestCommandFactory)));
 
-            button.Enabled = true;
+            //button.Enabled = true;
+            var pushButtonData = new PushButtonData("Test", "Test",
+                @"C:\Temp\TestCommands.dll",
+                "TestCommands.TestCommand1")
+            {
+                Image = CreateImageSource("Information_16.png"),
+                LargeImage = CreateImageSource("Information_32.png"),
+                ToolTip = "Tooltip"
+                //, AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
+            };
+
+            panel.AddItem(pushButtonData);
         }
         catch (Exception)
         {
+            Debugger.Launch();
             return false;
         }
 
         return true;
     }
 
-    private static PushButtonData CreateButtonData(string name, string text, string description, Type commandType)
-    {
-        return new PushButtonData(name, text,
-            Assembly.GetExecutingAssembly().Location, commandType.FullName)
-        {
-            Image = CreateImageSource("Information_16.png"),
-            LargeImage = CreateImageSource("Information_32.png"),
-            ToolTip = description,
-            AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
-        };
-    }
+    //private static PushButtonData CreateButtonData(string name, string text, string description, Type commandType)
+    //{
+    //    return new PushButtonData(name, text,
+    //        Assembly.GetExecutingAssembly().Location, commandType.FullName)
+    //    {
+    //        Image = CreateImageSource("Information_16.png"),
+    //        LargeImage = CreateImageSource("Information_32.png"),
+    //        ToolTip = description,
+    //        AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
+    //    };
+    //}
 
     private static ImageSource CreateImageSource(string image)
     {

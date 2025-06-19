@@ -218,8 +218,8 @@
     &lt;/Entry&gt;&#xD;
   &lt;/TypePattern&gt;&#xD;
 &lt;/Patterns&gt;</s:String>
-	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">// Copyright © 2023 - 2024 Olaf Meyer&#xD;
-// Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com&#xD;
+	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">// Copyright © 2023 - 2025 Olaf Meyer&#xD;
+// Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com&#xD;
 // This file is licensed to you under the MIT license.</s:String>
 	
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/PredefinedNamingRules/=PrivateStaticFields/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="s_" Suffix="" Style="aaBb" /&gt;</s:String>
