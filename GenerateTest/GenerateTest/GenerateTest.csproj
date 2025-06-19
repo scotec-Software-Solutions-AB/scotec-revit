@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<PlatformTarget>x64</PlatformTarget>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+			<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
+			<PackageReference Include="Scotec.Revit.Isolation" Version="1.0.0" />
+	</ItemGroup>
+
+</Project>

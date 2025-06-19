@@ -4,7 +4,7 @@
 	<AddIn Type="Application">
 		<Name>Test</Name>
 		<FullClassName>Scotec.Revit.Test.RevitTestAppFactory</FullClassName>
-		<Assembly>C:\Projects\scotec\scotec-revit\Source\Scotec.Revit.Test\bin\Debug\net8.0-windows\Scotec.Revit.Test.dll</Assembly>
+		<Assembly>C:\Projects\scotec\scotec-revit\Source\Scotec.Revit.Test\bin\x64\Debug\net8.0-windows\Scotec.Revit.Test.dll</Assembly>
 		<AddInId>F2E1648B-7E1A-4518-95E9-92437EA941A6</AddInId>
 		<VendorId>scotec</VendorId>
 		<VendorDescription>scotec Software Solutions AB</VendorDescription>

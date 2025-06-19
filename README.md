@@ -56,3 +56,15 @@ RevitTestCommandAvailabilityFactory
 
 
 You can find more information about Revit Add-in Isolation in my [blog article](https://www.scotec-software.com/en/blog/posts/Innovative-Revit-Addin-Development-Part-3).
+
+### User defined context name
+In previous versions of the ```Scotec.Revit.Isolation``` library, the Revit app and all commands had to reside in the same assembly to share the same assembly load context.
+Starting from version 2025.1.0, you can define a named load context that can be used across different assemblies.
+Therefore, the attributes now include a property called ```ContextName```. By setting a value for this property, you can define a named assembly load context that can be shared among multiple assemblies.
+
+```csharp
+[RevitDbApplicationIsolation(ContextName = "My.LoadContext")]
+public class RevitTestDbApp : IExternalDBApplication
+```
+
+It is recommended to use, for example, the Revit add-in name as the context name to avoid conflicts with other add-ins that might otherwise use the same context name.

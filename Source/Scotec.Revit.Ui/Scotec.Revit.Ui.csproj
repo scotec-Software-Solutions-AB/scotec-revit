@@ -43,6 +43,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
+		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
