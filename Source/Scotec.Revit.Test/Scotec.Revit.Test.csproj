@@ -25,7 +25,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Scotec.Revit.Isolation" Version="1.0.0" />
+	  <PackageReference Include="Scotec.Revit.Isolation" Version="2025.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
