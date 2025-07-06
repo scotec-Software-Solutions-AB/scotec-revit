@@ -36,14 +36,29 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="DynamicCommands\RevitDynamicActionCommandFactory.cs" />
+	  <Compile Remove="DynamicCommands\RevitDynamicCommandFactory.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Resources\RevitDynamicActionCommandFactory.template" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Resources\RevitDynamicCommandFactory.template" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
+		<None Include="DynamicCommands\RevitDynamicActionCommandFactory.cs" />
+		<None Include="DynamicCommands\RevitDynamicCommandFactory.cs" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
-		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -3,15 +3,12 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Loader;
+using System.Windows.Documents;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Logging;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using MethodAttributes = Mono.Cecil.MethodAttributes;
-using PropertyAttributes = Mono.Cecil.PropertyAttributes;
 
 namespace Scotec.Revit.Ui.DynamicCommands;
 
@@ -26,6 +23,7 @@ namespace Scotec.Revit.Ui.DynamicCommands;
 /// </remarks>
 public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
 {
+    
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitDynamicActionCommandGenerator" /> class.
     /// </summary>
@@ -44,6 +42,12 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
                                               ILogger<RevitDynamicActionCommandGenerator>? logger = null)
         : base(assemblyName, context, logger)
     {
+    }
+    protected override IEnumerable<string> GetBaseClasses()
+    {
+        var baseClasses = ExtractEmbeddedResources("Scotec.Revit.Ui.Resources.RevitDynamicActionCommandFactory");
+
+        return base.GetBaseClasses().Concat(baseClasses).ToList();
     }
 
     /// <summary>
@@ -66,150 +70,11 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     /// </exception>
     public void GenerateActionCommandType(string fullTypeName, Action<ExternalCommandData, IServiceProvider> action)
     {
-        var typeDefinition = GenerateCommandClass(fullTypeName, typeof(RevitDynamicActionCommandFactory));
         var commandId = Guid.NewGuid();
+        var commandClass = GenerateCommandClass(fullTypeName, "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommandFactory", commandId, "Tigev.RevitTools");
 
-        AddIdPropertyOverride(typeDefinition, commandId);
-
-        var contextName = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly())!.Name ?? "";
-        AddContextNamePropertyOverride(typeDefinition, contextName);
-
+        AddClass(commandClass);
+       
         RevitDynamicActionCommand.RegisterAction(commandId, action);
-    }
-
-    /// <summary>
-    ///     Adds an override for the <c>ContextName</c> property in the specified derived type.
-    /// </summary>
-    /// <param name="derivedType">
-    ///     The <see cref="TypeDefinition" /> representing the derived type where the property override will be added.
-    /// </param>
-    /// <param name="contextName">
-    ///     The context name value to be returned by the overridden <c>ContextName</c> property getter.
-    /// </param>
-    /// <remarks>
-    ///     This method dynamically generates a property named <c>ContextName</c> with a getter method that returns
-    ///     the specified <paramref name="contextName" />. The generated getter method overrides the corresponding
-    ///     abstract or virtual method in the base type.
-    /// </remarks>
-    /// <exception cref="System.InvalidOperationException">
-    ///     Thrown if the base method <c>get_ContextName</c> cannot be found in the type hierarchy of the base type.
-    /// </exception>
-    private void AddContextNamePropertyOverride(TypeDefinition derivedType, string contextName)
-    {
-        // Define the property
-        var property = new PropertyDefinition(
-            "ContextName",
-            PropertyAttributes.None,
-            derivedType.Module.ImportReference(typeof(string))
-        );
-        // Define the getter method
-        var getMethod = new MethodDefinition(
-            "get_ContextName",
-            MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.SpecialName,
-            derivedType.Module.ImportReference(typeof(string))
-        );
-        // Generate IL for the getter method
-        var ilProcessor = getMethod.Body.GetILProcessor();
-        // Load the constant string value onto the stack
-        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, contextName));
-
-        // Return the value
-        ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
-
-        // Add the getter method to the property
-        property.GetMethod = getMethod;
-
-        // Add the getter method and property to the derived type
-        derivedType.Methods.Add(getMethod);
-        derivedType.Properties.Add(property);
-
-        // Ensure the method overrides the base class's abstract method
-        var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_ContextName");
-        getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
-    }
-
-    /// <summary>
-    ///     Adds an override for the "Id" property in the specified derived type, assigning it a predefined <see cref="Guid" />
-    ///     value.
-    /// </summary>
-    /// <param name="derivedType">
-    ///     The <see cref="TypeDefinition" /> representing the derived type where the property override
-    ///     will be added.
-    /// </param>
-    /// <param name="commandId">The <see cref="Guid" /> value to be assigned to the "Id" property.</param>
-    /// <remarks>
-    ///     This method dynamically defines a new "Id" property in the specified type, implements its getter method to return
-    ///     the provided <paramref name="commandId" />, and ensures that the method overrides the base class's abstract
-    ///     "get_Id" method.
-    /// </remarks>
-    /// <exception cref="System.ArgumentNullException">
-    ///     Thrown if <paramref name="derivedType" /> is <c>null</c>.
-    /// </exception>
-    private void AddIdPropertyOverride(TypeDefinition derivedType, Guid commandId)
-    {
-        // Define the property
-        var property = new PropertyDefinition("Id", PropertyAttributes.None, derivedType.Module.ImportReference(typeof(Guid)));
-
-        // Define the getter method
-        var getMethod = new MethodDefinition(
-            "get_Id",
-            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.SpecialName,
-            derivedType.Module.ImportReference(typeof(Guid)));
-
-        // Implement the getter method
-        var ilProcessor = getMethod.Body.GetILProcessor();
-
-        // Load the predefined Guid onto the stack
-        var guidConstructor = typeof(Guid).GetConstructor([typeof(string)]);
-        ilProcessor.Append(ilProcessor.Create(OpCodes.Ldstr, commandId.ToString()));
-        ilProcessor.Append(ilProcessor.Create(OpCodes.Newobj, derivedType.Module.ImportReference(guidConstructor)));
-        ilProcessor.Append(ilProcessor.Create(OpCodes.Ret));
-
-        // Add the getter method to the property
-        property.GetMethod = getMethod;
-
-        // Add the getter method and property to the derived type
-        derivedType.Methods.Add(getMethod);
-        derivedType.Properties.Add(property);
-
-        // Ensure the method overrides the base class's abstract method
-        var baseGetMethod = FindBaseMethod(derivedType.BaseType.Resolve(), "get_Id");
-        getMethod.Overrides.Add(derivedType.Module.ImportReference(baseGetMethod));
-    }
-
-    /// <summary>
-    ///     Traverses the type hierarchy to locate a method with the specified name in the given type or its base types.
-    /// </summary>
-    /// <param name="type">The <see cref="TypeDefinition" /> representing the type to start the search from.</param>
-    /// <param name="methodName">The name of the method to search for.</param>
-    /// <returns>
-    ///     A <see cref="Mono.Cecil.MethodReference" /> representing the found method if it exists in the type hierarchy.
-    /// </returns>
-    /// <exception cref="System.InvalidOperationException">
-    ///     Thrown when a method with the specified name cannot be found in the type hierarchy.
-    /// </exception>
-    private MethodReference FindBaseMethod(TypeDefinition type, string methodName)
-    {
-        // Traverse the type hierarchy to find the method
-        while (true)
-        {
-            var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-            if (method != null)
-            {
-                return method;
-            }
-
-            // Move to the base type
-            var baseType = type.BaseType.Resolve();
-            if (baseType is null)
-            {
-                // If the method is not found, throw an exception
-                var message = $"Method '{methodName}' could not be found in the type hierarchy.";
-                Logger?.LogError(message);
-                throw new InvalidOperationException(message);
-            }
-
-            type = baseType;
-        }
     }
 }
