@@ -115,15 +115,18 @@ public abstract class RevitDynamicCommandFactory : IExternalCommand
             throw new InvalidOperationException($"Load context '{ContextName}' not found.");
         }
 
-        var assembly = loadContext.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-        using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
+        var result = SplitName(CommandTypeName);
 
+        //var assembly = loadContext.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+        var assembly = loadContext.LoadFromAssemblyName(new AssemblyName(result.AssemblyName));
+        using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
+        
         // Get the type associated to the assembly load context.
-        var type = assembly.GetType(CommandTypeName);
+        var type = assembly.GetType(result.TypeName);
 
         if (type is null)
         {
-            throw new InvalidOperationException($"Could not find type '{CommandTypeName}'.");
+            throw new InvalidOperationException($"Could not find type '{result.TypeName}' in assembly '{result.AssemblyName}'.");
         }
 
         var instance = (IExternalCommand?)Activator.CreateInstance(type);
@@ -135,5 +138,17 @@ public abstract class RevitDynamicCommandFactory : IExternalCommand
         InitializeCommand(instance);
 
         return instance;
+    }
+
+    private static (string AssemblyName, string TypeName) SplitName(string commandTypeName)
+    {
+        var parts = commandTypeName.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2)
+        {
+            throw new InvalidOperationException(
+                "The command type name must consist of an assembly name and a type name, separated by a ';'.");
+        }
+        
+        return (parts[0], parts[1]);
     }
 }

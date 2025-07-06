@@ -71,7 +71,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     public void GenerateActionCommandType(string fullTypeName, Action<ExternalCommandData, IServiceProvider> action)
     {
         var commandId = Guid.NewGuid();
-        var commandClass = GenerateCommandClass(fullTypeName, "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommandFactory", commandId, "Tigev.RevitTools");
+        var commandClass = GenerateCommandClass(fullTypeName, "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommandFactory", commandId, Context.Name);
 
         AddClass(commandClass);
        

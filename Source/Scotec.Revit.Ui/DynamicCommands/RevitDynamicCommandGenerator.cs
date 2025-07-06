@@ -240,9 +240,11 @@ public abstract class RevitDynamicCommandGenerator
         
         var commandClass = $$"""
                              using System;
+                             using Autodesk.Revit.Attributes;
                              
                              namespace {{namespaceName}};
                              
+                             [Transaction(TransactionMode.Manual)]
                              public class {{className}} : {{baseType}}
                              {
                                  public override Guid Id => new Guid("{{commandId}}");

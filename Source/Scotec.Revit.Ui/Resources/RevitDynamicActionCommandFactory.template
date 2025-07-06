@@ -52,7 +52,7 @@ public abstract class RevitDynamicActionCommandFactory : RevitDynamicCommandFact
     ///     This property returns the <see cref="System.Type.FullName" /> of the <see cref="RevitDynamicActionCommand" /> type.
     ///     It is used to identify and initialize commands dynamically within the Revit environment.
     /// </remarks>
-    protected override string CommandTypeName => "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommand";
+    protected override string CommandTypeName => "Scotec.Revit.Ui;Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommand";
 
     /// <summary>
     ///     Initializes the specified <see cref="RevitDynamicActionCommand" /> instance with the required properties.
