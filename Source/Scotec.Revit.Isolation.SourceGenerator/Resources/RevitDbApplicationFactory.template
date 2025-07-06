@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
-using Scotec.Revit.Isolation;
+using Scotec.Revit.Loader;
 using {2};
 
 namespace {0}
