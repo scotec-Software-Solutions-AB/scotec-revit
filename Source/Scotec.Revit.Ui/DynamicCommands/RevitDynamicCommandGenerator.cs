@@ -94,7 +94,8 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly()
     {
-        using var stream = Compile();
+        var assemblyName = "DynamicAssembly_" + Guid.NewGuid().ToString("D");
+        using var stream = Compile(assemblyName);
         stream.Seek(0, SeekOrigin.Begin);
 
         try
@@ -127,7 +128,8 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly(string path)
     {
-        using var stream = Compile();
+        var assemblyName = Path.GetFileNameWithoutExtension(path);
+        using var stream = Compile(assemblyName);
 
         SaveAssembly(stream, path);
 
@@ -179,7 +181,7 @@ public abstract class RevitDynamicCommandGenerator
         return baseClasses;
     }
 
-    public Stream Compile()
+    public Stream Compile(string assemblyName)
     {
         // Extract embedded resources to retrieve all base classes.
         var baseClasses = GetBaseClasses();
@@ -196,7 +198,7 @@ public abstract class RevitDynamicCommandGenerator
         
         // Create the compilation
         var compilation = CSharpCompilation.Create(
-            "DynamicAssembly",
+            assemblyName,
             syntaxTrees,
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
