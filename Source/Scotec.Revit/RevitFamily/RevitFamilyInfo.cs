@@ -229,6 +229,7 @@ public class RevitFamilyInfo
             stream = new MemoryStream();
             infoStream.Position = 0;
             infoStream.CopyTo(stream);
+            stream.Position = 0;
             return true;
         }
 
