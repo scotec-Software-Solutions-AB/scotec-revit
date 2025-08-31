@@ -47,6 +47,19 @@ namespace Scotec.Revit.Extensions
                 : null;
         }
 
+        /// <summary>
+        /// Determines whether the specified <see cref="InternalDefinition"/> represents a shared parameter.
+        /// </summary>
+        /// <param name="definition">
+        /// The <see cref="InternalDefinition"/> instance to evaluate.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the <see cref="InternalDefinition"/> represents a shared parameter; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method checks the type identifier of the <see cref="InternalDefinition"/> to determine if it starts with
+        /// "revit.local.shared", which indicates that the parameter is shared.
+        /// </remarks>
         public static bool IsShared(this InternalDefinition definition)
         {
             var ftid = definition.GetTypeId();
@@ -54,6 +67,19 @@ namespace Scotec.Revit.Extensions
                    && ftid.TypeId.StartsWith("revit.local.shared", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Determines whether the specified <see cref="InternalDefinition"/> represents a project parameter.
+        /// </summary>
+        /// <param name="definition">
+        /// The <see cref="InternalDefinition"/> instance to evaluate.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the <see cref="InternalDefinition"/> represents a project parameter; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method checks the type identifier of the <see cref="InternalDefinition"/> to determine if it starts with
+        /// "revit.local.project", which indicates that the parameter is a project parameter.
+        /// </remarks>
         public static bool IsProject(this InternalDefinition definition)
         {
             var ftid = definition.GetTypeId();
