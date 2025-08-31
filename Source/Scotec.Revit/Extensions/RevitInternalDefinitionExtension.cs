@@ -47,5 +47,18 @@ namespace Scotec.Revit.Extensions
                 : null;
         }
 
+        public static bool IsShared(this InternalDefinition definition)
+        {
+            var ftid = definition.GetTypeId();
+            return !ftid.Empty()
+                   && ftid.TypeId.StartsWith("revit.local.shared", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsProject(this InternalDefinition definition)
+        {
+            var ftid = definition.GetTypeId();
+            return !ftid.Empty()
+                   && ftid.TypeId.StartsWith("revit.local.project", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
