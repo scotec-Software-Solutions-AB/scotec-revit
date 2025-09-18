@@ -63,7 +63,6 @@ public abstract class RevitDynamicCommandGenerator
     {
         Logger = logger;
         Context = context ?? AssemblyLoadContext.GetLoadContext(GetType().Assembly)!;
-
     }
 
     /// <summary>

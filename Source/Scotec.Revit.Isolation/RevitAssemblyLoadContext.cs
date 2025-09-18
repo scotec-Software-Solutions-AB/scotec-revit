@@ -3,6 +3,8 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -19,7 +21,8 @@ namespace Scotec.Revit.Isolation;
 /// </remarks>
 public class RevitAssemblyLoadContext : AssemblyLoadContext
 {
-    private readonly AssemblyDependencyResolver _resolver;
+    private readonly string _pluginRoot;
+    private readonly Dictionary<string, string> _assemblyMap;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitAssemblyLoadContext" /> class with the specified context name
@@ -28,17 +31,16 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
     /// <param name="contextName">
     ///     The name of the assembly load context. This name is used for identification purposes.
     /// </param>
-    /// <param name="resolver">
-    ///     An instance of <see cref="System.Runtime.Loader.AssemblyDependencyResolver" /> used to resolve
-    ///     assemblies and unmanaged libraries.
-    /// </param>
     /// <remarks>
     ///     This constructor sets up the custom assembly load context to isolate and resolve dependencies
     ///     specific to Revit-related operations.
     /// </remarks>
-    public RevitAssemblyLoadContext(string contextName, AssemblyDependencyResolver resolver) : base(contextName)
+    public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
     {
-        _resolver = resolver;
+        _pluginRoot = Path.GetFullPath(pluginRoot);
+        _assemblyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        CacheAssemblies();
     }
 
     /// <summary>
@@ -56,15 +58,15 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
     ///     file path of the requested assembly. If the assembly is found, it is loaded using
     ///     <see cref="System.Runtime.Loader.AssemblyLoadContext.LoadFromAssemblyPath(string)" />.
     /// </remarks>
-    protected override Assembly Load(AssemblyName assemblyName)
+    protected override Assembly? Load(AssemblyName assemblyName)
     {
-        var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
-        if (assemblyPath != null)
+        if (_assemblyMap.TryGetValue(assemblyName.FullName, out var path))
         {
-            return LoadFromAssemblyPath(assemblyPath);
+            return LoadFromAssemblyPath(path);
         }
 
-        return null!;
+        // Let framework assemblies resolve normally
+        return null;
     }
 
     /// <summary>
@@ -82,14 +84,45 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
     ///     file path of the requested unmanaged library. If the library is found, it is loaded using
     ///     <see cref="System.Runtime.Loader.AssemblyLoadContext.LoadUnmanagedDllFromPath(string)" />.
     /// </remarks>
-    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
-    {
-        var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
-        if (libraryPath != null)
-        {
-            return LoadUnmanagedDllFromPath(libraryPath);
-        }
+    //protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    //{
+    //    var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+    //    if (libraryPath != null)
+    //    {
+    //        return LoadUnmanagedDllFromPath(libraryPath);
+    //    }
 
-        return IntPtr.Zero;
+    //    return IntPtr.Zero;
+    //}
+
+    private void CacheAssemblies()
+    {
+        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.AllDirectories))
+        {
+            try
+            {
+                var asmName = AssemblyName.GetAssemblyName(file);
+
+                if (!_assemblyMap.ContainsKey(asmName.FullName))
+                {
+                    _assemblyMap[asmName.FullName] = file;
+                }
+                else
+                {
+                    Console.WriteLine(
+                        $"[Warning] Duplicate assembly identity '{asmName.FullName}' found at: {file}. " +
+                        $"Using first occurrence: {_assemblyMap[asmName.FullName]}"
+                    );
+                }
+            }
+            catch (BadImageFormatException)
+            {
+                // Not a managed .NET assembly (likely a native DLL) → skip
+            }
+            catch (FileLoadException)
+            {
+                // The file exists but is not a valid .NET assembly → skip
+            }
+        }
     }
 }
