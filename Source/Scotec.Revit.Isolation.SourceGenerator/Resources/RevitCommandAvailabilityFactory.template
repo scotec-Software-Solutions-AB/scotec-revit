@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -27,8 +28,8 @@ namespace {0}
             var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
             if (context == null)
 			{{
-                var resolver = new AssemblyDependencyResolver(currentAssembly.Location);
-                context = new RevitAssemblyLoadContext(contextName, resolver);
+                //var resolver = new AssemblyDependencyResolver(Path.GetDirectoryName(currentAssembly.Location));
+                context = new RevitAssemblyLoadContext(contextName, Path.GetDirectoryName(currentAssembly.Location));
 			}}
 
             var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);

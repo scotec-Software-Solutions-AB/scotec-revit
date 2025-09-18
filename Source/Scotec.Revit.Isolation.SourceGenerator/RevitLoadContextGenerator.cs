@@ -28,6 +28,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     protected override void OnInitialize()
     {
+        //Debugger.Launch();
         Context.RegisterSourceOutput(Context.CompilationProvider, Execute);
     }
 

@@ -39,10 +39,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="RevitAssemblyLoadContext.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
 		<None Include="$(OutputPath)\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="RevitAssemblyLoadContext.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

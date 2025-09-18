@@ -43,6 +43,16 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
         : base(assemblyName, context, logger)
     {
     }
+    /// <summary>
+    /// Retrieves a collection of base class names used for dynamically generating commands.
+    /// </summary>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}"/> of <see cref="string"/> representing the names of base classes.
+    /// </returns>
+    /// <remarks>
+    /// This method overrides the base implementation to include additional base classes extracted from
+    /// embedded resources. The combined list of base classes is returned as a concatenated collection.
+    /// </remarks>
     protected override IEnumerable<string> GetBaseClasses()
     {
         var baseClasses = ExtractEmbeddedResources("Scotec.Revit.Ui.Resources.RevitDynamicActionCommandFactory");

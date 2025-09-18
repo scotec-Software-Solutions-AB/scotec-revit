@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -6,32 +8,56 @@ namespace Scotec.Revit.Loader;
 
 internal class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
-    private readonly AssemblyDependencyResolver _resolver;
+    private readonly string _pluginRoot;
+    private readonly Dictionary<string, string> _assemblyMap;
 
-    public RevitAssemblyLoadContext(string contextName, AssemblyDependencyResolver resolver) : base(contextName)
+    public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
     {{
-        _resolver = resolver;
+        _pluginRoot = Path.GetFullPath(pluginRoot);
+        _assemblyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        CacheAssemblies();
     }}
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
-        var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
-        if (assemblyPath != null)
+        if (_assemblyMap.TryGetValue(assemblyName.FullName, out var path))
         {{
-            return LoadFromAssemblyPath(assemblyPath);
+            return LoadFromAssemblyPath(path);
         }}
 
-        return null!;
+        // Let framework assemblies resolve normally
+        return null;
     }}
 
-    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+        private void CacheAssemblies()
     {{
-        var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
-        if (libraryPath != null)
+        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.AllDirectories))
         {{
-            return LoadUnmanagedDllFromPath(libraryPath);
-        }}
+            try
+            {{
+                var asmName = AssemblyName.GetAssemblyName(file);
 
-        return IntPtr.Zero;
+                if (!_assemblyMap.ContainsKey(asmName.FullName))
+                {{
+                    _assemblyMap[asmName.FullName] = file;
+                }}
+                else
+                {{
+                    Console.WriteLine(
+                        $"[Warning] Duplicate assembly identity '{{asmName.FullName}}' found at: {{file}}. " +
+                        $"Using first occurrence: {{_assemblyMap[asmName.FullName]}}"
+                    );
+                }}
+            }}
+            catch (BadImageFormatException)
+            {{
+                // Not a managed .NET assembly (likely a native DLL) → skip
+            }}
+            catch (FileLoadException)
+            {{
+                // The file exists but is not a valid .NET assembly → skip
+            }}
+        }}
     }}
 }}
