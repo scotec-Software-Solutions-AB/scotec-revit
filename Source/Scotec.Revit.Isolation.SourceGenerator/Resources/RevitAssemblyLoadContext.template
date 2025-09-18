@@ -9,28 +9,34 @@ namespace Scotec.Revit.Loader;
 internal class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private readonly string _pluginRoot;
-    private readonly Dictionary<string, string> _assemblyMap;
+    private readonly Dictionary<string, string> _assemblyFullNameMap;
+    private readonly Dictionary<string, string> _assemblyNameMap;
 
     public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
     {{
         _pluginRoot = Path.GetFullPath(pluginRoot);
-        _assemblyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         CacheAssemblies();
     }}
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
-    System.Diagnostics.Debugger.Launch();
         System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
-        if (_assemblyMap.TryGetValue(assemblyName.FullName, out var path))
+        if (_assemblyFullNameMap.TryGetValue(assemblyName.FullName, out var path))
         {{
-            System.Diagnostics.Debug.WriteLine($"Assembly found at {{path}}.");
-
+            System.Diagnostics.Debug.WriteLine($"Assembly '{{assemblyName.FullName}}' found at '{{path}}'.");
             return LoadFromAssemblyPath(path);
         }}
 
-        System.Diagnostics.Debug.WriteLine($"Could not load Assembly {{assemblyName.FullName}}.");
+        if (_assemblyNameMap.TryGetValue(assemblyName.Name, out path))
+        {{
+            System.Diagnostics.Debug.WriteLine($"Assembly '{{assemblyName.FullName}}' found at '{{path}}'.");
+            return LoadFromAssemblyPath(path);
+        }}
+
+        System.Diagnostics.Debug.WriteLine($"Could not load Assembly '{{assemblyName.FullName}}'.");
 
         // Let framework assemblies resolve normally
         return null;
@@ -42,17 +48,21 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         {{
             try
             {{
-                var asmName = AssemblyName.GetAssemblyName(file);
+                var assemblyName = AssemblyName.GetAssemblyName(file);
 
-                if (!_assemblyMap.ContainsKey(asmName.FullName))
+                if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
                 {{
-                    _assemblyMap[asmName.FullName] = file;
+                    _assemblyFullNameMap.Add(assemblyName.FullName, file);
+                    if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
+                    {{
+                        _assemblyNameMap.Add(assemblyName.Name!, file);
+                    }}
                 }}
                 else
                 {{
                     System.Diagnostics.Debug.WriteLine(
-                        $"[Warning] Duplicate assembly identity '{{asmName.FullName}}' found at: {{file}}. " +
-                        $"Using first occurrence: {{_assemblyMap[asmName.FullName]}}"
+                        $"[Warning] Duplicate assembly identity '{{assemblyName.FullName}}' found at: {{file}}. " +
+                        $"Using first occurrence: {{_assemblyFullNameMap[assemblyName.FullName]}}"
                     );
                 }}
             }}

@@ -22,7 +22,8 @@ namespace Scotec.Revit.Isolation;
 public class RevitAssemblyLoadContext : AssemblyLoadContext
 {
     private readonly string _pluginRoot;
-    private readonly Dictionary<string, string> _assemblyMap;
+    private readonly Dictionary<string, string> _assemblyFullNameMap;
+    private readonly Dictionary<string, string> _assemblyNameMap;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitAssemblyLoadContext" /> class with the specified context name
@@ -38,7 +39,8 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
     public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
     {
         _pluginRoot = Path.GetFullPath(pluginRoot);
-        _assemblyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         CacheAssemblies();
     }
@@ -60,7 +62,12 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
     /// </remarks>
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        if (_assemblyMap.TryGetValue(assemblyName.FullName, out var path))
+        if (_assemblyFullNameMap.TryGetValue(assemblyName.FullName, out var path))
+        {
+            return LoadFromAssemblyPath(path);
+        }
+
+        if (_assemblyNameMap.TryGetValue(assemblyName.Name!, out path))
         {
             return LoadFromAssemblyPath(path);
         }
@@ -101,17 +108,21 @@ public class RevitAssemblyLoadContext : AssemblyLoadContext
         {
             try
             {
-                var asmName = AssemblyName.GetAssemblyName(file);
+                var assemblyName = AssemblyName.GetAssemblyName(file);
 
-                if (!_assemblyMap.ContainsKey(asmName.FullName))
+                if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
                 {
-                    _assemblyMap[asmName.FullName] = file;
+                    _assemblyFullNameMap.Add(assemblyName.FullName, file);
+                    if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
+                    {
+                        _assemblyNameMap.Add(assemblyName.Name!, file);
+                    }
                 }
                 else
                 {
                     Console.WriteLine(
-                        $"[Warning] Duplicate assembly identity '{asmName.FullName}' found at: {file}. " +
-                        $"Using first occurrence: {_assemblyMap[asmName.FullName]}"
+                        $"[Warning] Duplicate assembly identity '{assemblyName.FullName}' found at: {file}. " +
+                        $"Using first occurrence: {_assemblyFullNameMap[assemblyName.FullName]}"
                     );
                 }
             }
