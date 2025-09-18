@@ -29,6 +29,18 @@ public abstract class RevitDynamicCommandGenerator
 {
     private readonly List<string> _classes = [];
 
+    /// <summary>
+    /// Adds a dynamically generated class to the internal list of classes managed by the generator.
+    /// </summary>
+    /// <param name="class">
+    /// The name of the class to be added. This should represent a fully qualified class name
+    /// that is dynamically generated and intended for use within the Revit environment.
+    /// </param>
+    /// <remarks>
+    /// This method is used internally to track dynamically generated classes, which are later
+    /// compiled into an assembly. The added classes are typically generated using specific
+    /// attributes and constructors to meet the requirements of the Revit environment.
+    /// </remarks>
     protected void AddClass(string @class)
     {
         _classes.Add(@class);
@@ -174,6 +186,16 @@ public abstract class RevitDynamicCommandGenerator
         }
     }
 
+    /// <summary>
+    /// Retrieves a collection of base class definitions used for generating dynamic commands.
+    /// </summary>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}"/> of strings, where each string represents the source code of a base class.
+    /// </returns>
+    /// <remarks>
+    /// This method extracts embedded resources containing base class definitions and returns them as a collection
+    /// of strings. Derived classes can override this method to include additional base classes or modify the behavior.
+    /// </remarks>
     protected virtual IEnumerable<string> GetBaseClasses()
     {
         var baseClasses = ExtractEmbeddedResources("Scotec.Revit.Ui.Resources.RevitDynamicCommandFactory");
@@ -181,6 +203,23 @@ public abstract class RevitDynamicCommandGenerator
         return baseClasses;
     }
 
+    /// <summary>
+    /// Compiles the dynamically generated source code into an in-memory assembly stream.
+    /// </summary>
+    /// <param name="assemblyName">
+    /// The name of the assembly to be generated. This name is used as the identifier for the compiled assembly.
+    /// </param>
+    /// <returns>
+    /// A <see cref="Stream"/> containing the compiled assembly in memory.
+    /// </returns>
+    /// <exception cref="Exception">
+    /// Thrown if the compilation process fails, providing detailed error messages for diagnostics.
+    /// </exception>
+    /// <remarks>
+    /// This method processes the dynamically generated source code, parses it into syntax trees, 
+    /// resolves necessary references, and compiles it into a dynamically linked library. 
+    /// The resulting assembly is returned as a memory stream, which can be loaded or saved as needed.
+    /// </remarks>
     public Stream Compile(string assemblyName)
     {
         // Extract embedded resources to retrieve all base classes.
@@ -221,6 +260,28 @@ public abstract class RevitDynamicCommandGenerator
     }
 
 
+    /// <summary>
+    /// Extracts embedded resources from the specified namespace within the executing assembly.
+    /// </summary>
+    /// <param name="resourceNamespace">
+    /// The namespace containing the embedded resources to extract. Only resources with names
+    /// starting with this namespace and ending with the ".template" extension will be included.
+    /// </param>
+    /// <returns>
+    /// An enumerable collection of strings, where each string represents the content of an
+    /// extracted embedded resource.
+    /// </returns>
+    /// <remarks>
+    /// This method retrieves all embedded resources within the executing assembly that match
+    /// the specified namespace and have a ".template" extension. The content of each resource
+    /// is read and returned as a string.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">
+    /// Thrown if the specified <paramref name="resourceNamespace"/> is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.InvalidOperationException">
+    /// Thrown if an embedded resource cannot be accessed or read.
+    /// </exception>
     protected static IEnumerable<string> ExtractEmbeddedResources( string resourceNamespace)
     {
         var assembly = Assembly.GetExecutingAssembly();
@@ -236,7 +297,33 @@ public abstract class RevitDynamicCommandGenerator
     }
 
 
-    protected string GenerateCommandClass(string fullTypeName, string baseType, Guid commandId, string contextName)
+    /// <summary>
+    /// Generates a command class dynamically for use in the Revit environment.
+    /// </summary>
+    /// <param name="fullTypeName">
+    /// The fully qualified name of the command class to be generated, including the namespace.
+    /// </param>
+    /// <param name="baseType">
+    /// The base type from which the generated command class will inherit.
+    /// </param>
+    /// <param name="commandId">
+    /// A unique identifier (<see cref="Guid"/>) for the command.
+    /// </param>
+    /// <param name="contextName">
+    /// The name of the context associated with the command.
+    /// </param>
+    /// <returns>
+    /// A string containing the source code of the dynamically generated command class.
+    /// </returns>
+    /// <remarks>
+    /// This method creates a C# class definition as a string, which includes the necessary attributes
+    /// and overrides for integration with the Revit environment. The generated class inherits from
+    /// the specified base type and includes properties for the command ID and context name.
+    /// </remarks>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when the <paramref name="fullTypeName"/> is null, empty, or does not contain a namespace.
+    /// </exception>
+    protected static string GenerateCommandClass(string fullTypeName, string baseType, Guid commandId, string contextName)
     {
         SplitFullClassName(fullTypeName, out var namespaceName, out var className);
         
@@ -264,7 +351,7 @@ public abstract class RevitDynamicCommandGenerator
             {
                 throw new ArgumentException("Full class name cannot be null or empty.", nameof(fullClassName));
             }
-            int lastDotIndex = fullClassName.LastIndexOf('.');
+            var lastDotIndex = fullClassName.LastIndexOf('.');
             if (lastDotIndex == -1)
             {
                 throw new ArgumentException("Full class name must contain a namespace.", nameof(fullClassName));

@@ -117,7 +117,6 @@ public abstract class RevitDynamicCommandFactory : IExternalCommand
 
         var result = SplitName(CommandTypeName);
 
-        //var assembly = loadContext.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
         var assembly = loadContext.LoadFromAssemblyName(new AssemblyName(result.AssemblyName));
         using var context = AssemblyLoadContext.EnterContextualReflection(assembly);
         
