@@ -21,16 +21,22 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
+    System.Diagnostics.Debugger.Launch();
+        System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
         if (_assemblyMap.TryGetValue(assemblyName.FullName, out var path))
         {{
+            System.Diagnostics.Debug.WriteLine($"Assembly found at {{path}}.");
+
             return LoadFromAssemblyPath(path);
         }}
+
+        System.Diagnostics.Debug.WriteLine($"Could not load Assembly {{assemblyName.FullName}}.");
 
         // Let framework assemblies resolve normally
         return null;
     }}
 
-        private void CacheAssemblies()
+    private void CacheAssemblies()
     {{
         foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.AllDirectories))
         {{
@@ -44,7 +50,7 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
                 }}
                 else
                 {{
-                    Console.WriteLine(
+                    System.Diagnostics.Debug.WriteLine(
                         $"[Warning] Duplicate assembly identity '{{asmName.FullName}}' found at: {{file}}. " +
                         $"Using first occurrence: {{_assemblyMap[asmName.FullName]}}"
                     );
