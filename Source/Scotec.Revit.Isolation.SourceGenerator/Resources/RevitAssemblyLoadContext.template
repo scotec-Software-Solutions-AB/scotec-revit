@@ -11,12 +11,14 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
+    private readonly AssemblyDependencyResolver _resolver;
 
     public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
     {{
         _pluginRoot = Path.GetFullPath(pluginRoot);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _resolver = new AssemblyDependencyResolver(pluginRoot);
 
         CacheAssemblies();
     }}
@@ -31,6 +33,14 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         }}
 
         if (_assemblyNameMap.TryGetValue(assemblyName.Name, out path))
+        {{
+            System.Diagnostics.Debug.WriteLine($"Assembly '{{assemblyName.FullName}}' found at '{{path}}'.");
+            return LoadFromAssemblyPath(path);
+        }}
+
+        System.Diagnostics.Debug.WriteLine($"Assembly not found in plugin path. Use AssemblyDependencyResolver.");
+        path = _resolver.ResolveAssemblyToPath(assemblyName);
+        if (path != null)
         {{
             System.Diagnostics.Debug.WriteLine($"Assembly '{{assemblyName.FullName}}' found at '{{path}}'.");
             return LoadFromAssemblyPath(path);
@@ -75,5 +85,16 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
                 // The file exists but is not a valid .NET assembly → skip
             }}
         }}
+    }}
+
+    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    {{
+        var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+        if (libraryPath != null)
+        {{
+            return LoadUnmanagedDllFromPath(libraryPath);
+        }}
+
+        return IntPtr.Zero;
     }}
 }}
