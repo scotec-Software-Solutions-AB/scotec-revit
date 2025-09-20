@@ -54,7 +54,7 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
 
     private void CacheAssemblies()
     {{
-        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.TopDirectoryOnly))
         {{
             try
             {{
