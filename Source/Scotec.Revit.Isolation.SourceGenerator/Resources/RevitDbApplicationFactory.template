@@ -30,7 +30,7 @@ namespace {0}
             if (context == null)
 			{{
                 //var resolver = new AssemblyDependencyResolver(Path.GetDirectoryName(currentAssembly.Location));
-                context = new RevitAssemblyLoadContext(contextName, Path.GetDirectoryName(currentAssembly.Location));
+                context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
 			}}
 
             var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);

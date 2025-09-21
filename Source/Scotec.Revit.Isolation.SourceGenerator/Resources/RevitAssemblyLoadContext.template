@@ -14,19 +14,20 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
     private readonly Dictionary<string, string> _assemblyNameMap;
     private readonly AssemblyDependencyResolver _resolver;
 
-    public RevitAssemblyLoadContext(string contextName, string pluginRoot) : base(contextName)
+    public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
     {{
-        _pluginRoot = Path.GetFullPath(pluginRoot);
+        System.Diagnostics.Debugger.Launch();
+        var root = Path.GetFullPath(rootAssembly);
+        _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        _resolver = new AssemblyDependencyResolver(pluginRoot);
+        _resolver = new AssemblyDependencyResolver(root);
 
         CacheAssemblies();
     }}
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
-        System.Diagnostics.Debugger.Launch();
         System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
 
         // 1. Let AssemblyDependencyResolver resolve first
@@ -41,7 +42,7 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
             }}
         }}
 
-         // 2. If ADR returned a root-level assembly, accept it if a RID-specific variant exists.
+        // 2. If ADR returned a root-level assembly, accept it if a RID-specific variant exists.
         if (resolvedPath != null)
         {{
             var runtimesDir = Path.Combine(_pluginRoot, "runtimes");
@@ -77,38 +78,66 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
 
     private void CacheAssemblies()
     {{
-        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.TopDirectoryOnly))
+        var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+        var runtimeDir = Path.Combine(_pluginRoot, "runtimes", runtimeId, "lib");
+            
+        // 1. Prefer assemblies under runtimes/<rid>/lib/*
+        if (Directory.Exists(runtimeDir))
         {{
-            try
+            foreach (var file in Directory.EnumerateFiles(runtimeDir, "*.dll", SearchOption.AllDirectories))
             {{
-                var assemblyName = AssemblyName.GetAssemblyName(file);
-
-                if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
-                {{
-                    _assemblyFullNameMap.Add(assemblyName.FullName, file);
-                    if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
-                    {{
-                        _assemblyNameMap.Add(assemblyName.Name!, file);
-                    }}
-                }}
-                else
-                {{
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[Warning] Duplicate assembly identity '{{assemblyName.FullName}}' found at: {{file}}. " +
-                        $"Using first occurrence: {{_assemblyFullNameMap[assemblyName.FullName]}}"
-                    );
-                }}
-            }}
-            catch (BadImageFormatException)
-            {{
-                // Not a managed .NET assembly (likely a native DLL) → skip
-            }}
-            catch (FileLoadException)
-            {{
-                // The file exists but is not a valid .NET assembly → skip
+                TryAddAssembly(file, "[RID-specific]");
             }}
         }}
+
+        // 2. Cache assemblies directly in plugin root, but skip those that also exist in runtimes/<rid>/*
+        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.TopDirectoryOnly))
+        {{
+            var assemblyName = AssemblyName.GetAssemblyName(file);
+            if (_assemblyNameMap.ContainsKey(assemblyName.Name!))
+            {{
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ALC:{{Name}}] Skipping root assembly '{{assemblyName.Name}}' because a RID-specific version is already cached.");
+                continue;
+            }}
+
+            TryAddAssembly(file, "[root]");
+        }}
     }}
+
+
+    private void TryAddAssembly(string file, string origin)
+    {{
+        try
+        {{
+            var assemblyName = AssemblyName.GetAssemblyName(file);
+
+            if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
+            {{
+                _assemblyFullNameMap.Add(assemblyName.FullName, file);
+                if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
+                {{
+                    _assemblyNameMap.Add(assemblyName.Name!, file);
+                }}
+
+                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Cached {{origin}} assembly {{assemblyName.Name}} at {{file}}");
+            }}
+            else
+            {{
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ALC:{{Name}}] [Warning] Duplicate assembly '{{assemblyName.FullName}}' at {{file}}, keeping first: {{_assemblyFullNameMap[assemblyName.FullName]}}");
+            }}
+        }}
+        catch (BadImageFormatException)
+        {{
+            // Not a managed .NET assembly → skip
+        }}
+        catch (FileLoadException)
+        {{
+            // File exists but is not a valid .NET assembly → skip
+        }}
+    }}
+
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {{
