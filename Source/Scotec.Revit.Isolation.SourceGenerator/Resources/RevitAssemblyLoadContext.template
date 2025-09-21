@@ -40,16 +40,16 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
             }}
         }}
 
-         // 2. If ADR returned a root-level assembly, only accept it if no RID-specific variant exists.
+         // 2. If ADR returned a root-level assembly, accept it if a RID-specific variant exists.
         if (resolvedPath != null)
         {{
             var runtimesDir = Path.Combine(_pluginRoot, "runtimes");
             var runtimeSpecificExists = Directory.Exists(runtimesDir) &&
                 Directory.EnumerateFiles(runtimesDir, assemblyName.Name + ".dll", SearchOption.AllDirectories).Any();
 
-            if (!runtimeSpecificExists)
+            if (runtimeSpecificExists)
             {{
-                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Using assembly resolved by ADR (no RID-specific override): {{resolvedPath}}");
+                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Using assembly resolved by ADR (has RID-specific override): {{resolvedPath}}");
                 return LoadFromAssemblyPath(resolvedPath);
             }}
         }}
