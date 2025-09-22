@@ -16,7 +16,6 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
 
     public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
     {{
-        System.Diagnostics.Debugger.Launch();
         var root = Path.GetFullPath(rootAssembly);
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
