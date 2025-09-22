@@ -29,49 +29,12 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
     {{
         System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
 
-        // 1. Let AssemblyDependencyResolver resolve first
         var resolvedPath = _resolver.ResolveAssemblyToPath(assemblyName);
         if (resolvedPath != null)
         {{
-            // If ADR resolves into a "runtimes" folder, we know this is the RID-specific copy.
-            if (resolvedPath.Contains($"{{Path.DirectorySeparatorChar}}runtimes{{Path.DirectorySeparatorChar}}"))
-            {{
-                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Using RID-specific assembly from: {{resolvedPath}}");
-                return LoadFromAssemblyPath(resolvedPath);
-            }}
-        }}
-
-        // 2. If ADR returned a root-level assembly, accept it if a RID-specific variant exists.
-        if (resolvedPath != null)
-        {{
-            var runtimesDir = Path.Combine(_pluginRoot, "runtimes");
-            var runtimeSpecificExists = Directory.Exists(runtimesDir) &&
-                Directory.EnumerateFiles(runtimesDir, assemblyName.Name + ".dll", SearchOption.AllDirectories).Any();
-
-            if (runtimeSpecificExists)
-            {{
-                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Using assembly resolved by ADR (has RID-specific override): {{resolvedPath}}");
-                return LoadFromAssemblyPath(resolvedPath);
-            }}
-        }}
-
-        // 3. Fallback: check plugin root cache (manual scan from CacheAssemblies)
-        if (_assemblyFullNameMap.TryGetValue(assemblyName.FullName, out var path) ||
-                _assemblyNameMap.TryGetValue(assemblyName.Name, out path))        
-        {{
-            System.Diagnostics.Debug.WriteLine($"Assembly '{{assemblyName.FullName}}' found at '{{path}}'.");
-            return LoadFromAssemblyPath(path);
-        }}
-
-        // 4. Fallback: if ADR gave us *something* (root-level), use it last
-        if (resolvedPath != null)
-        {{
-            System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Fallback to ADR-resolved assembly: {{resolvedPath}}");
             return LoadFromAssemblyPath(resolvedPath);
         }}
 
-        // 5. Let the framework handle unresolved assemblies
-        System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Could not resolve {{assemblyName.FullName}}");
         return null;
     }}
 
