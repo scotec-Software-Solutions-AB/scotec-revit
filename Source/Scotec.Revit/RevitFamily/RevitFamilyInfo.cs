@@ -163,6 +163,42 @@ public class RevitFamilyInfo
     public string Title { get; private set; } = string.Empty;
 
     /// <summary>
+    ///     Gets the product name associated with the Revit family.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="string"/> representing the product name extracted from the family data.
+    /// </value>
+    /// <remarks>
+    ///     This property is populated during the initialization of the <see cref="RevitFamilyInfo"/> instance
+    ///     by parsing the family data. It represents the product information defined within the Revit family file.
+    /// </remarks>
+    public string Product { get; private set; } = string.Empty;
+
+    /// <summary>
+    ///     Gets the version of the product associated with the Revit family.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="string"/> representing the version of the product.
+    /// </value>
+    /// <remarks>
+    ///     This property is extracted from the family data and indicates the version of the product
+    ///     that the Revit family is associated with. It is initialized during the loading of the family data.
+    /// </remarks>
+    public string ProductVersion { get; private set; } = string.Empty;
+
+    /// <summary>
+    ///     Gets the date and time when the Revit family was last updated.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="DateTime"/> representing the last update timestamp of the Revit family.
+    /// </value>
+    /// <remarks>
+    ///     This property is populated during the loading of the family data from the associated file or stream.
+    ///     It reflects the most recent modification date as specified in the family metadata.
+    /// </remarks>
+    public DateTime Updated { get; private set; }
+
+    /// <summary>
     ///     Initializes the Revit family information by loading its symbols, preview image, and associated data.
     /// </summary>
     /// <remarks>
@@ -323,8 +359,12 @@ public class RevitFamilyInfo
             // Extract the title
             Title = root.Element(AtomNamespace + "title")?.Value ?? string.Empty;
 
-            // Extract the product version
-            //var productVersion = document.Descendants(autodeskNs + "product-version").FirstOrDefault()?.Value;
+            // Extract the product and product version
+            Product = document.Descendants(AutodeskNamespace + "product").First().Value;    
+            ProductVersion = document.Descendants(AutodeskNamespace + "product-version").First().Value;
+
+            // Extract the updated date
+            Updated = DateTime.Parse(document.Descendants(AutodeskNamespace + "updated").First().Value);
 
             //Extract family types
             FamilySymbolInfos = document.Descendants(AutodeskNamespace + "part")
