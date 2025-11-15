@@ -11,7 +11,17 @@
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<NoPackageAnalysis>true</NoPackageAnalysis>
 		<Platforms>x64</Platforms>
+		<Configurations>Debug2025;Release2025</Configurations>
 	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release2025|x64'">
+		<DefineConstants>$(DefineConstants);RELEASE;REVIT2025;REVIT2026</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug2025|x64'">
+		<DefineConstants>$(DefineConstants);DEBUG;REVIT2025;REVIT2026</DefineConstants>
+	</PropertyGroup>
+
 
 	<PropertyGroup>
 		<Authors>$(CompanyName)</Authors>

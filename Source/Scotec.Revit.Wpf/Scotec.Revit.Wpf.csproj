@@ -6,10 +6,21 @@
 		<LangVersion>latest</LangVersion>
 		<PlatformTarget>x64</PlatformTarget>
 		<UseWpf>True</UseWpf>
+		<Configurations>Debug2025;Release2025</Configurations>
 		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release2025|x64'">
+		<DefineConstants>$(DefineConstants);RELEASE;REVIT2025;REVIT2026</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug2025|x64'">
+		<DefineConstants>$(DefineConstants);DEBUG;REVIT2025;REVIT2026</DefineConstants>
+	</PropertyGroup>
+
+
 	<ItemGroup>
+		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
 		<ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 
