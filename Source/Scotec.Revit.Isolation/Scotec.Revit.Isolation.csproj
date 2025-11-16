@@ -8,23 +8,6 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<Platforms>x64</Platforms>
 		<Nullable>enable</Nullable>
-		<Configurations>Debug2025;Release2025;Debug2026;Release2026</Configurations>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release2025|x64'">
-		<DefineConstants>$(DefineConstants);RELEASE;REVIT2025</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release2026|x64'">
-	  <DefineConstants>$(DefineConstants);RELEASE;REVIT2025</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug2025|x64'">
-		<DefineConstants>$(DefineConstants);DEBUG;REVIT2026</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug2026|x64'">
-	  <DefineConstants>$(DefineConstants);DEBUG;REVIT2026</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup>
