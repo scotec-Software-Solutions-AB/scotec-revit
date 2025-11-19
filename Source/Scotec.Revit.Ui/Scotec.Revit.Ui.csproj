@@ -57,12 +57,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
 	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 

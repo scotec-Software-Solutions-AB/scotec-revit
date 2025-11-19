@@ -55,7 +55,9 @@
 
 
 	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All">
+		  <TreatAsUsed>true</TreatAsUsed>
+		</ProjectReference>
 	</ItemGroup>
 
 	<PropertyGroup>
