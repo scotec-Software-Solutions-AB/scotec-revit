@@ -14,7 +14,10 @@ branches:
         regex: (^test$)
         tag: alpha
 #        track-merge-target: true
-        
+    revitRelease:
+        increment: Patch
+        regex: ^revit20.*
+        tag: ''        
 ignore:
   sha: []
 merge-message-formats: {}
