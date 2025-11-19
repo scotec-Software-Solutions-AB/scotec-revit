@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,8 @@ namespace Scotec.Revit.RevitFamily;
 /// </summary>
 /// <remarks>
 ///     This class provides functionality to manage and access Revit family data, such as symbols and preview images.
-///     It initializes and processes the family data from a given file path and stream.
+///     It initializes and processes the family data from a specified file path or stream.
+///     The class enables access to family information without loading the entire family file into memory.
 /// </remarks>
 public class RevitFamilyInfo
 {
@@ -28,34 +30,58 @@ public class RevitFamilyInfo
     private static readonly XNamespace AutodeskNamespace = "urn:schemas-autodesk-com:partatom";
 
     private readonly Func<Stream> _familyStreamLoader;
+    private readonly string? _infoStorageName;
     private readonly object _initializationLock = new();
     private readonly ILogger? _logger;
     private Stream? _preview;
+    private readonly Dictionary<string, Stream> _infoStreams = [];
 
-    public RevitFamilyInfo(Func<Stream> familyStreamLoader) : this(familyStreamLoader, null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader
+    /// and optional information storage name.
+    /// </summary>
+    /// <param name="familyStreamLoader">
+    /// A function that provides a <see cref="Stream" /> containing the Revit family data.
+    /// </param>
+    /// <param name="infoStorageName">
+    /// An optional name for the information storage associated with the Revit family data. Defaults to <c>null</c>.
+    /// </param>
+    /// <exception cref="System.ArgumentNullException">
+    /// Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
+    /// </exception>
+    /// <remarks>
+    /// This constructor initializes the Revit family information using the provided stream loader function.
+    /// The optional information storage name can be used to identify or categorize the family data.
+    /// </remarks>
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader, string? infoStorageName =  null) : this(familyStreamLoader, infoStorageName, null)
     {
     }
 
     /// <summary>
-    ///     Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader and
-    ///     logger.
+    ///     Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader,
+    ///     optional information storage name, and logger.
     /// </summary>
     /// <param name="familyStreamLoader">
     ///     A function that provides a <see cref="Stream" /> containing the Revit family data.
     /// </param>
+    /// <param name="infoStorageName">
+    ///     An optional name for the storage associated with the Revit family data. If not provided, defaults to <c>null</c>.
+    /// </param>
     /// <param name="logger">
-    ///     An instance of <see cref="ILogger" /> used for logging operations.
+    ///     An instance of <see cref="ILogger" /> used for logging operations. If not provided, defaults to <c>null</c>.
     /// </param>
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
     /// </exception>
     /// <remarks>
-    ///     This constructor enables deferred loading of the Revit family data using the provided stream loader function.
+    ///     This constructor enables the initialization of the Revit family information with deferred loading of the family data.
+    ///     The optional storage name can be used to identify or associate metadata with the family data.
     ///     The logger is utilized to record diagnostic and error information during the processing of the family data.
     /// </remarks>
-    public RevitFamilyInfo(Func<Stream> familyStreamLoader, ILogger? logger)
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader, string? infoStorageName, ILogger? logger)
     {
         _familyStreamLoader = familyStreamLoader;
+        _infoStorageName = infoStorageName;
         _logger = logger;
     }
 
@@ -137,6 +163,42 @@ public class RevitFamilyInfo
     public string Title { get; private set; } = string.Empty;
 
     /// <summary>
+    ///     Gets the product name associated with the Revit family.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="string"/> representing the product name extracted from the family data.
+    /// </value>
+    /// <remarks>
+    ///     This property is populated during the initialization of the <see cref="RevitFamilyInfo"/> instance
+    ///     by parsing the family data. It represents the product information defined within the Revit family file.
+    /// </remarks>
+    public string Product { get; private set; } = string.Empty;
+
+    /// <summary>
+    ///     Gets the version of the product associated with the Revit family.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="string"/> representing the version of the product.
+    /// </value>
+    /// <remarks>
+    ///     This property is extracted from the family data and indicates the version of the product
+    ///     that the Revit family is associated with. It is initialized during the loading of the family data.
+    /// </remarks>
+    public string ProductVersion { get; private set; } = string.Empty;
+
+    /// <summary>
+    ///     Gets the date and time when the Revit family was last updated.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="DateTime"/> representing the last update timestamp of the Revit family.
+    /// </value>
+    /// <remarks>
+    ///     This property is populated during the loading of the family data from the associated file or stream.
+    ///     It reflects the most recent modification date as specified in the family metadata.
+    /// </remarks>
+    public DateTime Updated { get; private set; }
+
+    /// <summary>
     ///     Initializes the Revit family information by loading its symbols, preview image, and associated data.
     /// </summary>
     /// <remarks>
@@ -164,9 +226,10 @@ public class RevitFamilyInfo
 
             try
             {
-                using var stream = new CompoundFile(GetFamilyStream());
-                LoadPartAtom(stream);
-                LoadImage(stream);
+                using var root = RootStorage.Open(GetFamilyStream(), StorageModeFlags.LeaveOpen);
+                LoadPartAtom(root);
+                LoadImage(root);
+                LoadStreams(root);
                 IsInitialized = true;
             }
             catch (Exception e)
@@ -175,6 +238,39 @@ public class RevitFamilyInfo
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// Attempts to retrieve a data stream associated with the specified stream name.
+    /// </summary>
+    /// <param name="streamName">
+    /// The name of the stream to retrieve. This is used as a key to locate the associated data stream.
+    /// </param>
+    /// <param name="stream">
+    /// When this method returns, contains the <see cref="Stream"/> associated with the specified stream name,
+    /// if the operation is successful; otherwise, <c>null</c>.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if a data stream associated with the specified stream name is found and successfully retrieved;
+    /// otherwise, <c>false</c>.
+    /// </returns>
+    /// <remarks>
+    /// This method checks if a data stream exists for the given stream name in the internal collection.
+    /// If found, it creates a copy of the stream and returns it through the <paramref name="stream"/> parameter.
+    /// </remarks>
+    public bool TryGetInfoDataStream(string streamName, [NotNullWhen(true)]out Stream? stream)
+    {
+        if (_infoStreams.TryGetValue(streamName, out var infoStream))
+        {
+            stream = new MemoryStream();
+            infoStream.Position = 0;
+            infoStream.CopyTo(stream);
+            stream.Position = 0;
+            return true;
+        }
+
+        stream = null;
+        return false;
     }
 
     /// <summary>
@@ -194,8 +290,8 @@ public class RevitFamilyInfo
     /// <summary>
     ///     Loads the preview image from the specified compound file.
     /// </summary>
-    /// <param name="compoundFile">
-    ///     The <see cref="CompoundFile" /> containing the Revit family data.
+    /// <param name="storage">
+    ///     The <see cref="RootStorage" /> containing the Revit family data.
     /// </param>
     /// <remarks>
     ///     This method attempts to locate and extract the "RevitPreview4.0" stream from the provided compound file.
@@ -206,18 +302,19 @@ public class RevitFamilyInfo
     /// <exception cref="Exception">
     ///     Thrown if an unexpected error occurs during the image extraction process.
     /// </exception>
-    private void LoadImage(CompoundFile compoundFile)
+    private void LoadImage(RootStorage storage)
     {
         try
         {
-            if (!compoundFile.RootStorage.TryGetStream("RevitPreview4.0", out var stream))
+            if (!storage.TryOpenStream("RevitPreview4.0", out var stream))
             {
                 _logger?.LogDebug("The 'RevitPreview4.0' stream could not be found in the family file.");
                 return;
             }
 
-            var data = stream.GetData();
-            var image = PngExtractor.ExtractPng(data);
+            var buffer = new byte[stream.Length];
+            stream.ReadExactly(buffer, 0, buffer.Length);
+            var image = PngExtractor.ExtractPng(buffer);
             _preview = new MemoryStream(image);
         }
         catch (Exception e)
@@ -230,7 +327,7 @@ public class RevitFamilyInfo
     /// <summary>
     ///     Loads and processes the "PartAtom" stream from the specified compound file.
     /// </summary>
-    /// <param name="compoundFile">The compound file containing the "PartAtom" stream.</param>
+    /// <param name="storage">The compound file containing the "PartAtom" stream.</param>
     /// <remarks>
     ///     This method extracts and parses the "PartAtom" stream to retrieve family metadata, such as the title and family
     ///     types. It updates the <see cref="Title" /> property with the family name and populates the
@@ -239,17 +336,18 @@ public class RevitFamilyInfo
     /// <exception cref="Exception">
     ///     Thrown if the "PartAtom" stream is not found in the compound file or if the family description cannot be loaded.
     /// </exception>
-    private void LoadPartAtom(CompoundFile compoundFile)
+    private void LoadPartAtom(RootStorage storage)
     {
         try
         {
-            if (!compoundFile.RootStorage.TryGetStream("PartAtom", out var stream))
+            if (!storage.TryOpenStream("PartAtom", out var stream))
             {
                 throw new Exception("The 'PartAtom' stream could not be found in the family file.");
             }
 
-            var data = stream.GetData();
-            var xml = Encoding.UTF8.GetString(data);
+            var buffer = new byte[stream.Length];
+            stream.ReadExactly(buffer, 0, buffer.Length);
+            var xml = Encoding.UTF8.GetString(buffer);
 
             var document = XDocument.Parse(xml);
             var root = document.Root;
@@ -261,8 +359,12 @@ public class RevitFamilyInfo
             // Extract the title
             Title = root.Element(AtomNamespace + "title")?.Value ?? string.Empty;
 
-            // Extract the product version
-            //var productVersion = document.Descendants(autodeskNs + "product-version").FirstOrDefault()?.Value;
+            // Extract the product and product version
+            Product = document.Descendants(AutodeskNamespace + "product").First().Value;    
+            ProductVersion = document.Descendants(AutodeskNamespace + "product-version").First().Value;
+
+            // Extract the updated date
+            Updated = DateTime.Parse(document.Descendants(AutodeskNamespace + "updated").First().Value);
 
             //Extract family types
             FamilySymbolInfos = document.Descendants(AutodeskNamespace + "part")
@@ -273,6 +375,56 @@ public class RevitFamilyInfo
         {
             _logger?.LogError(e, "Error while reading the family description from the 'PartAtom' stream.");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Loads streams from the specified root storage within the compound file.
+    /// </summary>
+    /// <param name="rootStorage">
+    /// The <see cref="RootStorage"/> representing the root storage of the compound file.
+    /// </param>
+    /// <remarks>
+    /// This method enumerates the entries within the specified storage and processes each entry of type
+    /// <see cref="EntryType.Stream"/>. For each stream entry, it attempts to load the stream into memory.
+    /// If a stream cannot be opened or an error occurs during the process, the corresponding entry is set to <c>null</c>,
+    /// and an error is logged.
+    /// </remarks>
+    /// <exception cref="System.Exception">
+    /// Thrown if an unexpected error occurs while attempting to load a stream.
+    /// </exception>
+    private void LoadStreams(RootStorage rootStorage)
+    {
+        
+        if (string.IsNullOrEmpty(_infoStorageName) || !rootStorage.TryOpenStorage(_infoStorageName, out var storage))
+        {
+            return;
+        }
+
+        var streamEntries = storage.EnumerateEntries().Where(e => e.Type == EntryType.Stream);
+        
+        foreach (var streamEntry in streamEntries)
+        {
+            var streamName = streamEntry.Name;
+            try
+            {
+                if (storage.TryOpenStream(streamName, out var stream))
+                {
+                    var memoryStream = new MemoryStream();
+                    stream.CopyTo(memoryStream);
+                    memoryStream.Position = 0;
+                    _infoStreams[streamName] = memoryStream;
+                }
+                else
+                {
+                    _logger?.LogInformation("Stream '{streamName}' not found in the compound file.", streamName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _infoStreams[streamName] = null;
+                _logger?.LogError(ex, "Failed to load stream '{streamName}'.", streamName);
+            }
         }
     }
 }

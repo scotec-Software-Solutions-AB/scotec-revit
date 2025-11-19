@@ -170,7 +170,7 @@ public abstract class RevitAppBase
     ///     This method can be overridden in derived classes to implement a custom assembly resolution strategy.
     ///     By default, it attempts to locate the assembly in the same directory as the current add-in.
     /// </remarks>
-    protected virtual Assembly OnAssemblyResolve(ResolveEventArgs args)
+    protected virtual Assembly? OnAssemblyResolve(ResolveEventArgs args)
     {
         var currentPath = GetAddInPath();
         var assemblyName = new AssemblyName(args.Name);

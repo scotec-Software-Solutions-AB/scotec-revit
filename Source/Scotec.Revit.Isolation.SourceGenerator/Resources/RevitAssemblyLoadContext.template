@@ -1,0 +1,114 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
+
+namespace Scotec.Revit.Loader;
+
+internal class RevitAssemblyLoadContext : AssemblyLoadContext
+{{
+    private readonly string _pluginRoot;
+    private readonly Dictionary<string, string> _assemblyFullNameMap;
+    private readonly Dictionary<string, string> _assemblyNameMap;
+    private readonly AssemblyDependencyResolver _resolver;
+
+    public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
+    {{
+        var root = Path.GetFullPath(rootAssembly);
+        _pluginRoot = Path.GetDirectoryName(root);
+        _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _resolver = new AssemblyDependencyResolver(root);
+
+        CacheAssemblies();
+    }}
+
+    protected override Assembly Load(AssemblyName assemblyName)
+    {{
+        System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
+
+        var resolvedPath = _resolver.ResolveAssemblyToPath(assemblyName);
+        if (resolvedPath != null)
+        {{
+            return LoadFromAssemblyPath(resolvedPath);
+        }}
+
+        return null;
+    }}
+
+    private void CacheAssemblies()
+    {{
+        var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+        var runtimeDir = Path.Combine(_pluginRoot, "runtimes", runtimeId, "lib");
+            
+        // 1. Prefer assemblies under runtimes/<rid>/lib/*
+        if (Directory.Exists(runtimeDir))
+        {{
+            foreach (var file in Directory.EnumerateFiles(runtimeDir, "*.dll", SearchOption.AllDirectories))
+            {{
+                TryAddAssembly(file, "[RID-specific]");
+            }}
+        }}
+
+        // 2. Cache assemblies directly in plugin root, but skip those that also exist in runtimes/<rid>/*
+        foreach (var file in Directory.EnumerateFiles(_pluginRoot, "*.dll", SearchOption.TopDirectoryOnly))
+        {{
+            var assemblyName = AssemblyName.GetAssemblyName(file);
+            if (_assemblyNameMap.ContainsKey(assemblyName.Name!))
+            {{
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ALC:{{Name}}] Skipping root assembly '{{assemblyName.Name}}' because a RID-specific version is already cached.");
+                continue;
+            }}
+
+            TryAddAssembly(file, "[root]");
+        }}
+    }}
+
+
+    private void TryAddAssembly(string file, string origin)
+    {{
+        try
+        {{
+            var assemblyName = AssemblyName.GetAssemblyName(file);
+
+            if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
+            {{
+                _assemblyFullNameMap.Add(assemblyName.FullName, file);
+                if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
+                {{
+                    _assemblyNameMap.Add(assemblyName.Name!, file);
+                }}
+
+                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Cached {{origin}} assembly {{assemblyName.Name}} at {{file}}");
+            }}
+            else
+            {{
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ALC:{{Name}}] [Warning] Duplicate assembly '{{assemblyName.FullName}}' at {{file}}, keeping first: {{_assemblyFullNameMap[assemblyName.FullName]}}");
+            }}
+        }}
+        catch (BadImageFormatException)
+        {{
+            // Not a managed .NET assembly → skip
+        }}
+        catch (FileLoadException)
+        {{
+            // File exists but is not a valid .NET assembly → skip
+        }}
+    }}
+
+
+    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    {{
+        var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+        if (libraryPath != null)
+        {{
+            return LoadUnmanagedDllFromPath(libraryPath);
+        }}
+
+        return IntPtr.Zero;
+    }}
+}}

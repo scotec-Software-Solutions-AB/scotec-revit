@@ -22,6 +22,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Resources\RevitAssemblyLoadContext.template" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<EmbeddedResource Include="Resources\RevitDbApplicationFactory.template" />
 		<EmbeddedResource Include="Resources\RevitCommandAvailabilityFactory.template" />
 		<EmbeddedResource Include="Resources\RevitCommandFactory.template" />
