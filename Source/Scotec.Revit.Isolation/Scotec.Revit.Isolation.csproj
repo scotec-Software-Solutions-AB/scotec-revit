@@ -6,9 +6,8 @@
 		<LangVersion>latest</LangVersion>
 		<PlatformTarget>x64</PlatformTarget>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Platforms>AnyCPU;x64</Platforms>
+		<Platforms>x64</Platforms>
 		<Nullable>enable</Nullable>
-
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -39,10 +38,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="RevitAssemblyLoadContext.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\Logo.png" Pack="true" PackagePath="" />
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
 		<None Include="$(OutputPath)\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="RevitAssemblyLoadContext.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -51,11 +55,14 @@
 
 
 	<ItemGroup>
-		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" PrivateAssets="All">
+		  <TreatAsUsed>true</TreatAsUsed>
+		</ProjectReference>
 	</ItemGroup>
 
 	<PropertyGroup>
 		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
 	</PropertyGroup>
+
 
 </Project>

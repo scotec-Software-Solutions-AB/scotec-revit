@@ -10,6 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
 		<ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	</ItemGroup>
 

@@ -3,17 +3,17 @@
 // // This file is licensed to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Windows;
 using Autodesk.Revit.Attributes;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using MethodAttributes = Mono.Cecil.MethodAttributes;
-using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Scotec.Revit.Ui.DynamicCommands;
 
@@ -27,6 +27,24 @@ namespace Scotec.Revit.Ui.DynamicCommands;
 /// </remarks>
 public abstract class RevitDynamicCommandGenerator
 {
+    private readonly List<string> _classes = [];
+
+    /// <summary>
+    /// Adds a dynamically generated class to the internal list of classes managed by the generator.
+    /// </summary>
+    /// <param name="class">
+    /// The name of the class to be added. This should represent a fully qualified class name
+    /// that is dynamically generated and intended for use within the Revit environment.
+    /// </param>
+    /// <remarks>
+    /// This method is used internally to track dynamically generated classes, which are later
+    /// compiled into an assembly. The added classes are typically generated using specific
+    /// attributes and constructors to meet the requirements of the Revit environment.
+    /// </remarks>
+    protected void AddClass(string @class)
+    {
+        _classes.Add(@class);
+    }
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitDynamicCommandGenerator" /> class.
     /// </summary>
@@ -45,33 +63,6 @@ public abstract class RevitDynamicCommandGenerator
     {
         Logger = logger;
         Context = context ?? AssemblyLoadContext.GetLoadContext(GetType().Assembly)!;
-
-        // Retrieve the directories of all loaded assemblies and add them to the assembly resolver.
-        // Note: The order of directories is crucial. The resolver searches for assemblies in the directories
-        // in the sequence they are added. we always want to search first in the directory of the current load context.
-        var resolver = new DefaultAssemblyResolver();
-
-        var searchDirectories = Context.Assemblies
-                                       .Select(a => Path.GetDirectoryName(a.Location))
-                                       .Where(p => p != null)
-                                       .Distinct()
-                                       .ToList();
-
-        // Add the search path for Revit assemblies.
-        searchDirectories.Add(Path.GetDirectoryName(Application.Current.MainWindow!.GetType().Assembly.Location));
-        searchDirectories.ForEach(resolver.AddSearchDirectory);
-
-        var moduleParameters = new ModuleParameters
-        {
-            AssemblyResolver = resolver,
-            Kind = ModuleKind.Dll
-        };
-
-        AssemblyDefinition = AssemblyDefinition.CreateAssembly(
-            new AssemblyNameDefinition(assemblyName, new Version(1, 0, 0, 0)),
-            assemblyName, moduleParameters);
-
-        MainModuleDefinition = AssemblyDefinition.MainModule;
     }
 
     /// <summary>
@@ -97,24 +88,6 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     protected ILogger<RevitDynamicCommandGenerator>? Logger { get; }
 
-    /// <summary>
-    ///     Gets the dynamically generated assembly definition.
-    /// </summary>
-    /// <remarks>
-    ///     This property provides access to the <see cref="Mono.Cecil.AssemblyDefinition" /> instance
-    ///     representing the dynamically created assembly. It is used to define and manage the structure
-    ///     of the assembly, including its modules, types, and members.
-    /// </remarks>
-    protected AssemblyDefinition AssemblyDefinition { get; }
-
-    /// <summary>
-    ///     Gets the main module definition of the dynamically generated assembly.
-    /// </summary>
-    /// <remarks>
-    ///     This property provides access to the main module of the assembly being dynamically created.
-    ///     It is used to define and manage types, methods, and other members within the assembly.
-    /// </remarks>
-    protected ModuleDefinition MainModuleDefinition { get; }
 
     /// <summary>
     ///     Finalizes the dynamically generated assembly and loads it into the default <see cref="AssemblyLoadContext" />.
@@ -132,14 +105,14 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly()
     {
-        using var stream = new MemoryStream();
-        SaveAssembly(stream);
+        var assemblyName = "DynamicAssembly_" + Guid.NewGuid().ToString("D");
+        using var stream = Compile(assemblyName);
         stream.Seek(0, SeekOrigin.Begin);
 
         try
         {
             var loadedAssembly = AssemblyLoadContext.Default.LoadFromStream(stream);
-            ;
+            
             return loadedAssembly;
         }
         catch (Exception e)
@@ -166,7 +139,10 @@ public abstract class RevitDynamicCommandGenerator
     /// </remarks>
     public Assembly FinalizeAssembly(string path)
     {
-        SaveAssembly(path);
+        var assemblyName = Path.GetFileNameWithoutExtension(path);
+        using var stream = Compile(assemblyName);
+
+        SaveAssembly(stream, path);
 
         try
         {
@@ -191,11 +167,15 @@ public abstract class RevitDynamicCommandGenerator
     ///     This method writes the generated assembly to the specified file path. If the operation fails,
     ///     an error is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
-    public void SaveAssembly(string outputPath)
+    private void SaveAssembly(Stream assemblyStream, string outputPath)
     {
         try
         {
-            AssemblyDefinition.Write(outputPath);
+            assemblyStream.Position = 0;
+            
+            using var file = File.OpenWrite(outputPath);
+            assemblyStream.CopyTo(file);
+            file.Flush(true);
             Logger?.LogDebug($"Assembly saved to {outputPath}");
         }
         catch (Exception e)
@@ -206,87 +186,178 @@ public abstract class RevitDynamicCommandGenerator
     }
 
     /// <summary>
-    ///     Saves the dynamically generated assembly to the specified output stream.
+    /// Retrieves a collection of base class definitions used for generating dynamic commands.
     /// </summary>
-    /// <param name="outputStream">
-    ///     The <see cref="Stream" /> to which the assembly will be written.
-    ///     The stream must be writable and will be reset to the beginning after writing.
-    /// </param>
-    /// <exception cref="System.ArgumentNullException">
-    ///     Thrown if <paramref name="outputStream" /> is <c>null</c>.
-    /// </exception>
-    /// <exception cref="System.IO.IOException">
-    ///     Thrown if an I/O error occurs while writing to the stream.
-    /// </exception>
-    /// <exception cref="Exception">
-    ///     Thrown if the assembly cannot be written to the stream for any other reason.
-    /// </exception>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}"/> of strings, where each string represents the source code of a base class.
+    /// </returns>
     /// <remarks>
-    ///     This method writes the contents of the dynamically generated assembly to the provided stream.
-    ///     After writing, the stream's position is reset to the beginning. If an error occurs during the
-    ///     save operation, it is logged using the provided logger, and the exception is rethrown.
+    /// This method extracts embedded resources containing base class definitions and returns them as a collection
+    /// of strings. Derived classes can override this method to include additional base classes or modify the behavior.
     /// </remarks>
-    public void SaveAssembly(Stream outputStream)
+    protected virtual IEnumerable<string> GetBaseClasses()
     {
-        try
-        {
-            AssemblyDefinition.Write(outputStream);
-            outputStream.Position = 0;
-            Logger?.LogDebug("Assembly saved to stream.");
-        }
-        catch (Exception e)
-        {
-            Logger?.LogError(e, "Failed to save assembly to stream.");
-            throw;
-        }
+        var baseClasses = ExtractEmbeddedResources("Scotec.Revit.Ui.Resources.RevitDynamicCommandFactory");
+
+        return baseClasses;
     }
 
     /// <summary>
-    ///     Generates a new command class dynamically within the Revit environment.
+    /// Compiles the dynamically generated source code into an in-memory assembly stream.
     /// </summary>
-    /// <param name="fullTypeName">
-    ///     The fully qualified name of the type to be generated, including its namespace and class name.
-    /// </param>
-    /// <param name="baseType">
-    ///     The base type from which the generated command class will inherit.
+    /// <param name="assemblyName">
+    /// The name of the assembly to be generated. This name is used as the identifier for the compiled assembly.
     /// </param>
     /// <returns>
-    ///     A <see cref="Mono.Cecil.TypeDefinition" /> representing the dynamically generated command class.
+    /// A <see cref="Stream"/> containing the compiled assembly in memory.
+    /// </returns>
+    /// <exception cref="Exception">
+    /// Thrown if the compilation process fails, providing detailed error messages for diagnostics.
+    /// </exception>
+    /// <remarks>
+    /// This method processes the dynamically generated source code, parses it into syntax trees, 
+    /// resolves necessary references, and compiles it into a dynamically linked library. 
+    /// The resulting assembly is returned as a memory stream, which can be loaded or saved as needed.
+    /// </remarks>
+    public Stream Compile(string assemblyName)
+    {
+        // Extract embedded resources to retrieve all base classes.
+        var baseClasses = GetBaseClasses();
+        
+        // Parse the source code into syntax trees.
+        var syntaxTrees = baseClasses.Concat(_classes).Select(code => CSharpSyntaxTree.ParseText(code)).ToList();
+        
+        // Add references (e.g., mscorlib, System.Runtime, etc.)
+        var references = Context.Assemblies
+            .Concat(AssemblyLoadContext.Default.Assemblies)
+            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Select(a => MetadataReference.CreateFromFile(a.Location))
+            .ToList();
+        
+        // Create the compilation
+        var compilation = CSharpCompilation.Create(
+            assemblyName,
+            syntaxTrees,
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        );
+
+        // Emit the compiled assembly into a stream.
+        var stream = new MemoryStream();
+        var result = compilation.Emit(stream);
+        if (!result.Success)
+        {
+            // Handle compilation errors
+            var errors = string.Join(Environment.NewLine, result.Diagnostics
+                .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                .Select(diagnostic => diagnostic.ToString()));
+            throw new Exception($"Compilation failed:\n{errors}");
+        }
+
+        stream.Position = 0;
+        return stream;
+    }
+
+
+    /// <summary>
+    /// Extracts embedded resources from the specified namespace within the executing assembly.
+    /// </summary>
+    /// <param name="resourceNamespace">
+    /// The namespace containing the embedded resources to extract. Only resources with names
+    /// starting with this namespace and ending with the ".template" extension will be included.
+    /// </param>
+    /// <returns>
+    /// An enumerable collection of strings, where each string represents the content of an
+    /// extracted embedded resource.
     /// </returns>
     /// <remarks>
-    ///     This method is used to create a new command class at runtime. The generated class will inherit
-    ///     from the specified base type and include necessary attributes and constructors required for
-    ///     integration with the Revit environment. The method also ensures that the generated class is
-    ///     added to the main module of the assembly.
+    /// This method retrieves all embedded resources within the executing assembly that match
+    /// the specified namespace and have a ".template" extension. The content of each resource
+    /// is read and returned as a string.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
-    ///     Thrown if <paramref name="fullTypeName" /> or <paramref name="baseType" /> is <c>null</c>.
+    /// Thrown if the specified <paramref name="resourceNamespace"/> is <c>null</c>.
     /// </exception>
-    protected TypeDefinition GenerateCommandClass(string fullTypeName, Type baseType)
+    /// <exception cref="System.InvalidOperationException">
+    /// Thrown if an embedded resource cannot be accessed or read.
+    /// </exception>
+    protected static IEnumerable<string> ExtractEmbeddedResources( string resourceNamespace)
     {
-        //using var scope = _context.EnterContextualReflection();
+        var assembly = Assembly.GetExecutingAssembly();
+        // Get all resource names in the specified namespace
+        var resourceNames = assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith(resourceNamespace, StringComparison.OrdinalIgnoreCase) && name.EndsWith(".template"));
+        foreach (var resourceName in resourceNames)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var reader = new StreamReader(stream);
+            yield return reader.ReadToEnd();
+        }
+    }
 
-        SplitTypeName(fullTypeName, out var namespacePart, out var classNamePart);
 
-        // Import the base class (replace 'BaseClass' with your actual base class)
-        var baseTypeReference = MainModuleDefinition.ImportReference(baseType);
-        // Define the derived class
-        var derivedType = new TypeDefinition(
-            namespacePart, // Namespace
-            classNamePart, // Class name
-            TypeAttributes.Public | TypeAttributes.Class,
-            baseTypeReference); // Base class
+    /// <summary>
+    /// Generates a command class dynamically for use in the Revit environment.
+    /// </summary>
+    /// <param name="fullTypeName">
+    /// The fully qualified name of the command class to be generated, including the namespace.
+    /// </param>
+    /// <param name="baseType">
+    /// The base type from which the generated command class will inherit.
+    /// </param>
+    /// <param name="commandId">
+    /// A unique identifier (<see cref="Guid"/>) for the command.
+    /// </param>
+    /// <param name="contextName">
+    /// The name of the context associated with the command.
+    /// </param>
+    /// <returns>
+    /// A string containing the source code of the dynamically generated command class.
+    /// </returns>
+    /// <remarks>
+    /// This method creates a C# class definition as a string, which includes the necessary attributes
+    /// and overrides for integration with the Revit environment. The generated class inherits from
+    /// the specified base type and includes properties for the command ID and context name.
+    /// </remarks>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when the <paramref name="fullTypeName"/> is null, empty, or does not contain a namespace.
+    /// </exception>
+    protected static string GenerateCommandClass(string fullTypeName, string baseType, Guid commandId, string contextName)
+    {
+        SplitFullClassName(fullTypeName, out var namespaceName, out var className);
+        
+        var commandClass = $$"""
+                             using System;
+                             using Autodesk.Revit.Attributes;
+                             
+                             namespace {{namespaceName}};
+                             
+                             [Transaction(TransactionMode.Manual)]
+                             public class {{className}} : {{baseType}}
+                             {
+                                 public override Guid Id => new Guid("{{commandId}}");
+                                  
+                                 protected override string ContextName => "{{contextName}}";
+                             }
+                             """;
+        
+        return commandClass;
 
-        // Add the derived class to the module
-        MainModuleDefinition.Types.Add(derivedType);
 
-        // Add the default constructor
-        AddDefaultConstructor(MainModuleDefinition, derivedType, baseTypeReference);
-
-        // Add the [Transaction(TransactionMode.Manual)] attribute
-        AddTransactionAttribute(MainModuleDefinition, derivedType);
-
-        return derivedType;
+        static void SplitFullClassName(string fullClassName, out string namespaceName, out string className)
+        {
+            if (string.IsNullOrWhiteSpace(fullClassName))
+            {
+                throw new ArgumentException("Full class name cannot be null or empty.", nameof(fullClassName));
+            }
+            var lastDotIndex = fullClassName.LastIndexOf('.');
+            if (lastDotIndex == -1)
+            {
+                throw new ArgumentException("Full class name must contain a namespace.", nameof(fullClassName));
+            }
+            namespaceName = fullClassName.Substring(0, lastDotIndex);
+            className = fullClassName.Substring(lastDotIndex + 1);
+        }
     }
 
     /// <summary>
@@ -327,87 +398,5 @@ public abstract class RevitDynamicCommandGenerator
 
         namespacePart = fullTypeName[..lastDotIndex];
         classNamePart = fullTypeName[(lastDotIndex + 1)..];
-    }
-
-    /// <summary>
-    ///     Adds a default constructor to the specified derived class.
-    /// </summary>
-    /// <param name="module">
-    ///     The <see cref="ModuleDefinition" /> representing the module where the derived class is defined.
-    /// </param>
-    /// <param name="derivedClass">
-    ///     The <see cref="TypeDefinition" /> representing the derived class to which the default constructor will be added.
-    /// </param>
-    /// <param name="baseType">
-    ///     The <see cref="TypeReference" /> representing the base class of the derived class.
-    /// </param>
-    /// <remarks>
-    ///     This method defines a public default constructor for the derived class and ensures that it calls the default
-    ///     constructor of the base class, if available. The constructor is added to the derived class's method collection.
-    /// </remarks>
-    private static void AddDefaultConstructor(ModuleDefinition module, TypeDefinition derivedClass, TypeReference baseType)
-    {
-        // Define the default constructor
-        var constructor = new MethodDefinition(
-            ".ctor", // Constructor name
-            MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
-            module.TypeSystem.Void); // Return type is void
-        // Get the base class's default constructor
-        var baseConstructor = baseType.Resolve().Methods
-                                      .FirstOrDefault(m => m.IsConstructor && !m.HasParameters);
-        if (baseConstructor != null)
-        {
-            var ilProcessor = constructor.Body.GetILProcessor();
-            // Emit IL to call the base class's constructor
-            ilProcessor.Append(ilProcessor.Create(OpCodes.Ldarg_0)); // Load "this"
-            ilProcessor.Append(ilProcessor.Create(OpCodes.Call,
-                module.ImportReference(baseConstructor))); // Call base constructor
-            ilProcessor.Append(ilProcessor.Create(OpCodes.Ret)); // Return
-        }
-
-        // Add the constructor to the derived class
-        derivedClass.Methods.Add(constructor);
-    }
-
-    /// <summary>
-    ///     Adds a <see cref="TransactionAttribute" /> with a specified <see cref="TransactionMode" /> to the given type
-    ///     definition.
-    /// </summary>
-    /// <param name="module">
-    ///     The <see cref="ModuleDefinition" /> where the type is defined. This is used to resolve and import required
-    ///     references.
-    /// </param>
-    /// <param name="type">
-    ///     The <see cref="TypeDefinition" /> to which the <see cref="TransactionAttribute" /> will be added.
-    /// </param>
-    /// <remarks>
-    ///     This method dynamically applies the <see cref="TransactionAttribute" /> to a type, setting its mode to
-    ///     <see cref="TransactionMode.Manual" />. This is typically used to mark Revit command classes as requiring manual
-    ///     transaction handling.
-    /// </remarks>
-    /// <exception cref="System.ArgumentNullException">
-    ///     Thrown if <paramref name="module" /> or <paramref name="type" /> is <c>null</c>.
-    /// </exception>
-    private static void AddTransactionAttribute(ModuleDefinition module, TypeDefinition type)
-    {
-        // Import the TransactionAttribute type
-        var transactionAttributeType = module.ImportReference(typeof(TransactionAttribute));
-        // Import the TransactionMode enum
-        var transactionModeType = module.ImportReference(typeof(TransactionMode));
-
-        // Get the constructor of TransactionAttribute that takes a TransactionMode argument
-        var constructor = transactionAttributeType.Resolve().Methods
-                                                  .First(m => m.IsConstructor && m.Parameters.Count == 1 &&
-                                                              m.Parameters[0].ParameterType.FullName == transactionModeType.FullName);
-        var constructorReference = module.ImportReference(constructor);
-
-        // Create the CustomAttribute
-        var customAttribute = new CustomAttribute(constructorReference);
-        // Set the constructor argument to TransactionMode.Manual
-        var transactionModeManual = new CustomAttributeArgument(transactionModeType, (int)TransactionMode.Manual);
-        customAttribute.ConstructorArguments.Add(transactionModeManual);
-
-        // Add the attribute to the class
-        type.CustomAttributes.Add(customAttribute);
     }
 }

@@ -1,0 +1,25 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="Scotec.Revit.Isolation.SourceGenerator/Scotec.Revit.Isolation.SourceGenerator.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Scotec.Revit.Isolation/Scotec.Revit.Isolation.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Scotec.Revit.Test/Scotec.Revit.Test.csproj">
+    <BuildType Solution="Release|x64" Project="Debug" />
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Scotec.Revit.Ui/Scotec.Revit.Ui.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Scotec.Revit.Wpf/Scotec.Revit.Wpf.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Scotec.Revit/Scotec.Revit.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

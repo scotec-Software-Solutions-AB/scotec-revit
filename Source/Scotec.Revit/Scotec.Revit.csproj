@@ -7,7 +7,7 @@
 		<LangVersion>latest</LangVersion>
 		<PlatformTarget>x64</PlatformTarget>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Platforms>AnyCPU;x64</Platforms>
+		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -43,16 +43,15 @@
 
 	<ItemGroup>
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
-		<PackageReference Include="Autofac" Version="8.0.0" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="OpenMcdf" Version="2.4.1" />
-		<PackageReference Include="Scotec.Extensions.Linq" Version="1.0.8" />
-		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.0.8" />
+		<PackageReference Include="OpenMcdf" Version="3.0.1" />
+		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.0.9-dev.13" />
 	</ItemGroup>
 	<ItemGroup>
-		<!--<PackageReference Include="Scotec.Revit.Isolation" Version="2025.0.8" />-->
-		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
+		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj">
+		  <TreatAsUsed>true</TreatAsUsed>
+		</ProjectReference>
 	</ItemGroup>
 
 	<PropertyGroup>
