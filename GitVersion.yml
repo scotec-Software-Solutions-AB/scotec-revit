@@ -17,7 +17,8 @@ branches:
     revitRelease:
         increment: Patch
         regex: ^revit20.*
-        tag: ''        
+        tag: ''
+        source-branches: ['main']        
 ignore:
   sha: []
 merge-message-formats: {}
