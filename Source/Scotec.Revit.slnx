@@ -1,7 +1,5 @@
 <Solution>
   <Configurations>
-    <BuildType Name="Debug" />
-    <BuildType Name="Release" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="Scotec.Revit.Isolation.SourceGenerator/Scotec.Revit.Isolation.SourceGenerator.csproj">
