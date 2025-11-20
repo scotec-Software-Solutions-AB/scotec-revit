@@ -29,10 +29,10 @@ jobs:
       with:
         dotnet-version: 8.0.x        
     - name: Restore dependencies
-      run: dotnet restore ./Source/Scotec.Revit.sln
+      run: dotnet restore ./Source/Scotec.Revit.slnx
     - name: Build
-      run: dotnet build --no-restore ./Source/Scotec.Revit.sln -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
+      run: dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
 #    - name: Pack
-#      run: dotnet pack --no-restore --no-build ./Source/Scotec.Revit.sln -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
+#      run: dotnet pack --no-restore --no-build ./Source/Scotec.Revit.slnx -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
     - name: Push project
       run: dotnet nuget push localPackages/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}} --skip-duplicate
