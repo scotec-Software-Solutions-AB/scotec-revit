@@ -53,6 +53,7 @@ jobs:
       run: >
         dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release
         -p:CompanyName="scotec Software Solutions AB"
+        -p:RevitYear="${{ matrix.revitYear }}"
         -p:DefineConstants="$REVIT_CONST"
         -p:Version="$PKG_VERSION"
         -p:PackageVersion="$PKG_VERSION"
