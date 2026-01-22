@@ -23,12 +23,6 @@
 		<DefineConstants>$(DefineConstants);REVIT2026</DefineConstants>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<RevitYear>2025</RevitYear>
-		<DefineConstants>$(DefineConstants);REVIT2025</DefineConstants>
-	</PropertyGroup>
-
-	
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>

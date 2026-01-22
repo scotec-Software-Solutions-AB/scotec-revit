@@ -48,7 +48,9 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore ./Source/Scotec.Revit.slnx
+      run: dotnet restore ./Source/Scotec.Revit.slnx -c Release
+        -p:RevitYear="${{ matrix.revitYear }}"
+        -p:DefineConstants="$REVIT_CONST"
 
     - name: Build
       run: >
