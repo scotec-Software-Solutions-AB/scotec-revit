@@ -1,11 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+	</PropertyGroup>
+
 	<PropertyGroup>
 		<Description>Revit application and command base classes that support Inversion of Control (IoC).</Description>
 		<IsPublishable>True</IsPublishable>
 		<Title>Scotec.Revit</Title>
 	</PropertyGroup>
-
 
 	<ItemGroup Condition="'$(RevitYear)' == '2025'">
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
@@ -17,7 +21,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
 		<PackageReference Include="OpenMcdf" Version="3.1.0" />
 		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.0" />
 	</ItemGroup>
