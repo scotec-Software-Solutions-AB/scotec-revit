@@ -348,7 +348,12 @@ public class RevitFamilyInfo
             return true;
         }
 
-        return TryGetStream(storage, path[1..], out stream);
+        if (storage.TryOpenStorage(path[0], out var childStorage))
+        {
+            return TryGetStream(childStorage, path[1..], out stream);
+        }
+        
+        return false;
     }
 
     /// <summary>
