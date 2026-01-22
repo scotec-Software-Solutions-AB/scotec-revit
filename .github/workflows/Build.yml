@@ -1,36 +1,71 @@
-name: Build
+name: Build & Deploy
 
 on: [workflow_dispatch]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        revitYear: [2025, 2026]
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v0.10.2
       with:
         versionSpec: '5.12.x'
+
     - name: Determine Version
       uses: gittools/actions/gitversion/execute@v0.10.2
       with:
         useConfigFile: true
         configFilePath: GitVersion.yml
-    - name: Display SemVer
+
+    - name: Compute package version (incl prerelease)
+      shell: bash
       run: |
-        echo "SemVer: $GITVERSION_SEMVER"  
+        BASE="${{ matrix.revitYear }}.${GITVERSION_MINOR}.${GITVERSION_PATCH}"
+        PKG_VERSION="${BASE}${GITVERSION_PRERELEASETAGWITHDASH}"
+
+        echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
+        echo "REVIT_CONST=REVIT${{ matrix.revitYear }}" >> $GITHUB_ENV
+
+        echo "Computed PKG_VERSION: $PKG_VERSION"
+        echo "DefineConstants: $REVIT_CONST"
+        echo "SemVer (GitVersion): $GITVERSION_SEMVER"
+
     - name: Setup .NET 8.0
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x        
+        dotnet-version: 8.0.x
+
     - name: Restore dependencies
       run: dotnet restore ./Source/Scotec.Revit.slnx
+
     - name: Build
-      run: dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
-#    - name: Pack
-#      run: dotnet pack --no-restore --no-build ./Source/Scotec.Revit/Scotec.Revit.csproj -c Release -p:Version=$GITVERSION_ASSEMBLYSEMVER -p:InformationalVersion=$GITVERSION_SEMVER -p:PackageVersion=$GITVERSION_SEMVER -p:CompanyName="scotec Software Solutions AB"
+      run: >
+        dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release
+        -p:CompanyName="scotec Software Solutions AB"
+        -p:DefineConstants="$REVIT_CONST"
+        -p:Version="$PKG_VERSION"
+        -p:PackageVersion="$PKG_VERSION"
+        -p:InformationalVersion="$PKG_VERSION+$GITVERSION_SHA"
+
+    - name: Pack
+      run: >
+        dotnet pack --no-restore --no-build ./Source/Scotec.Revit.slnx -c Release
+        -p:CompanyName="scotec Software Solutions AB"
+        -p:DefineConstants="$REVIT_CONST"
+        -p:Version="$PKG_VERSION"
+        -p:PackageVersion="$PKG_VERSION"
+        -p:InformationalVersion="$PKG_VERSION+$GITVERSION_SHA"
+        -o ./localPackages
+
+#    - name: Push package
+#      run: dotnet nuget push ./localPackages/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
