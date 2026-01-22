@@ -22,14 +22,14 @@
 		</ProjectReference>
 	</ItemGroup>
 
-	<!--<ItemGroup>
+	<ItemGroup>
 	  <None Remove="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll" />
-	</ItemGroup>-->
+	</ItemGroup>
 
-	<!--<ItemGroup>
+	<ItemGroup>
 		<None Include="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll"
 			Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-	</ItemGroup>-->
+	</ItemGroup>
 
 	<ItemGroup Condition="'$(RevitYear)' == '2025'">
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
@@ -39,26 +39,27 @@
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2026.0.0.9999" />
 	</ItemGroup>
 
-	<Target Name="PackSourceGenerator" BeforeTargets="Pack">
-		<!-- Build generator (safe even if already built; MSBuild will incremental-skip) -->
+	<!--Not working that way.-->
+	<!--<Target Name="PackSourceGenerator" BeforeTargets="Pack">
+		--><!-- Build generator (safe even if already built; MSBuild will incremental-skip) --><!--
 		<MSBuild Projects="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj"
 		         Targets="Build"
 		         Properties="Configuration=$(Configuration)" />
 
-		<!-- Query the generator's TargetPath (the produced dll path) -->
+		--><!-- Query the generator's TargetPath (the produced dll path) --><!--
 		<MSBuild Projects="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj"
 		         Targets="GetTargetPath"
 		         Properties="Configuration=$(Configuration)">
 			<Output TaskParameter="TargetOutputs" ItemName="_GeneratorTargetPaths" />
 		</MSBuild>
 
-		<!-- Pack the generator DLL into this package as an analyzer -->
+		--><!-- Pack the generator DLL into this package as an analyzer --><!--
 		<ItemGroup>
 			<None Include="@(_GeneratorTargetPaths)"
 			      Pack="true"
 			      PackagePath="analyzers/dotnet/cs/"
 			      Visible="false" />
 		</ItemGroup>
-	</Target>
+	</Target>-->
 
 </Project>
