@@ -1,6 +1,15 @@
 <Project>
 
 	<PropertyGroup>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<PlatformTarget>x64</PlatformTarget>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<Configurations>Release;Revit2025;Revit2026</Configurations>
 	</PropertyGroup>
 
@@ -8,7 +17,6 @@
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
 		<Optimize>false</Optimize>
-
 		<!-- ensure #if DEBUG works in these configs -->
 		<DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
 	</PropertyGroup>
@@ -23,16 +31,11 @@
 		<DefineConstants>$(DefineConstants);REVIT2026</DefineConstants>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
-		<Nullable>enable</Nullable>
-		<LangVersion>latest</LangVersion>
-		<PlatformTarget>x64</PlatformTarget>
-		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Platforms>x64</Platforms>
+	<PropertyGroup Condition="'$(RevitYear)' == ''">
+		<RevitYear>2025</RevitYear>
+		<DefineConstants>$(DefineConstants);REVIT2025</DefineConstants>
 	</PropertyGroup>
-	
+
 	<PropertyGroup>
 		<Authors>$(CompanyName)</Authors>
 		<Company>$(CompanyName)</Company>
