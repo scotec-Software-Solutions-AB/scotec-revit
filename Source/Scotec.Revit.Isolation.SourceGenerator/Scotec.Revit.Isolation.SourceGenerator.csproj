@@ -3,20 +3,14 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<LangVersion>Preview</LangVersion>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<NoPackageAnalysis>true</NoPackageAnalysis>
-		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Authors>$(CompanyName)</Authors>
-		<Company>$(CompanyName)</Company>
-		<Copyright>$(CompanyName)</Copyright>
 		<Description>Source generator to support assembly load context in Revit add-ins.</Description>
 		<Title>Scotec.Revit.Isolation.SourceGenerator</Title>
 	</PropertyGroup>
@@ -37,8 +31,6 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<!-- Visual Studio 2022 version 17.8 uses Roslyn 4.8.0. Using a newer version requires update of Visual Studio. -->
-		<!-- Visual Studio 17.8 is the first version supporting .NET8. -->
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
