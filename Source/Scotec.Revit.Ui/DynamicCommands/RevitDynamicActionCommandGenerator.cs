@@ -71,7 +71,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     ///     <see cref="Autodesk.Revit.UI.ExternalCommandData" /> and an <see cref="IServiceProvider" /> as parameters.
     /// </param>
     /// <remarks>
-    ///     This method creates a new command type derived from <see cref="RevitDynamicActionCommandFactory" />, assigns it a
+    ///     This method creates a new command type derived from "RevitDynamicActionCommandFactory" />, assigns it a
     ///     unique
     ///     identifier, and registers the provided action for execution within the Revit environment.
     /// </remarks>
@@ -81,7 +81,7 @@ public class RevitDynamicActionCommandGenerator : RevitDynamicCommandGenerator
     public void GenerateActionCommandType(string fullTypeName, Action<ExternalCommandData, IServiceProvider> action)
     {
         var commandId = Guid.NewGuid();
-        var commandClass = GenerateCommandClass(fullTypeName, "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommandFactory", commandId, Context.Name);
+        var commandClass = GenerateCommandClass(fullTypeName, "Scotec.Revit.Ui.DynamicCommands.RevitDynamicActionCommandFactory", commandId, Context.Name ?? "Default");
 
         AddClass(commandClass);
        

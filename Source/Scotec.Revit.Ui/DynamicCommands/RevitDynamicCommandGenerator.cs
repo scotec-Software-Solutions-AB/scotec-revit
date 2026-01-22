@@ -159,12 +159,15 @@ public abstract class RevitDynamicCommandGenerator
     /// <summary>
     ///     Saves the dynamically generated assembly to the specified file path.
     /// </summary>
+    /// <param name="assemblyStream">The stream containing the assembly data to be saved.</param>
     /// <param name="outputPath">The file path where the assembly will be saved.</param>
-    /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="outputPath" /> is <c>null</c> or empty.</exception>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown if <paramref name="assemblyStream" /> or <paramref name="outputPath" /> is <c>null</c> or empty.
+    /// </exception>
     /// <exception cref="System.IO.IOException">Thrown if an I/O error occurs during the save operation.</exception>
-    /// <exception cref="Exception">Thrown if the assembly cannot be saved due to an unexpected error.</exception>
+    /// <exception cref="System.Exception">Thrown if the assembly cannot be saved due to an unexpected error.</exception>
     /// <remarks>
-    ///     This method writes the generated assembly to the specified file path. If the operation fails,
+    ///     This method writes the generated assembly from the provided stream to the specified file path. If the operation fails,
     ///     an error is logged using the provided logger, and the exception is rethrown.
     /// </remarks>
     private void SaveAssembly(Stream assemblyStream, string outputPath)
@@ -290,6 +293,10 @@ public abstract class RevitDynamicCommandGenerator
         foreach (var resourceName in resourceNames)
         {
             using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream is null)
+            {
+                continue;
+            }
             using var reader = new StreamReader(stream);
             yield return reader.ReadToEnd();
         }

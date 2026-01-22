@@ -7,6 +7,22 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
+/// <summary>
+/// Represents the base class for Revit factory generators, providing common functionality
+/// for generating source code in Revit-related projects.
+/// </summary>
+/// <remarks>
+/// This abstract class serves as a foundation for specific Revit factory generators, such as
+/// <see cref="RevitCommandFactoryGenerator" />, <see cref="RevitApplicationFactoryGenerator" />,
+/// <see cref="RevitDbApplicationFactoryGenerator" />, and <see cref="RevitCommandAvailabilityFactoryGenerator" />.
+/// It extends the <see cref="RevitIncrementalGenerator" /> class and provides methods and logic
+/// to facilitate the source generation process.
+/// </remarks>
+/// <seealso cref="RevitIncrementalGenerator" />
+/// <seealso cref="RevitCommandFactoryGenerator" />
+/// <seealso cref="RevitApplicationFactoryGenerator" />
+/// <seealso cref="RevitDbApplicationFactoryGenerator" />
+/// <seealso cref="RevitCommandAvailabilityFactoryGenerator" />
 public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
 {
     /// <summary>
