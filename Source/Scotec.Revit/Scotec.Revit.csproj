@@ -1,61 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
-		<Nullable>enable</Nullable>
-		<LangVersion>latest</LangVersion>
-		<PlatformTarget>x64</PlatformTarget>
-		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Platforms>x64</Platforms>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<Authors>$(CompanyName)</Authors>
-		<Company>$(CompanyName)</Company>
-		<Copyright>$(CompanyName)</Copyright>
 		<Description>Revit application and command base classes that support Inversion of Control (IoC).</Description>
 		<IsPublishable>True</IsPublishable>
-		<PackageIcon>Logo.png</PackageIcon>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://www.scotec-software.com</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/scotec-Software-Solutions-AB/scotec-revit</RepositoryUrl>
-		<RepositoryType>git</RepositoryType>
-		<SignAssembly>False</SignAssembly>
 		<Title>Scotec.Revit</Title>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<IsPackable>true</IsPackable>
-		<DebugType>embedded</DebugType>
-		<DebugSymbols>true</DebugSymbols>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-	</PropertyGroup>
 
-	<ItemGroup>
-		<None Include="..\Logo.png" Pack="true" PackagePath="" />
-		<None Include="..\README.md" Pack="true" PackagePath="" />
-		<Content Include="..\..\license.txt" Link="license.txt" Pack="true" PackagePath="license.txt" />
+	<ItemGroup Condition="'$(RevitYear)' == '2025'">
+		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(RevitYear)' == '2026'">
+		<PackageReference Include="Autodesk.Revit.SDK" Version="2026.0.0.9999" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Autodesk.Revit.SDK" Version="2026.0.0.9999" />
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="OpenMcdf" Version="3.1.0" />
 		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.0" />
 	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj">
 		  <TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
 	</ItemGroup>
-
-	<PropertyGroup>
-		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
-	</PropertyGroup>
 
 </Project>

@@ -3,20 +3,14 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<LangVersion>Preview</LangVersion>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<NoPackageAnalysis>true</NoPackageAnalysis>
-		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Authors>$(CompanyName)</Authors>
-		<Company>$(CompanyName)</Company>
-		<Copyright>$(CompanyName)</Copyright>
 		<Description>Source generator to support assembly load context in Revit add-ins.</Description>
 		<Title>Scotec.Revit.Isolation.SourceGenerator</Title>
 	</PropertyGroup>
