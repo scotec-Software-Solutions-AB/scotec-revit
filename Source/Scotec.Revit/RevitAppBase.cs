@@ -198,7 +198,7 @@ public abstract class RevitAppBase
     ///     and loads it into the specified load context. If the assembly file does not exist
     ///     or cannot be loaded, <c>null</c> is returned.
     /// </remarks>
-    protected virtual Assembly OnAssemblyResolve(AssemblyLoadContext context, AssemblyName assemblyName)
+    protected virtual Assembly? OnAssemblyResolve(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         var currentPath = GetAddInPath();
         var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
@@ -327,7 +327,7 @@ public abstract class RevitAppBase
     ///     This method delegates the resolution logic to the
     ///     <see cref="OnAssemblyResolve(AssemblyLoadContext, AssemblyName)" /> method.
     /// </remarks>
-    private Assembly LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
+    private Assembly? LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         return OnAssemblyResolve(context, assemblyName);
     }
@@ -382,7 +382,7 @@ public abstract class RevitAppBase
     ///     This method delegates the resolution logic to the <see cref="OnAssemblyResolve(ResolveEventArgs)" /> method.
     ///     It is automatically attached to the <see cref="AppDomain.AssemblyResolve" /> event during application startup.
     /// </remarks>
-    private Assembly CurrentDomainOnAssemblyResolve(object? sender, ResolveEventArgs args)
+    private Assembly? CurrentDomainOnAssemblyResolve(object? sender, ResolveEventArgs args)
     {
         return OnAssemblyResolve(args);
     }

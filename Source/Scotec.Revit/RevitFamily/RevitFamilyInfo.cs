@@ -502,7 +502,6 @@ public class RevitFamilyInfo
             }
             catch (Exception ex)
             {
-                _infoStreams[streamName] = null;
                 _logger?.LogError(ex, "Failed to load stream '{streamName}'.", streamName);
             }
         }
