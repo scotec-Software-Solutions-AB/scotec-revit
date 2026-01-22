@@ -1,5 +1,9 @@
 <Project>
 
+	<PropertyGroup>
+		<Configurations>Release;Revit2025;Revit2026</Configurations>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' == 'Revit2025' Or '$(Configuration)' == 'Revit2026'">
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>

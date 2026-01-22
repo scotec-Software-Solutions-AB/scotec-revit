@@ -31,8 +31,6 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<!-- Visual Studio 2022 version 17.8 uses Roslyn 4.8.0. Using a newer version requires update of Visual Studio. -->
-		<!-- Visual Studio 17.8 is the first version supporting .NET8. -->
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
