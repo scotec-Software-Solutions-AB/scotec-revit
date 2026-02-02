@@ -24,6 +24,7 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
 		<PackageReference Include="OpenMcdf" Version="3.1.0" />
 		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.0" />
+		<PackageReference Include="Scotec.Extensions.Linq" Version="1.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
