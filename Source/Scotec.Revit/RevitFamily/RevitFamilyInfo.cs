@@ -11,6 +11,7 @@ using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using OpenMcdf;
+using Scotec.Extensions.Linq;
 using Scotec.Extensions.Utilities;
 
 namespace Scotec.Revit.RevitFamily;
@@ -23,7 +24,7 @@ namespace Scotec.Revit.RevitFamily;
 ///     It initializes and processes the family data from a specified file path or stream.
 ///     The class enables access to family information without loading the entire family file into memory.
 /// </remarks>
-public class RevitFamilyInfo
+public class RevitFamilyInfo : IDisposable
 {
     // Define the namespaces
     private static readonly XNamespace AtomNamespace = "http://www.w3.org/2005/Atom";
@@ -267,8 +268,8 @@ public class RevitFamilyInfo
             infoStream.Position = 0;
             infoStream.CopyTo(stream);
             stream.Position = 0;
-
-            infoStream.Dispose();
+            infoStream.Position = 0;
+            
             return true;
         }
 
@@ -510,5 +511,36 @@ public class RevitFamilyInfo
                 _logger?.LogError(ex, "Failed to load stream '{streamName}'.", streamName);
             }
         }
+    }
+
+    /// <summary>
+    /// Releases all resources used by the <see cref="RevitFamilyInfo"/> instance.
+    /// </summary>
+    /// <remarks>
+    /// This method is used to clean up resources such as streams and other disposable objects
+    /// associated with the <see cref="RevitFamilyInfo"/> instance. It ensures that unmanaged
+    /// resources are properly released to avoid memory leaks.
+    /// </remarks>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _preview?.Dispose();
+            _infoStreams.Values.ForAll(stream => stream.Dispose());
+        }
+    }
+
+    /// <summary>
+    /// Releases all resources used by the <see cref="RevitFamilyInfo"/> instance.
+    /// </summary>
+    /// <remarks>
+    /// This method is used to clean up resources such as streams and other disposable objects
+    /// associated with the <see cref="RevitFamilyInfo"/> instance. It ensures that unmanaged
+    /// resources are properly released to avoid memory leaks.
+    /// </remarks>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }
