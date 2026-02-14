@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2025 Olaf Meyer
+// Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -8,8 +8,9 @@ using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
+using Scotec.Revit.Extensions;
 using Scotec.Revit.Links;
-using Scotec.Revit.Extensions;  
+
 namespace Scotec.Revit.Spatial;
 
 /// <summary>
@@ -26,9 +27,9 @@ public sealed class RevitSpatialContainmentResolver
     private readonly List<RevitLinkGraphNode> _nodes;
 
     /// <summary>
-    ///     Initializes a new instance of the <see cref="RevitSpatialContainmentResolver"/> class using a host document.
+    ///     Initializes a new instance of the <see cref="RevitSpatialContainmentResolver" /> class using a host document.
     /// </summary>
-    /// <param name="hostDocument">The host <see cref="Document"/> for which spatial containment will be resolved.</param>
+    /// <param name="hostDocument">The host <see cref="Document" /> for which spatial containment will be resolved.</param>
     /// <remarks>
     ///     This constructor builds the Revit link graph for the provided host document and prepares the resolver
     ///     to perform spatial containment queries across the host and all linked documents.
@@ -53,7 +54,8 @@ public sealed class RevitSpatialContainmentResolver
     /// </exception>
     /// <remarks>
     ///     This constructor sets up the resolver to work with the provided Revit link graph, enabling spatial containment
-    ///     resolution for elements across host and linked documents. Use this overload if you already have a pre-built link graph.
+    ///     resolution for elements across host and linked documents. Use this overload if you already have a pre-built link
+    ///     graph.
     /// </remarks>
     public RevitSpatialContainmentResolver(List<RevitLinkGraphNode> linkGraphNodes)
     {
@@ -66,17 +68,23 @@ public sealed class RevitSpatialContainmentResolver
     /// <summary>
     ///     Finds a container (Room and/or Space) for the given element.
     /// </summary>
-    /// <param name="element">The <see cref="Autodesk.Revit.DB.Element"/> for which to find the containing Room or Space.</param>
+    /// <param name="element">The <see cref="Autodesk.Revit.DB.Element" /> for which to find the containing Room or Space.</param>
     /// <param name="elementOccurrenceInstance">
-    ///     The <see cref="RevitLinkInstance"/> occurrence that places the element's document, or <c>null</c> for host elements.
+    ///     The <see cref="RevitLinkInstance" /> occurrence that places the element's document, or <c>null</c> for host
+    ///     elements.
     /// </param>
     /// <param name="mode">The search mode specifying whether to look for Rooms, Spaces, or both.</param>
-    /// <param name="phase">The <see cref="Phase"/> in which to search for the container, or <c>null</c> for the default phase.</param>
+    /// <param name="phase">
+    ///     The <see cref="Phase" /> in which to search for the container, or <c>null</c> for the default
+    ///     phase.
+    /// </param>
     /// <param name="searchHostOnlyContainers">
-    ///     If <c>true</c>, only containers in the host document are considered; if <c>false</c>, containers in linked documents are also considered.
+    ///     If <c>true</c>, only containers in the host document are considered; if <c>false</c>, containers in linked
+    ///     documents are also considered.
     /// </param>
     /// <returns>
-    ///     A <see cref="RevitSpatialContainmentResult"/> describing the found container, or <c>null</c> if no suitable container is found.
+    ///     A <see cref="RevitSpatialContainmentResult" /> describing the found container, or <c>null</c> if no suitable
+    ///     container is found.
     /// </returns>
     /// <remarks>
     ///     This method determines the spatial container (Room or Space) for a given element by transforming its location
@@ -95,7 +103,7 @@ public sealed class RevitSpatialContainmentResolver
         {
             return null;
         }
-        
+
         // Compute the element point in HOST coordinates
         var elemPointInHost = GetElementPointInHost(element, point, ref elementOccurrenceInstance);
         if (elemPointInHost is null)
@@ -138,18 +146,21 @@ public sealed class RevitSpatialContainmentResolver
     /// <summary>
     ///     Computes the location of an element in host document coordinates.
     /// </summary>
-    /// <param name="element">The <see cref="Autodesk.Revit.DB.Element"/> whose point is to be transformed.</param>
+    /// <param name="element">The <see cref="Autodesk.Revit.DB.Element" /> whose point is to be transformed.</param>
     /// <param name="elementPointInElementDoc">The point in the element's own document coordinates.</param>
     /// <param name="elementOccurrenceInstance">
-    ///     Reference to the <see cref="RevitLinkInstance"/> occurrence that places the element's document.
+    ///     Reference to the <see cref="RevitLinkInstance" /> occurrence that places the element's document.
     ///     This will be set to <c>null</c> for host elements.
     /// </param>
     /// <returns>
-    ///     The <see cref="XYZ"/> point in host document coordinates, or <c>null</c> if the transformation cannot be performed.
+    ///     The <see cref="XYZ" /> point in host document coordinates, or <c>null</c> if the transformation cannot be
+    ///     performed.
     /// </returns>
     /// <remarks>
-    ///     This method determines the correct transformation for the element's location, handling both host and linked elements.
-    ///     For host elements, the point is returned unchanged. For linked elements, the method finds the appropriate link instance
+    ///     This method determines the correct transformation for the element's location, handling both host and linked
+    ///     elements.
+    ///     For host elements, the point is returned unchanged. For linked elements, the method finds the appropriate link
+    ///     instance
     ///     and applies the accumulated transform to map the point into the host document's coordinate system.
     /// </remarks>
     public XYZ? GetElementPointInHost(Element element, XYZ elementPointInElementDoc, ref RevitLinkInstance? elementOccurrenceInstance)
@@ -192,16 +203,17 @@ public sealed class RevitSpatialContainmentResolver
     /// <summary>
     ///     Attempts to find a spatial container (Room or Space) at a given point in a document.
     /// </summary>
-    /// <param name="doc">The <see cref="Document"/> in which to search for the container.</param>
-    /// <param name="pointInDoc">The <see cref="XYZ"/> point in the document's coordinate system.</param>
-    /// <param name="phase">The <see cref="Phase"/> in which to search, or <c>null</c> for the default phase.</param>
+    /// <param name="doc">The <see cref="Document" /> in which to search for the container.</param>
+    /// <param name="pointInDoc">The <see cref="XYZ" /> point in the document's coordinate system.</param>
+    /// <param name="phase">The <see cref="Phase" /> in which to search, or <c>null</c> for the default phase.</param>
     /// <param name="mode">The search mode specifying whether to look for Rooms, Spaces, or both.</param>
     /// <returns>
-    ///     The found <see cref="SpatialElement"/> (Room or Space), or <c>null</c> if no container is found at the point.
+    ///     The found <see cref="SpatialElement" /> (Room or Space), or <c>null</c> if no container is found at the point.
     /// </returns>
     /// <remarks>
     ///     This method checks for a Room or Space at the specified point in the given document, using the provided search mode
-    ///     to determine the order and type of containers to check. If multiple containers overlap, only the first found is returned.
+    ///     to determine the order and type of containers to check. If multiple containers overlap, only the first found is
+    ///     returned.
     ///     The logic can be extended to return all containers or use custom selection criteria if needed.
     /// </remarks>
     private static SpatialElement? TryGetContainer(Document doc,
@@ -238,7 +250,7 @@ public sealed class RevitSpatialContainmentResolver
     /// <summary>
     ///     Determines whether a spatial container (Room or Space) is valid for containment.
     /// </summary>
-    /// <param name="container">The <see cref="SpatialElement"/> to validate.</param>
+    /// <param name="container">The <see cref="SpatialElement" /> to validate.</param>
     /// <returns>
     ///     <c>true</c> if the container is valid (e.g., has area &gt; 0); otherwise, <c>false</c>.
     /// </returns>
