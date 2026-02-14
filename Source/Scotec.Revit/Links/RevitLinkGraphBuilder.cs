@@ -1,5 +1,5 @@
-﻿// Copyright © 2023 - 2025 Olaf Meyer
-// Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
 using System.Collections.Generic;
