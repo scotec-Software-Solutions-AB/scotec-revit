@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -114,25 +114,25 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     }
 
     /// <summary>
-    /// Executes the dynamic action command within the Revit environment.
+    ///     Executes the dynamic action command within the Revit environment.
     /// </summary>
     /// <param name="commandData">
-    /// An object that provides contextual information about the external command, including access to the Revit
-    /// application and active document.
+    ///     An object that provides contextual information about the external command, including access to the Revit
+    ///     application and active document.
     /// </param>
     /// <param name="services">
-    /// A service provider that supplies additional dependencies required for the execution of the command.
+    ///     A service provider that supplies additional dependencies required for the execution of the command.
     /// </param>
     /// <returns>
-    /// A <see cref="Result" /> value indicating the outcome of the command execution.
-    /// Returns <see cref="Result.Succeeded" /> if the command executes successfully,
-    /// or <see cref="Result.Failed" /> if an exception occurs during execution.
+    ///     A <see cref="Result" /> value indicating the outcome of the command execution.
+    ///     Returns <see cref="Result.Succeeded" /> if the command executes successfully,
+    ///     or <see cref="Result.Failed" /> if an exception occurs during execution.
     /// </returns>
     /// <remarks>
-    /// This method overrides the <see cref="OnExecute" /> method to provide
-    /// specific behavior for executing dynamic actions. It retrieves the registered action associated with the command's
-    /// <see cref="Id" /> and invokes it. If the action is not found or an exception occurs, the method handles the error
-    /// and logs it appropriately.
+    ///     This method overrides the <see cref="OnExecute" /> method to provide
+    ///     specific behavior for executing dynamic actions. It retrieves the registered action associated with the command's
+    ///     <see cref="Id" /> and invokes it. If the action is not found or an exception occurs, the method handles the error
+    ///     and logs it appropriately.
     /// </remarks>
     protected override Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
     {
