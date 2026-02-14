@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -159,6 +159,7 @@ public static class RevitTabManager
 
         return panel!;
     }
+
     /// <summary>
     ///     Creates a new panel within a specified tab in the Autodesk Revit ribbon interface.
     /// </summary>
@@ -253,7 +254,8 @@ public static class RevitTabManager
     ///     Thrown when the <paramref name="application" /> parameter is <c>null</c>.
     /// </exception>
     /// <exception cref="System.ArgumentException">
-    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space characters.
+    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space
+    ///     characters.
     /// </exception>
     /// <remarks>
     ///     This method first checks if a ribbon panel with the specified name exists within the given tab.
@@ -324,7 +326,8 @@ public static class RevitTabManager
     }
 
     /// <summary>
-    ///     Determines whether a ribbon panel with the specified name exists within the given tab in the Autodesk Revit ribbon interface.
+    ///     Determines whether a ribbon panel with the specified name exists within the given tab in the Autodesk Revit ribbon
+    ///     interface.
     /// </summary>
     /// <param name="application">
     ///     The <see cref="UIControlledApplication" /> instance used to interact with the Revit application.
@@ -342,13 +345,14 @@ public static class RevitTabManager
     ///     Thrown when the <paramref name="application" /> parameter is <c>null</c>.
     /// </exception>
     /// <exception cref="System.ArgumentException">
-    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space characters.
+    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space
+    ///     characters.
     /// </exception>
     /// <remarks>
     ///     This method checks for the existence of a ribbon panel within a specific tab in the Revit ribbon interface.
     ///     It is useful for validating whether a panel has already been created before attempting to create or retrieve it.
     /// </remarks>
-    public static bool HasPanel(UIControlledApplication application, string panelName, Tab tab )
+    public static bool HasPanel(UIControlledApplication application, string panelName, Tab tab)
     {
         if (application == null)
         {

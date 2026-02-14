@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -201,6 +201,20 @@ public class RevitFamilyInfo : IDisposable
     public DateTime Updated { get; private set; }
 
     /// <summary>
+    ///     Releases all resources used by the <see cref="RevitFamilyInfo" /> instance.
+    /// </summary>
+    /// <remarks>
+    ///     This method is used to clean up resources such as streams and other disposable objects
+    ///     associated with the <see cref="RevitFamilyInfo" /> instance. It ensures that unmanaged
+    ///     resources are properly released to avoid memory leaks.
+    /// </remarks>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
     ///     Initializes the Revit family information by loading its symbols, preview image, and associated data.
     /// </summary>
     /// <remarks>
@@ -269,7 +283,7 @@ public class RevitFamilyInfo : IDisposable
             infoStream.CopyTo(stream);
             stream.Position = 0;
             infoStream.Position = 0;
-            
+
             return true;
         }
 
@@ -304,6 +318,23 @@ public class RevitFamilyInfo : IDisposable
         using var root = RootStorage.Open(GetFamilyStream(), StorageModeFlags.LeaveOpen);
 
         return TryGetStream(root, path.Split('/'), out stream);
+    }
+
+    /// <summary>
+    ///     Releases all resources used by the <see cref="RevitFamilyInfo" /> instance.
+    /// </summary>
+    /// <remarks>
+    ///     This method is used to clean up resources such as streams and other disposable objects
+    ///     associated with the <see cref="RevitFamilyInfo" /> instance. It ensures that unmanaged
+    ///     resources are properly released to avoid memory leaks.
+    /// </remarks>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _preview?.Dispose();
+            _infoStreams.Values.ForAll(stream => stream.Dispose());
+        }
     }
 
     /// <summary>
@@ -353,7 +384,7 @@ public class RevitFamilyInfo : IDisposable
         {
             return TryGetStream(childStorage, path[1..], out stream);
         }
-        
+
         return false;
     }
 
@@ -511,36 +542,5 @@ public class RevitFamilyInfo : IDisposable
                 _logger?.LogError(ex, "Failed to load stream '{streamName}'.", streamName);
             }
         }
-    }
-
-    /// <summary>
-    /// Releases all resources used by the <see cref="RevitFamilyInfo"/> instance.
-    /// </summary>
-    /// <remarks>
-    /// This method is used to clean up resources such as streams and other disposable objects
-    /// associated with the <see cref="RevitFamilyInfo"/> instance. It ensures that unmanaged
-    /// resources are properly released to avoid memory leaks.
-    /// </remarks>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _preview?.Dispose();
-            _infoStreams.Values.ForAll(stream => stream.Dispose());
-        }
-    }
-
-    /// <summary>
-    /// Releases all resources used by the <see cref="RevitFamilyInfo"/> instance.
-    /// </summary>
-    /// <remarks>
-    /// This method is used to clean up resources such as streams and other disposable objects
-    /// associated with the <see cref="RevitFamilyInfo"/> instance. It ensures that unmanaged
-    /// resources are properly released to avoid memory leaks.
-    /// </remarks>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 }

@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,8 @@ public abstract class RevitAppBase
     ///     These add-in-specific service providers are utilized during the execution of Revit commands.
     ///     However, this behavior does not apply if each plugin runs — as recommended — in its own isolation context.
     ///     In such cases, the Scotec.Revit assembly is loaded separately in each context.
-    ///     Nonetheless, it may be a valid use case to run a set of add-ins within the same context, which is well supported by this library.
+    ///     Nonetheless, it may be a valid use case to run a set of add-ins within the same context, which is well supported by
+    ///     this library.
     /// </summary>
     private static readonly Dictionary<Guid, IServiceProvider> ServiceProviders;
 
@@ -340,8 +341,12 @@ public abstract class RevitAppBase
     /// </param>
     /// <remarks>
     ///     This method ensures that each add-in has its own dedicated service provider, avoiding conflicts caused by shared
-    ///     static members
-    ///     when multiple add-ins are loaded in the same Revit process.
+    ///     static members when multiple add-ins are loaded in the same Revit process.
+    ///     When running each plugin in its own isolation context, the Scotec.Revit assembly is loaded separately for each
+    ///     context,
+    ///     and this method will not be invoked multiple times for the same assembly. However, it may still be a valid use case
+    ///     to
+    ///     run a set of add-ins within the same context, which is well supported by this library.
     /// </remarks>
     private void AddServiceProvider(IServiceProvider services)
     {
