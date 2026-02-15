@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -161,6 +161,38 @@ public static class RevitTabManager
     }
 
     /// <summary>
+    ///     Creates a new panel within a specified tab in the Autodesk Revit ribbon interface.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication" /> instance used to interact with the Revit application.
+    /// </param>
+    /// <param name="panelName">
+    ///     The name of the panel to be created.
+    /// </param>
+    /// <param name="tab">
+    ///     The <see cref="Autodesk.Windows.RibbonTab" /> instance representing the tab where the panel will be created.
+    /// </param>
+    /// <returns>
+    ///     The created <see cref="RibbonPanel" /> instance.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when the <paramref name="application" /> or <paramref name="tab" /> parameter is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.ArgumentException">
+    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of whitespace.
+    /// </exception>
+    /// <remarks>
+    ///     This method creates a new panel within the specified tab in the Revit ribbon. If the panel already exists,
+    ///     it will not be recreated. Ensure that the tab exists before calling this method.
+    /// </remarks>
+    public static RibbonPanel CreatePanel(UIControlledApplication application, string panelName, Tab tab)
+    {
+        var panel = application.CreateRibbonPanel(tab, panelName);
+
+        return panel!;
+    }
+
+    /// <summary>
     ///     Retrieves a ribbon panel from the specified tab in the Autodesk Revit ribbon interface.
     /// </summary>
     /// <param name="application">The <see cref="UIControlledApplication" /> instance representing the Revit application.</param>
@@ -200,6 +232,50 @@ public static class RevitTabManager
         return (HasPanel(application, panelName, tabName)
             ? GetPanels(application, tabName).FirstOrDefault(item => item.Name == panelName)
             : CreatePanel(application, panelName, tabName))!;
+    }
+
+    /// <summary>
+    ///     Retrieves a ribbon panel with the specified name from the given tab in the Autodesk Revit ribbon interface.
+    ///     If the panel does not exist, it creates a new one.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication" /> instance used to interact with the Revit application.
+    /// </param>
+    /// <param name="panelName">
+    ///     The name of the ribbon panel to retrieve or create.
+    /// </param>
+    /// <param name="tab">
+    ///     The <see cref="Tab" /> instance representing the tab from which to retrieve or create the panel.
+    /// </param>
+    /// <returns>
+    ///     The <see cref="RibbonPanel" /> instance representing the retrieved or newly created ribbon panel.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when the <paramref name="application" /> parameter is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.ArgumentException">
+    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space
+    ///     characters.
+    /// </exception>
+    /// <remarks>
+    ///     This method first checks if a ribbon panel with the specified name exists within the given tab.
+    ///     If the panel exists, it retrieves it; otherwise, it creates a new panel with the specified name.
+    /// </remarks>
+    public static RibbonPanel GetPanel(UIControlledApplication application, string panelName, Tab tab)
+    {
+        if (application == null)
+        {
+            throw new ArgumentNullException(nameof(application));
+        }
+
+        if (string.IsNullOrWhiteSpace(panelName))
+        {
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(panelName));
+        }
+
+        return (HasPanel(application, panelName, tab)
+            ? GetPanels(application, tab).FirstOrDefault(item => item.Name == panelName)
+            : CreatePanel(application, panelName, tab))!;
     }
 
     /// <summary>
@@ -250,6 +326,48 @@ public static class RevitTabManager
     }
 
     /// <summary>
+    ///     Determines whether a ribbon panel with the specified name exists within the given tab in the Autodesk Revit ribbon
+    ///     interface.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication" /> instance used to interact with the Revit application.
+    /// </param>
+    /// <param name="panelName">
+    ///     The name of the ribbon panel to check for existence.
+    /// </param>
+    /// <param name="tab">
+    ///     The <see cref="Tab" /> instance representing the tab in which to search for the panel.
+    /// </param>
+    /// <returns>
+    ///     <c>true</c> if a ribbon panel with the specified name exists within the given tab; otherwise, <c>false</c>.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when the <paramref name="application" /> parameter is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.ArgumentException">
+    ///     Thrown when the <paramref name="panelName" /> parameter is <c>null</c>, empty, or consists only of white-space
+    ///     characters.
+    /// </exception>
+    /// <remarks>
+    ///     This method checks for the existence of a ribbon panel within a specific tab in the Revit ribbon interface.
+    ///     It is useful for validating whether a panel has already been created before attempting to create or retrieve it.
+    /// </remarks>
+    public static bool HasPanel(UIControlledApplication application, string panelName, Tab tab)
+    {
+        if (application == null)
+        {
+            throw new ArgumentNullException(nameof(application));
+        }
+
+        if (string.IsNullOrWhiteSpace(panelName))
+        {
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(panelName));
+        }
+
+        return GetPanels(application, tab).Any(item => item.Name == panelName);
+    }
+
+    /// <summary>
     ///     Retrieves all ribbon panels associated with a specific tab in the Autodesk Revit ribbon interface.
     /// </summary>
     /// <param name="application">
@@ -274,5 +392,29 @@ public static class RevitTabManager
     public static IList<RibbonPanel> GetPanels(UIControlledApplication application, string tabName)
     {
         return application.GetRibbonPanels(tabName).ToList();
+    }
+
+    /// <summary>
+    ///     Retrieves a list of ribbon panels associated with the specified tab in the Autodesk Revit ribbon interface.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication" /> instance used to interact with the Revit application.
+    /// </param>
+    /// <param name="tab">
+    ///     The <see cref="Tab" /> instance representing the tab whose panels are to be retrieved.
+    /// </param>
+    /// <returns>
+    ///     A list of <see cref="RibbonPanel" /> objects representing the panels within the specified tab.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when the <paramref name="application" /> or <paramref name="tab" /> parameter is <c>null</c>.
+    /// </exception>
+    /// <remarks>
+    ///     This method retrieves all ribbon panels associated with the specified tab.
+    ///     It is useful for accessing and managing panels within the Add-Ins tab or Analyze tab in the Revit ribbon interface.
+    /// </remarks>
+    public static IList<RibbonPanel> GetPanels(UIControlledApplication application, Tab tab)
+    {
+        return application.GetRibbonPanels(tab).ToList();
     }
 }

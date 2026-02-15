@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -11,6 +11,7 @@ using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using OpenMcdf;
+using Scotec.Extensions.Linq;
 using Scotec.Extensions.Utilities;
 
 namespace Scotec.Revit.RevitFamily;
@@ -19,11 +20,11 @@ namespace Scotec.Revit.RevitFamily;
 ///     Represents information about a Revit family, including its symbols, preview image, and associated data.
 /// </summary>
 /// <remarks>
-///     This class provides functionality to manage and access Revit family data, such as symbols and preview images.
+///     This class provides functionality to manage and access Revit family data, such as symbol names and preview images.
 ///     It initializes and processes the family data from a specified file path or stream.
 ///     The class enables access to family information without loading the entire family file into memory.
 /// </remarks>
-public class RevitFamilyInfo
+public class RevitFamilyInfo : IDisposable
 {
     // Define the namespaces
     private static readonly XNamespace AtomNamespace = "http://www.w3.org/2005/Atom";
@@ -31,29 +32,29 @@ public class RevitFamilyInfo
 
     private readonly Func<Stream> _familyStreamLoader;
     private readonly string? _infoStorageName;
+    private readonly Dictionary<string, Stream> _infoStreams = [];
     private readonly object _initializationLock = new();
     private readonly ILogger? _logger;
     private Stream? _preview;
-    private readonly Dictionary<string, Stream> _infoStreams = [];
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader
-    /// and optional information storage name.
+    ///     Initializes a new instance of the <see cref="RevitFamilyInfo" /> class with the specified family stream loader
+    ///     and optional information storage name.
     /// </summary>
     /// <param name="familyStreamLoader">
-    /// A function that provides a <see cref="Stream" /> containing the Revit family data.
+    ///     A function that provides a <see cref="Stream" /> containing the Revit family data.
     /// </param>
     /// <param name="infoStorageName">
-    /// An optional name for the information storage associated with the Revit family data. Defaults to <c>null</c>.
+    ///     An optional name for the information storage associated with the Revit family data. Defaults to <c>null</c>.
     /// </param>
     /// <exception cref="System.ArgumentNullException">
-    /// Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
+    ///     Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
     /// </exception>
     /// <remarks>
-    /// This constructor initializes the Revit family information using the provided stream loader function.
-    /// The optional information storage name can be used to identify or categorize the family data.
+    ///     This constructor initializes the Revit family information using the provided stream loader function.
+    ///     The optional information storage name can be used to identify or categorize the family data.
     /// </remarks>
-    public RevitFamilyInfo(Func<Stream> familyStreamLoader, string? infoStorageName =  null) : this(familyStreamLoader, infoStorageName, null)
+    public RevitFamilyInfo(Func<Stream> familyStreamLoader, string? infoStorageName = null) : this(familyStreamLoader, infoStorageName, null)
     {
     }
 
@@ -74,7 +75,8 @@ public class RevitFamilyInfo
     ///     Thrown when <paramref name="familyStreamLoader" /> is <c>null</c>.
     /// </exception>
     /// <remarks>
-    ///     This constructor enables the initialization of the Revit family information with deferred loading of the family data.
+    ///     This constructor enables the initialization of the Revit family information with deferred loading of the family
+    ///     data.
     ///     The optional storage name can be used to identify or associate metadata with the family data.
     ///     The logger is utilized to record diagnostic and error information during the processing of the family data.
     /// </remarks>
@@ -166,10 +168,10 @@ public class RevitFamilyInfo
     ///     Gets the product name associated with the Revit family.
     /// </summary>
     /// <value>
-    ///     A <see cref="string"/> representing the product name extracted from the family data.
+    ///     A <see cref="string" /> representing the product name extracted from the family data.
     /// </value>
     /// <remarks>
-    ///     This property is populated during the initialization of the <see cref="RevitFamilyInfo"/> instance
+    ///     This property is populated during the initialization of the <see cref="RevitFamilyInfo" /> instance
     ///     by parsing the family data. It represents the product information defined within the Revit family file.
     /// </remarks>
     public string Product { get; private set; } = string.Empty;
@@ -178,7 +180,7 @@ public class RevitFamilyInfo
     ///     Gets the version of the product associated with the Revit family.
     /// </summary>
     /// <value>
-    ///     A <see cref="string"/> representing the version of the product.
+    ///     A <see cref="string" /> representing the version of the product.
     /// </value>
     /// <remarks>
     ///     This property is extracted from the family data and indicates the version of the product
@@ -190,13 +192,27 @@ public class RevitFamilyInfo
     ///     Gets the date and time when the Revit family was last updated.
     /// </summary>
     /// <value>
-    ///     A <see cref="DateTime"/> representing the last update timestamp of the Revit family.
+    ///     A <see cref="DateTime" /> representing the last update timestamp of the Revit family.
     /// </value>
     /// <remarks>
     ///     This property is populated during the loading of the family data from the associated file or stream.
     ///     It reflects the most recent modification date as specified in the family metadata.
     /// </remarks>
     public DateTime Updated { get; private set; }
+
+    /// <summary>
+    ///     Releases all resources used by the <see cref="RevitFamilyInfo" /> instance.
+    /// </summary>
+    /// <remarks>
+    ///     This method is used to clean up resources such as streams and other disposable objects
+    ///     associated with the <see cref="RevitFamilyInfo" /> instance. It ensures that unmanaged
+    ///     resources are properly released to avoid memory leaks.
+    /// </remarks>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     /// <summary>
     ///     Initializes the Revit family information by loading its symbols, preview image, and associated data.
@@ -241,24 +257,24 @@ public class RevitFamilyInfo
     }
 
     /// <summary>
-    /// Attempts to retrieve a data stream associated with the specified stream name.
+    ///     Attempts to retrieve a data stream associated with the specified stream name.
     /// </summary>
     /// <param name="streamName">
-    /// The name of the stream to retrieve. This is used as a key to locate the associated data stream.
+    ///     The name of the stream to retrieve. This is used as a key to locate the associated data stream.
     /// </param>
     /// <param name="stream">
-    /// When this method returns, contains the <see cref="Stream"/> associated with the specified stream name,
-    /// if the operation is successful; otherwise, <c>null</c>.
+    ///     When this method returns, contains the <see cref="Stream" /> associated with the specified stream name,
+    ///     if the operation is successful; otherwise, <c>null</c>.
     /// </param>
     /// <returns>
-    /// <c>true</c> if a data stream associated with the specified stream name is found and successfully retrieved;
-    /// otherwise, <c>false</c>.
+    ///     <c>true</c> if a data stream associated with the specified stream name is found and successfully retrieved;
+    ///     otherwise, <c>false</c>.
     /// </returns>
     /// <remarks>
-    /// This method checks if a data stream exists for the given stream name in the internal collection.
-    /// If found, it creates a copy of the stream and returns it through the <paramref name="stream"/> parameter.
+    ///     This method checks if a data stream exists for the given stream name in the internal collection.
+    ///     If found, it creates a copy of the stream and returns it through the <paramref name="stream" /> parameter.
     /// </remarks>
-    public bool TryGetInfoDataStream(string streamName, [NotNullWhen(true)]out Stream? stream)
+    public bool TryGetInfoDataStream(string streamName, [NotNullWhen(true)] out Stream? stream)
     {
         if (_infoStreams.TryGetValue(streamName, out var infoStream))
         {
@@ -266,10 +282,109 @@ public class RevitFamilyInfo
             infoStream.Position = 0;
             infoStream.CopyTo(stream);
             stream.Position = 0;
+            infoStream.Position = 0;
+
             return true;
         }
 
         stream = null;
+        return false;
+    }
+
+    /// <summary>
+    ///     Attempts to retrieve a stream from the Revit family data based on the specified path.
+    /// </summary>
+    /// <param name="path">
+    ///     The path to the desired stream within the Revit family data. The path segments are separated by '/'.
+    /// </param>
+    /// <param name="stream">
+    ///     When this method returns, contains the <see cref="Stream" /> object if the stream is found; otherwise, <c>null</c>.
+    /// </param>
+    /// <returns>
+    ///     <c>true</c> if the stream is successfully retrieved; otherwise, <c>false</c>.
+    /// </returns>
+    /// <remarks>
+    ///     This method navigates through the storage structure of the Revit family data to locate the specified stream.
+    ///     The path is split into segments, and each segment is used to traverse the storage hierarchy.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when <paramref name="path" /> is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown if the Revit family data stream cannot be accessed or is in an invalid state.
+    /// </exception>
+    public bool TryGetStream(string path, [NotNullWhen(true)] out Stream? stream)
+    {
+        using var root = RootStorage.Open(GetFamilyStream(), StorageModeFlags.LeaveOpen);
+
+        return TryGetStream(root, path.Split('/'), out stream);
+    }
+
+    /// <summary>
+    ///     Releases all resources used by the <see cref="RevitFamilyInfo" /> instance.
+    /// </summary>
+    /// <remarks>
+    ///     This method is used to clean up resources such as streams and other disposable objects
+    ///     associated with the <see cref="RevitFamilyInfo" /> instance. It ensures that unmanaged
+    ///     resources are properly released to avoid memory leaks.
+    /// </remarks>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _preview?.Dispose();
+            _infoStreams.Values.ForAll(stream => stream.Dispose());
+        }
+    }
+
+    /// <summary>
+    ///     Attempts to retrieve a stream from the specified storage and path.
+    /// </summary>
+    /// <param name="storage">
+    ///     The <see cref="Storage" /> object representing the root storage to search within.
+    /// </param>
+    /// <param name="path">
+    ///     An array of strings representing the hierarchical path to the desired stream.
+    /// </param>
+    /// <param name="stream">
+    ///     When this method returns, contains the <see cref="Stream" /> object if the operation is successful; otherwise,
+    ///     <c>null</c>.
+    /// </param>
+    /// <returns>
+    ///     <c>true</c> if the stream is successfully retrieved; otherwise, <c>false</c>.
+    /// </returns>
+    /// <remarks>
+    ///     This method recursively navigates the specified storage hierarchy to locate and retrieve the desired stream.
+    ///     If the path contains a single element, it attempts to open the stream directly. If successful, the stream is copied
+    ///     into a new <see cref="MemoryStream" /> for further use.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown if <paramref name="storage" /> or <paramref name="path" /> is <c>null</c>.
+    /// </exception>
+    private bool TryGetStream(Storage storage, string[] path, [NotNullWhen(true)] out Stream? stream)
+    {
+        stream = null;
+        if (path.Length == 1)
+        {
+            if (!storage.TryOpenStream(path[0], out var storageStream))
+            {
+                return false;
+            }
+
+            stream = new MemoryStream();
+            storageStream.Position = 0;
+            storageStream.CopyTo(stream);
+            stream.Position = 0;
+
+            storageStream.Dispose();
+            return true;
+        }
+
+        if (storage.TryOpenStorage(path[0], out var childStorage))
+        {
+            return TryGetStream(childStorage, path[1..], out stream);
+        }
+
         return false;
     }
 
@@ -314,6 +429,7 @@ public class RevitFamilyInfo
 
             var buffer = new byte[stream.Length];
             stream.ReadExactly(buffer, 0, buffer.Length);
+            stream.Dispose();
             var image = PngExtractor.ExtractPng(buffer);
             _preview = new MemoryStream(image);
         }
@@ -340,13 +456,14 @@ public class RevitFamilyInfo
     {
         try
         {
-            if (!storage.TryOpenStream("PartAtom", out var stream))
+            if (!storage.TryOpenStream("PartAtom", out var atomStream))
             {
                 throw new Exception("The 'PartAtom' stream could not be found in the family file.");
             }
 
-            var buffer = new byte[stream.Length];
-            stream.ReadExactly(buffer, 0, buffer.Length);
+            var buffer = new byte[atomStream.Length];
+            atomStream.ReadExactly(buffer, 0, buffer.Length);
+            atomStream.Dispose();
             var xml = Encoding.UTF8.GetString(buffer);
 
             var document = XDocument.Parse(xml);
@@ -360,7 +477,7 @@ public class RevitFamilyInfo
             Title = root.Element(AtomNamespace + "title")?.Value ?? string.Empty;
 
             // Extract the product and product version
-            Product = document.Descendants(AutodeskNamespace + "product").First().Value;    
+            Product = document.Descendants(AutodeskNamespace + "product").First().Value;
             ProductVersion = document.Descendants(AutodeskNamespace + "product-version").First().Value;
 
             // Extract the updated date
@@ -379,30 +496,29 @@ public class RevitFamilyInfo
     }
 
     /// <summary>
-    /// Loads streams from the specified root storage within the compound file.
+    ///     Loads streams from the specified root storage within the compound file.
     /// </summary>
     /// <param name="rootStorage">
-    /// The <see cref="RootStorage"/> representing the root storage of the compound file.
+    ///     The <see cref="RootStorage" /> representing the root storage of the compound file.
     /// </param>
     /// <remarks>
-    /// This method enumerates the entries within the specified storage and processes each entry of type
-    /// <see cref="EntryType.Stream"/>. For each stream entry, it attempts to load the stream into memory.
-    /// If a stream cannot be opened or an error occurs during the process, the corresponding entry is set to <c>null</c>,
-    /// and an error is logged.
+    ///     This method enumerates the entries within the specified storage and processes each entry of type
+    ///     <see cref="EntryType.Stream" />. For each stream entry, it attempts to load the stream into memory.
+    ///     If a stream cannot be opened or an error occurs during the process, the corresponding entry is set to <c>null</c>,
+    ///     and an error is logged.
     /// </remarks>
     /// <exception cref="System.Exception">
-    /// Thrown if an unexpected error occurs while attempting to load a stream.
+    ///     Thrown if an unexpected error occurs while attempting to load a stream.
     /// </exception>
     private void LoadStreams(RootStorage rootStorage)
     {
-        
         if (string.IsNullOrEmpty(_infoStorageName) || !rootStorage.TryOpenStorage(_infoStorageName, out var storage))
         {
             return;
         }
 
         var streamEntries = storage.EnumerateEntries().Where(e => e.Type == EntryType.Stream);
-        
+
         foreach (var streamEntry in streamEntries)
         {
             var streamName = streamEntry.Name;
@@ -412,6 +528,7 @@ public class RevitFamilyInfo
                 {
                     var memoryStream = new MemoryStream();
                     stream.CopyTo(memoryStream);
+                    stream.Dispose();
                     memoryStream.Position = 0;
                     _infoStreams[streamName] = memoryStream;
                 }
@@ -422,7 +539,6 @@ public class RevitFamilyInfo
             }
             catch (Exception ex)
             {
-                _infoStreams[streamName] = null;
                 _logger?.LogError(ex, "Failed to load stream '{streamName}'.", streamName);
             }
         }

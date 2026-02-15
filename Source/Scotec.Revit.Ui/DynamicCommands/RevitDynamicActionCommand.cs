@@ -1,6 +1,6 @@
-﻿// // Copyright © 2023 - 2025 Olaf Meyer
-// // Copyright © 2023 - 2025 scotec Software Solutions AB, www.scotec-software.com
-// // This file is licensed to you under the MIT license.
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -129,7 +129,7 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     ///     or <see cref="Result.Failed" /> if an exception occurs during execution.
     /// </returns>
     /// <remarks>
-    ///     This method overrides the <see cref="RevitDynamicCommand.OnExecute" /> method to provide
+    ///     This method overrides the <see cref="OnExecute" /> method to provide
     ///     specific behavior for executing dynamic actions. It retrieves the registered action associated with the command's
     ///     <see cref="Id" /> and invokes it. If the action is not found or an exception occurs, the method handles the error
     ///     and logs it appropriately.
