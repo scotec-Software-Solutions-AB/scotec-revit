@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -18,15 +19,6 @@ namespace Scotec.Revit;
 ///     when executing a Revit command. It allows specifying whether no transaction, a single transaction,
 ///     or a transaction group should be used.
 /// </remarks>
-/// <summary>
-///     Indicates that no transaction is required.
-/// </summary>
-/// <summary>
-///     Indicates that a single transaction is required.
-/// </summary>
-/// <summary>
-///     Indicates that a transaction group is required.
-/// </summary>
 public enum RevitTransactionMode
 {
     /// <summary>
@@ -97,6 +89,10 @@ public class RevitTransactionModeAttribute : Attribute
 ///     This class provides a framework for handling Revit external commands, including failure preprocessing and
 ///     processing.
 ///     It includes methods that can be overridden to customize behavior during command execution and failure handling.
+///     During execution, this class creates a new scope for the DI container and adds the current <see cref="Document"/>
+///     if available, the current <see cref="View"/> if available, the <see cref="Autodesk.Revit.UI.UIApplication"/>,
+///     and the JournalData.
+///     Override <see cref="ConfigureServices"/> to apply custom services to the current scope.
 /// </remarks>
 [RevitTransactionMode(Mode = RevitTransactionMode.SingleTransaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
@@ -121,6 +117,19 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </remarks>
     [Obsolete("This property is deprecated. Use the RevitTransactionModeAttribute to specify the transaction mode for your command class instead.")]
     protected bool NoTransaction { get; set; }
+
+    /// <summary>
+    ///     Allows derived classes to add services to the DI container for the command's lifetime scope.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to which services can be added.</param>
+    /// <remarks>
+    ///     Override this method in derived classes to register additional services required for the command.
+    ///     The base implementation does not add any service to the DI container.
+    /// </remarks>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+        // Derived classes can override to add services.
+    }
 
     /// <summary>
     ///     Executes the external command within the Revit environment.
@@ -168,6 +177,11 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
                                               builder.RegisterInstance(commandData.Application).ExternallyOwned();
                                               builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
+
+                                              // Allow derived classes to add services
+                                              var services = new ServiceCollection();
+                                              ConfigureServices(services);
+                                              builder.Populate(services);
                                           });
 
             var transactionMode = GetTransactionMode();
@@ -372,7 +386,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         {
             return attr.Mode;
         }
-        
+
         return RevitTransactionMode.SingleTransaction;
     }
 }
