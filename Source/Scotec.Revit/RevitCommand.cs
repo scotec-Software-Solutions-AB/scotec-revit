@@ -315,7 +315,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     This method invokes the <see cref="OnDismiss" /> method, which can be overridden
     ///     in derived classes to provide custom dismissal behavior.
     /// </remarks>
-    public void Dismiss(Document document)
+    void IFailuresProcessor.Dismiss(Document document)
     {
         OnDismiss(document);
     }
