@@ -400,7 +400,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     private RevitTransactionMode GetTransactionMode()
     {
 #pragma warning disable CS0618 // NoTransaction is obsolete
-        // We do not want to alter the behavior.
+        // We do not want to alter the behavior of legacy code.
         // Therefore, if NoTransaction is set to true, we ignore the attribute and return RevitTransactionMode.None.
         if (NoTransaction)
         {
@@ -415,6 +415,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             return attr.Mode;
         }
 
+        // Return the default value.
         return RevitTransactionMode.SingleTransaction;
     }
 }
