@@ -50,7 +50,30 @@ public enum RevitTransactionMode
     ///     This mode is useful for commands that involve multiple operations that need to be treated as a single logical
     ///     transaction.
     /// </remarks>
-    TransactionGroup
+    TransactionGroup,
+
+
+    /// <summary>
+    ///     Specifies that the transaction should be rolled back after execution.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, all changes made within the transaction are rolled back
+    ///     upon completion of the command. This ensures that no changes are permanently applied
+    ///     to the Revit model, providing a safe way to execute commands that may require temporary
+    ///     modifications.
+    /// </remarks>
+    SingleTransactionRollback,
+
+    /// <summary>
+    ///     Specifies a transaction group mode with rollback behavior for a Revit command.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, all changes made within the transaction group are rolled back
+    ///     upon completion of the command. This ensures that no changes are permanently applied
+    ///     to the Revit model, providing a safe way to execute commands that may require temporary
+    ///     modifications.
+    /// </remarks>
+    TransactionGroupRollback
 }
 
 /// <summary>
@@ -195,6 +218,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             switch (transactionMode)
             {
                 case RevitTransactionMode.SingleTransaction:
+                case RevitTransactionMode.SingleTransactionRollback:
                 {
                     using var transaction = new Transaction(document);
                     transaction.Start(CommandName);
@@ -204,7 +228,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     transaction.SetFailureHandlingOptions(failureHandlingOptions);
 
                     var result = OnExecute(commandData, serviceProvider);
-                    if (result == Result.Succeeded)
+                    
+                    // Do not commit on error or in rollback mode.
+                    if(result == Result.Succeeded && transactionMode == RevitTransactionMode.SingleTransaction)
                     {
                         transaction.Commit();
                     }
@@ -212,15 +238,17 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     return result;
                 }
                 case RevitTransactionMode.TransactionGroup:
+                case RevitTransactionMode.TransactionGroupRollback:
                 {
                     using var transactionGroup = new TransactionGroup(document);
                     transactionGroup.Start(CommandName);
 
                     var result = OnExecute(commandData, serviceProvider);
-                    if (result == Result.Succeeded)
+
+                    // Do not commit on error or in rollback mode.
+                    if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
                     {
                         transactionGroup.Assimilate();
-                        transactionGroup.Commit();
                     }
 
                     return result;
