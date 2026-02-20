@@ -10,21 +10,10 @@ namespace Scotec.Revit.Ui.DynamicCommands;
 /// </summary>
 /// <remarks>
 ///     This class serves as a foundation for creating dynamic Revit commands, providing additional features and behaviors
-///     that can be utilized and extended by derived classes. It is designed to simplify the implementation of commands
-///     that require dynamic behavior within the Revit environment.
+///     that can be utilized and extended by derived classes.
+///     It is designed to simplify the implementation of commands that require dynamic behavior within the Revit environment.
+///     The transaction mode is set to RevitTransactionMode.None for this class by default.
+///     However, it can be overridden by applying the RevitTransactionModeAttribute to a derived class.
 /// </remarks>
-public abstract class RevitDynamicCommand : RevitCommand
-{
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="RevitDynamicCommand" /> class.
-    /// </summary>
-    /// <remarks>
-    ///     This constructor sets the <see cref="RevitCommand.NoTransaction" /> property to <c>true</c>,
-    ///     indicating that the command does not require a transaction by default.
-    ///     Derived classes can override this behavior if needed.
-    /// </remarks>
-    protected RevitDynamicCommand()
-    {
-        NoTransaction = true;
-    }
-}
+[RevitTransactionMode(Mode = RevitTransactionMode.None)]
+public abstract class RevitDynamicCommand : RevitCommand;
