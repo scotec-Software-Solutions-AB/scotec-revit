@@ -39,7 +39,7 @@ public enum RevitTransactionMode
     ///     are encapsulated within a single transaction. This is useful for commands that require
     ///     atomicity and consistency in their operations.
     /// </remarks>
-    SingleTransaction,
+    Transaction,
 
     /// <summary>
     ///     Indicates that a transaction group is required.
@@ -62,7 +62,7 @@ public enum RevitTransactionMode
     ///     to the Revit model, providing a safe way to execute commands that may require temporary
     ///     modifications.
     /// </remarks>
-    SingleTransactionRollback,
+    TransactionWithRollback,
 
     /// <summary>
     ///     Specifies a transaction group mode with rollback behavior for a Revit command.
@@ -73,7 +73,7 @@ public enum RevitTransactionMode
     ///     to the Revit model, providing a safe way to execute commands that may require temporary
     ///     modifications.
     /// </remarks>
-    TransactionGroupRollback
+    TransactionGroupWithRollback
 }
 
 /// <summary>
@@ -92,14 +92,14 @@ public class RevitTransactionModeAttribute : Attribute
     /// <value>
     ///     A value of type <see cref="RevitTransactionMode" /> that specifies how transactions
     ///     should be handled during the execution of the command. The default value is
-    ///     <see cref="RevitTransactionMode.SingleTransaction" />.
+    ///     <see cref="RevitTransactionMode.Transaction" />.
     /// </value>
     /// <remarks>
     ///     This property allows configuring the transaction handling mode for a Revit command.
-    ///     It can be set to <see cref="RevitTransactionMode.None" />, <see cref="RevitTransactionMode.SingleTransaction" />,
+    ///     It can be set to <see cref="RevitTransactionMode.None" />, <see cref="RevitTransactionMode.Transaction" />,
     ///     or <see cref="RevitTransactionMode.TransactionGroup" /> depending on the desired behavior.
     /// </remarks>
-    public RevitTransactionMode Mode { get; set; } = RevitTransactionMode.SingleTransaction;
+    public RevitTransactionMode Mode { get; set; } = RevitTransactionMode.Transaction;
 }
 
 /// <summary>
@@ -117,7 +117,7 @@ public class RevitTransactionModeAttribute : Attribute
 ///     and the JournalData.
 ///     Override <see cref="ConfigureServices"/> to apply custom services to the current scope.
 /// </remarks>
-[RevitTransactionMode(Mode = RevitTransactionMode.SingleTransaction)]
+[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
     /// <summary>
@@ -217,8 +217,8 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
             switch (transactionMode)
             {
-                case RevitTransactionMode.SingleTransaction:
-                case RevitTransactionMode.SingleTransactionRollback:
+                case RevitTransactionMode.Transaction:
+                case RevitTransactionMode.TransactionWithRollback:
                 {
                     using var transaction = new Transaction(document);
                     transaction.Start(CommandName);
@@ -230,7 +230,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     var result = OnExecute(commandData, serviceProvider);
                     
                     // Do not commit on error or in rollback mode.
-                    if(result == Result.Succeeded && transactionMode == RevitTransactionMode.SingleTransaction)
+                    if(result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
                     {
                         transaction.Commit();
                     }
@@ -238,7 +238,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     return result;
                 }
                 case RevitTransactionMode.TransactionGroup:
-                case RevitTransactionMode.TransactionGroupRollback:
+                case RevitTransactionMode.TransactionGroupWithRollback:
                 {
                     using var transactionGroup = new TransactionGroup(document);
                     transactionGroup.Start(CommandName);
@@ -416,6 +416,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         }
 
         // Return the default value.
-        return RevitTransactionMode.SingleTransaction;
+        return RevitTransactionMode.Transaction;
     }
 }

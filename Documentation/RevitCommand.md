@@ -24,10 +24,10 @@ The `RevitCommand` class supports several transaction modes, controlled via the 
 | Mode                          | Description                                                                                  | Behavior                                                                                  |
 |-------------------------------|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | `None`                        | No transaction is created.                                                                   | Command executes without transaction. User manages transactions manually if needed.        |
-| `SingleTransaction`           | A single transaction is created for the command.                                             | All changes are committed if the command succeeds.                                        |
+| `Transaction`                 | A single transaction is created for the command.                                             | All changes are committed if the command succeeds.                                        |
 | `TransactionGroup`            | A transaction group is created, allowing multiple transactions to be grouped.                | Group is assimilated and committed if the command succeeds.                               |
-| `SingleTransactionRollback`   | A single transaction is created, but changes are rolled back after execution.                | All changes are discarded, even if the command succeeds.                                  |
-| `TransactionGroupRollback`    | A transaction group is created, but changes are rolled back after execution.                 | All changes are discarded, even if the command succeeds.                                  |
+| `TransactionWithRollback`     | A single transaction is created, but changes are rolled back after execution.                | All changes are discarded, even if the command succeeds.                                  |
+| `TransactionGroupWithRollback`| A transaction group is created, but changes are rolled back after execution.                 | All changes are discarded, even if the command succeeds.                                  |
 
 ### How to Specify Transaction Mode
 
@@ -36,11 +36,13 @@ The `RevitCommand` class supports several transaction modes, controlled via the 
 Apply the `RevitTransactionModeAttribute` to your command class:
 
 ```csharp
-[RevitTransactionMode(Mode = RevitTransactionMode.SingleTransaction)] 
-public class MyCommand : RevitCommand { // ... }
+[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)] 
+public class MyCommand : RevitCommand 
+{
+    // ... 
+}
 ```
-
-
+    
 > **Note:** If `NoTransaction` is set to `true`, it overrides the attribute and disables transaction management.
 
 ---
@@ -48,14 +50,14 @@ public class MyCommand : RevitCommand { // ... }
 ## Working with Transaction Modes
 
 - **None:** No transaction is started. You must handle transactions manually if you need them.
-- **SingleTransaction:** The framework starts a transaction, executes your command, and commits if successful.
+- **Transaction:** The framework starts a transaction, executes your command, and commits if successful.
 - **TransactionGroup:** The framework starts a transaction group, executes your command, assimilates and commits if successful.
 - **Rollback Modes:** The framework starts a transaction or group, executes your command, but always rolls back/discards changes.
 
-**Example: Single Transaction Mode**
+**Example: Transaction Mode**
 
 ```csharp
-[RevitTransactionMode(Mode = RevitTransactionMode.SingleTransaction)] 
+[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)] 
 public class MyCommand : RevitCommand 
 { 
     protected override string CommandName => "My Command";
@@ -67,7 +69,6 @@ public class MyCommand : RevitCommand
     }
 }
 ```
-
 
 ---
 
@@ -87,6 +88,7 @@ Each command execution creates a new DI scope using Autofac and Microsoft.Extens
 To add custom services to the DI scope, override the `ConfigureServices(IServiceCollection services)` method in your command class:
 
 ```csharp
+[RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
 public class MyCommand : RevitCommand 
 { 
     protected override string CommandName => "My Command";
