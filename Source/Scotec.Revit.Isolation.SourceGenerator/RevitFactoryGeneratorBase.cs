@@ -2,6 +2,7 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -119,7 +120,7 @@ public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
     /// <seealso cref="RegisterSourceOutputForAttribute" />
     private void Execute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
     {
-        ////Debugger.Launch();
+        //Debugger.Launch();
         var symbol = syntaxContext.TargetSymbol;
         var className = syntaxContext.TargetSymbol.Name;
         var @namespace = symbol.ContainingNamespace.ToDisplayString();
@@ -130,18 +131,20 @@ public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
                                   .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == GetAttributes().First());
         if (attributeData != null)
         {
-            //Debugger.Launch();
-
             // Access constructor arguments (positional arguments)
             // var constructorArg = attributeData.ConstructorArguments.FirstOrDefault().Value;
             // Access named arguments (property values)
-            var contextName = attributeData.NamedArguments
+            var contextName = (string?)attributeData.NamedArguments
                                            .FirstOrDefault(kvp => kvp.Key == "ContextName").Value.Value;
+
+            var parameters = new object?[] { @namespace, className, globalNamespace, contextName };
+            var additionalParameters = OnExecute(sourceContext, syntaxContext);
+            var allParameters = parameters.Concat(additionalParameters).ToArray();
             // Use these values in your template
             var template = LoadTemplate(GetTemplateName());
             if (!string.IsNullOrEmpty(template))
             {
-                var content = string.Format(template, @namespace, className, globalNamespace, contextName);
+                var content = string.Format(template, allParameters);
                 sourceContext.AddSource($"{className}Factory.g.cs", content);
             }
         }
@@ -158,5 +161,10 @@ public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
         //    var content = string.Format(template, @namespace, className, globalNamespace);
         //    sourceContext.AddSource($"{className}Factory.g.cs", content);
         //}
+    }
+
+    protected virtual object?[] OnExecute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
+    {
+        return [];
     }
 }

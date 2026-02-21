@@ -12,6 +12,7 @@
 	<ItemGroup>
 			<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
 			<PackageReference Include="Scotec.Revit.Isolation" Version="1.0.0" />
+			<PackageReference Include="Scotec.Revit" Version="1.0.0" />
 	</ItemGroup>
 
 </Project>

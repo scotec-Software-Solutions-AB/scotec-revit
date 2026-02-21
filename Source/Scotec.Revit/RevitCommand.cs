@@ -73,7 +73,17 @@ public enum RevitTransactionMode
     ///     to the Revit model, providing a safe way to execute commands that may require temporary
     ///     modifications.
     /// </remarks>
-    TransactionGroupWithRollback
+    TransactionGroupWithRollback,
+
+    /// <summary>
+    ///     Specifies that the command should operate in read-only mode.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, the command is executed without any transaction and is expected
+    ///     to perform only read operations on the Revit model. No modifications are allowed.
+    ///     This is useful for commands that query or analyze the model without making changes.
+    /// </remarks>
+    ReadOnly
 }
 
 /// <summary>
@@ -86,6 +96,28 @@ public enum RevitTransactionMode
 [AttributeUsage(AttributeTargets.Class)]
 public class RevitTransactionModeAttribute : Attribute
 {
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitTransactionModeAttribute" /> class with the default transaction mode.
+    /// </summary>
+    /// <remarks>
+    ///     This constructor sets the <see cref="Mode" /> property to its default value, 
+    ///     which is <see cref="RevitTransactionMode.Transaction" />.
+    /// </remarks>
+    public RevitTransactionModeAttribute()
+    {
+        
+    }
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitTransactionModeAttribute" /> class with the specified transaction mode.
+    /// </summary>
+    /// <param name="mode">
+    ///     The <see cref="RevitTransactionMode" /> to be associated with the Revit command, specifying how transactions
+    ///     should be handled during the execution of the command.
+    /// </param>
+    public RevitTransactionModeAttribute(RevitTransactionMode mode)
+    {
+        Mode = mode;
+    }
     /// <summary>
     ///     Gets or sets the transaction mode for the associated Revit command.
     /// </summary>
@@ -209,9 +241,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
             var transactionMode = GetTransactionMode();
             var serviceProvider = scope.Resolve<IServiceProvider>();
-            if (document == null || transactionMode == RevitTransactionMode.None)
+            
+            // Skip transaction management if no document is open or transaction is not required.
+            if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
-                // Skip transaction management if no document is open or transaction is not required.
                 return OnExecute(commandData, serviceProvider);
             }
 
