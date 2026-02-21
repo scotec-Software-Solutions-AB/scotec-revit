@@ -104,7 +104,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     public async Task<TResult> Run<TResult>(Func<UIApplication, TResult> action)
     {
         _action = uiApplication => action(uiApplication)!;
-        var task = ExecuteInternal<TResult>();
+        var task = ExecuteInternalAsync<TResult>();
 
         return await task;
     }
@@ -133,7 +133,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
             action(uiApplication);
             return new object();
         };
-        var task = ExecuteInternal<object>();
+        var task = ExecuteInternalAsync<object>();
 
         await task;
     }
@@ -152,7 +152,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     This method is responsible for raising the external event and waiting for its completion.
     ///     It ensures that the task is executed on the appropriate thread within the Revit API context.
     /// </remarks>
-    private Task<TResult> ExecuteInternal<TResult>()
+    private Task<TResult> ExecuteInternalAsync<TResult>()
     {
         _resetEvent.Reset();
 
