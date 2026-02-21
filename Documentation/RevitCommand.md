@@ -1,7 +1,7 @@
 # RevitCommand Usage Guide
 
 This document provides a detailed guide on how to use the `RevitCommand` base class in the `Scotec.Revit` framework. It covers transaction modes, dependency injection (DI) scope creation, and how to register additional services for your command.
-
+^^
 ---
 
 ## Overview
@@ -28,6 +28,7 @@ The `RevitCommand` class supports several transaction modes, controlled via the 
 | `TransactionGroup`            | A transaction group is created, allowing multiple transactions to be grouped.                | Group is assimilated and committed if the command succeeds.                               |
 | `TransactionWithRollback`     | A single transaction is created, but changes are rolled back after execution.                | All changes are discarded, even if the command succeeds.                                  |
 | `TransactionGroupWithRollback`| A transaction group is created, but changes are rolled back after execution.                 | All changes are discarded, even if the command succeeds.                                  |
+| `ReadOnly`                    | No transaction is started; the command runs in read-only mode.                               | No changes are allowed; command can only read data from the document.                     |
 
 ### How to Specify Transaction Mode
 
@@ -53,6 +54,7 @@ public class MyCommand : RevitCommand
 - **Transaction:** The framework starts a transaction, executes your command, and commits if successful.
 - **TransactionGroup:** The framework starts a transaction group, executes your command, assimilates and commits if successful.
 - **Rollback Modes:** The framework starts a transaction or group, executes your command, but always rolls back/discards changes.
+- **ReadOnly:** The framework executes your command in read-only mode, preventing any changes to the document.
 
 **Example: Transaction Mode**
 
