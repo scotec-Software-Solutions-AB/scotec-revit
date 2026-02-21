@@ -5,6 +5,10 @@
     <BuildType Name="Revit2026" />
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/Documentation/">
+    <File Path="../Documentation/RevitAddinIsolation.md" />
+    <File Path="../Documentation/RevitCommand.md" />
+  </Folder>
   <Project Path="Scotec.Revit.Isolation.SourceGenerator/Scotec.Revit.Isolation.SourceGenerator.csproj">
     <Platform Project="x64" />
   </Project>

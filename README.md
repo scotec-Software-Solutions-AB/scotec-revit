@@ -1,70 +1,74 @@
-# scotec-revit
+# Scotec.Revit
 
-## scotec.revit.isolation
-Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from the newer version, a TypeLoadException will be thrown. Similar errors can occur if methods are not found, or their parameters have changed. 
+A modern .NET library for building robust, testable, and maintainable Autodesk Revit add-ins. This solution provides advanced abstractions for Revit command execution, dependency injection, and add-in isolation, targeting .NET 8 and .NET Standard 2.0 for maximum compatibility and performance.
 
-Isolating Revit add-ins using ```AssemblyLoadContext``` provides an elegant and straightforward solution to avoiding DLL hell. The ```Scotec.Revit.Isolation``` library assists you in this process by automatically generating the required code when compiling your add-in. The factories created in this process then generate instances of your apps or commands in the add-in specific load context and ensure that Revit calls are forwarded accordingly.
+---
 
-To load an add-in into its own assembly load context, you only need to assign the ```RevitApplicationIsolation``` attribute to the Revit appplication class. 
+## Features
 
-```csharp
-[RevitApplicationIsolation]
-public class RevitTestApp : IExternalApplication
-{
-	...
-}
-```
+- **Revit Add-in Isolation:**  
+  Provides patterns and guidance for isolating Revit add-ins, improving reliability and testability.
+- **Revit Command Framework:**  
+  Simplifies the implementation of Revit external commands with built-in transaction management, dependency injection, and failure handling.
 
-Corresponding attributes also exist for the DB application and commands:
+---
 
-```csharp
-[RevitDbApplicationIsolation]
-public class RevitTestDbApp : IExternalDBApplication
-```
+## Documentation
 
-```csharp
-[RevitCommandIsolation]
-public class RevitTestCommand : IExternalCommand
-```
+### 1. Revit Add-in Isolation
 
-```csharp
-[RevitCommandAvailabilityIsolation]
-public class RevitTestCommandAvailability : IExternalCommandAvailability
-```
+Explains best practices and patterns for isolating Revit add-ins, including:
 
-When using the attributes, factories are automatically generated, which instantiate the instances of the Revit apps and commands and load them into the load context. As Revit does not know anything about the load context, the generated factory types must be registered in Revit instead of your implementations. To do this, simply add ```Factory``` to the corresponding type name.
-For the examples above, this would be:
+- Why isolation is important for stability and testability
+- How to structure your add-in for isolation
+- Example approaches and recommended techniques
 
-```csharp
-RevitTestAppFactory
-RevitTestDbAppFactory
-RevitTestCommandFactory
-RevitTestCommandAvailabilityFactory
-```
+**See:** [RevitAddinIsolation.md](Documentation/RevitAddinIsolation.md)
 
-```xml
-<RevitAddIns>
-	<AddIn Type="Application">
-		<Name>Test</Name>
-		<FullClassName>Scotec.Revit.Test.RevitTestAppFactory</FullClassName>
-		<Assembly>.\Scotec.Revit.Test\Scotec.Revit.Test.dll</Assembly>
-		<AddInId>F2E1648B-7E1A-4518-95E9-92437EA941A6</AddInId>
-		<VendorId>scotec</VendorId>
-		<VendorDescription>scotec Software Solutions AB</VendorDescription>
-	</AddIn>
-```
+---
 
+### 2. Revit Command Framework
 
-You can find more information about Revit Add-in Isolation in my [blog article](https://www.scotec-software.com/en/blog/posts/Innovative-Revit-Addin-Development-Part-3).
+A detailed guide to the `RevitCommand` base class, including:
 
-### User defined context name
-In previous versions of the ```Scotec.Revit.Isolation``` library, the Revit app and all commands had to reside in the same assembly to share the same assembly load context.
-Starting from version 2025.1.0, you can define a named load context that can be used across different assemblies.
-Therefore, the attributes now include a property called ```ContextName```. By setting a value for this property, you can define a named assembly load context that can be shared among multiple assemblies.
+- How to implement your own Revit commands
+- Supported transaction modes (`None`, `SingleTransaction`, `TransactionGroup`, and rollback variants)
+- How to use and override dependency injection scopes
+- How to register additional services for your command
 
-```csharp
-[RevitDbApplicationIsolation(ContextName = "My.LoadContext")]
-public class RevitTestDbApp : IExternalDBApplication
-```
+**See:** [RevitCommand.md](Documentation/RevitCommand.md)
 
-It is recommended to use, for example, the Revit add-in name as the context name to avoid conflicts with other add-ins that might otherwise use the same context name.
+---
+
+## Getting Started
+
+1. **Install the NuGet package**
+   - Add the [Scotec.Revit](https://www.nuget.org/packages/Scotec.Revit/) NuGet package to your Revit add-in project using Visual Studio's NuGet Package Manager or the CLI:
+     ```
+     dotnet add package Scotec.Revit
+     ```
+   - For other related packages, see the [NuGet Gallery](https://www.nuget.org/packages?q=Scotec.Revit).
+
+2. **Reference the library in your project**
+   - Ensure your project targets `net8.0-windows`.
+
+3. **Explore the documentation**
+   - [RevitAddinIsolation.md](Documentation/RevitAddinIsolation.md): Understand add-in isolation patterns and best practices.
+   - [RevitCommand.md](Documentation/RevitCommand.md): Learn about the command framework, transaction modes, and DI.
+
+4. **Start developing your Revit add-in**
+   - Use the provided abstractions and patterns as described in the documentation files.
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome!  
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines.
+
+---
+
+## License
+
+This project is licensed under the MIT License.  
+See the [LICENSE](license.txt) file for details.
+
+---
