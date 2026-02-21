@@ -2,7 +2,6 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Scotec.Revit.Isolation.SourceGenerator;
@@ -113,7 +112,7 @@ public sealed class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
             return revitTransactionMode!;
         }
 
-        // The command may not be derrived from Scotec.Revit.RevitCommand. Try to get the Autodesk.Revit.Attributes.TransactionMode.
+        // The command may not be derived from Scotec.Revit.RevitCommand. Try to get the Autodesk.Revit.Attributes.TransactionMode.
         if (TryGetTransactionMode(syntaxContext, compilation, out var transactionMode))
         {
             return transactionMode!;
