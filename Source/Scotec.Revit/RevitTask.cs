@@ -14,7 +14,7 @@ namespace Scotec.Revit;
 ///     This class facilitates the execution of asynchronous operations in the Revit API environment, ensuring
 ///     that tasks are performed on the appropriate thread.
 /// </summary>
-public class RevitTask : IExternalEventHandler
+public sealed class RevitTask : IExternalEventHandler, IDisposable
 {
     private readonly ExternalEvent _externalEvent;
     private readonly string _name;
@@ -71,7 +71,7 @@ public class RevitTask : IExternalEventHandler
     ///     A <see cref="string" /> representing the name of the external event handler.
     /// </returns>
     /// <remarks>
-    ///     This method is part of the <see cref="IExternalEventHandler" /> implementation and is used
+    ///     This method is part of the <see cref="Autodesk.Revit.UI.IExternalEventHandler" /> implementation and is used
     ///     to identify the external event handler within the Revit API context.
     /// </remarks>
     string IExternalEventHandler.GetName()
@@ -106,7 +106,7 @@ public class RevitTask : IExternalEventHandler
         _action = uiApplication => action(uiApplication)!;
         var task = ExecuteInternal<TResult>();
 
-        return await task!;
+        return await task;
     }
 
     /// <summary>
@@ -164,5 +164,18 @@ public class RevitTask : IExternalEventHandler
             return (TResult)_result!;
         });
         return task;
+    }
+
+    /// <summary>
+    /// Releases all resources used by the <see cref="RevitTask"/> instance.
+    /// </summary>
+    /// <remarks>
+    /// This method disposes of the external event and reset event associated with the <see cref="RevitTask"/> instance.
+    /// It should be called when the task is no longer needed to free up resources.
+    /// </remarks>
+    public void Dispose()
+    {
+        _externalEvent.Dispose();
+        _resetEvent.Dispose();
     }
 }
