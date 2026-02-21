@@ -1,6 +1,6 @@
 # Scotec.Revit
 
-A modern .NET library for building robust, testable, and maintainable Autodesk Revit add-ins. This solution provides advanced abstractions for Revit command execution, dependency injection, and add-in isolation, targeting .NET 8 and .NET Standard 2.0 for maximum compatibility and performance.
+A modern .NET library for building robust, testable, and maintainable Autodesk® Revit® add-ins. This solution provides advanced abstractions for Revit command execution, dependency injection, and add-in isolation, targeting .NET 8 for maximum compatibility and performance.
 
 ---
 
