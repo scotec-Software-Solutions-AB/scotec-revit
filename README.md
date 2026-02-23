@@ -73,11 +73,7 @@ A comprehensive guide to the `RevitTask` class, including:
 Contributions, issues, and feature requests are welcome!  
 Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines.
 
----
-
 ## License
 
 This project is licensed under the MIT License.  
 See the [LICENSE](license.txt) file for details.
-
----

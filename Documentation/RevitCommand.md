@@ -2,8 +2,6 @@
 
 This document provides a detailed guide on how to use the `RevitCommand` base class in the `Scotec.Revit` framework. It covers transaction modes, dependency injection (DI) scope creation, and how to register additional services for your command.
 
----
-
 ## Overview
 
 `RevitCommand` is an abstract base class for implementing Revit external commands. It provides:
@@ -118,5 +116,3 @@ public class MyCommand : RevitCommand
 - Specify transaction mode via attribute for clear, modern behavior.
 - Override `ConfigureServices` to register custom services for your command's DI scope.
 - Use the injected `IServiceProvider` in `OnExecute` to access your services.
-
-**For further details, see the source code and XML documentation in `Scotec.Revit\RevitCommand.cs`.**
