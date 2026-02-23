@@ -2,16 +2,14 @@
 
 A modern .NET library for building robust, testable, and maintainable Autodesk® Revit® add-ins. This solution provides advanced abstractions for Revit command execution, dependency injection, and add-in isolation, targeting .NET 8 for maximum compatibility and performance.
 
----
-
 ## Features
 
 - **Revit Add-in Isolation:**  
   Provides patterns and guidance for isolating Revit add-ins, improving reliability and testability.
 - **Revit Command Framework:**  
   Simplifies the implementation of Revit external commands with built-in transaction management, dependency injection, and failure handling.
-
----
+- **RevitTask (External Event Integration):**  
+  Enables safe, asynchronous, and context-correct execution of Revit API operations from any thread or UI, using the `IExternalEventHandler` mechanism. This allows you to bridge between external UI frameworks (like WPF/WinForms) and the Revit API, ensuring all database operations are performed in the correct Revit context.
 
 ## Documentation
 
@@ -26,7 +24,6 @@ Explains best practices and patterns for isolating Revit add-ins, including:
 **See:** [RevitAddinIsolation.md](Documentation/RevitAddinIsolation.md)
 
 ---
-
 ### 2. Revit Command Framework
 
 A detailed guide to the `RevitCommand` base class, including:
@@ -39,6 +36,18 @@ A detailed guide to the `RevitCommand` base class, including:
 **See:** [RevitCommand.md](Documentation/RevitCommand.md)
 
 ---
+
+### 3. [RevitTask.md](RevitTask.md)
+
+A comprehensive guide to the `RevitTask` class, including:
+
+- How to safely execute operations in the Revit API context using `IExternalEventHandler`
+- Usage patterns for both result-returning and void tasks
+- Threading, context, and error handling
+- Example integration with WPF and async/await
+
+**See:** [RevitTask.md](RevitTask.md)
+
 
 ## Getting Started
 
