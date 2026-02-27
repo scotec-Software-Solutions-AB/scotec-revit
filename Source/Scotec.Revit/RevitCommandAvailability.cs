@@ -2,11 +2,12 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Scotec.Revit;
 
@@ -19,7 +20,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     Determines whether an external command is available for execution in the current Revit context.
     /// </summary>
     /// <param name="applicationData">
-    ///     The <see cref="UIApplication" /> instance providing access to the current Revit application and its data.
+    ///     The <see cref="Autodesk.Revit.UI.UIApplication" /> instance providing access to the current Revit application and its data.
     /// </param>
     /// <param name="selectedCategories">
     ///     A <see cref="CategorySet" /> containing the categories of the selected elements in the Revit document.
@@ -47,9 +48,21 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                                   builder.RegisterInstance(document).ExternallyOwned();
                                               }
 
+                                              var view = applicationData.ActiveUIDocument?.ActiveView;
+                                              if (view != null)
+                                              {
+                                                  builder.RegisterInstance(view).ExternallyOwned();
+                                              }
+
                                               builder.RegisterInstance(applicationData).ExternallyOwned();
                                               builder.RegisterInstance(applicationData.Application).ExternallyOwned();
                                               builder.RegisterInstance(selectedCategories).ExternallyOwned();
+
+                                              // Allow derived classes to add services
+                                              var services = new ServiceCollection();
+                                              ConfigureServices(services);
+                                              builder.Populate(services);
+                                              builder.Populate(services);
                                           });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
@@ -62,6 +75,20 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             return false;
         }
     }
+
+    /// <summary>
+    ///     Allows derived classes to add services to the DI container for the command's lifetime scope.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to which services can be added.</param>
+    /// <remarks>
+    ///     Override this method in derived classes to register additional services required for the command.
+    ///     The base implementation does not add any service to the DI container.
+    /// </remarks>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+        // Derived classes can override to add services.
+    }
+
 
     /// <summary>
     ///     Determines whether the external command is available for execution in the current Revit context.

@@ -8,6 +8,7 @@
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<NoPackageAnalysis>true</NoPackageAnalysis>
+
 	</PropertyGroup>
 
 	<PropertyGroup>

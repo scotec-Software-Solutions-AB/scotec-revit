@@ -7,8 +7,132 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
+
+/// <summary>
+///     Specifies the transaction mode for a Revit command.
+/// </summary>
+/// <remarks>
+///     This enumeration defines the different modes of transaction handling that can be used
+///     when executing a Revit command. It allows specifying whether no transaction, a single transaction,
+///     or a transaction group should be used.
+/// </remarks>
+public enum RevitTransactionMode
+{
+    /// <summary>
+    ///     Indicates that no transaction is required for the Revit command.
+    /// </summary>
+    /// <remarks>
+    ///     This mode specifies that the command does not require any transaction handling by the framework.
+    ///     It is typically used for commands where the user intends to manage transactions manually
+    ///     or when no modifications to the Revit document are necessary.
+    /// </remarks>
+    None,
+
+    /// <summary>
+    ///     Indicates that a single transaction is required for the execution of a Revit command.
+    /// </summary>
+    /// <remarks>
+    ///     This mode ensures that all operations performed during the execution of the command
+    ///     are encapsulated within a single transaction. This is useful for commands that require
+    ///     atomicity and consistency in their operations.
+    /// </remarks>
+    Transaction,
+
+    /// <summary>
+    ///     Indicates that a transaction group is required.
+    /// </summary>
+    /// <remarks>
+    ///     A transaction group allows multiple transactions to be grouped together, enabling them to be committed or rolled
+    ///     back as a single unit.
+    ///     This mode is useful for commands that involve multiple operations that need to be treated as a single logical
+    ///     transaction.
+    /// </remarks>
+    TransactionGroup,
+
+
+    /// <summary>
+    ///     Specifies that the transaction should be rolled back after execution.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, all changes made within the transaction are rolled back
+    ///     upon completion of the command. This ensures that no changes are permanently applied
+    ///     to the Revit model, providing a safe way to execute commands that may require temporary
+    ///     modifications.
+    /// </remarks>
+    TransactionWithRollback,
+
+    /// <summary>
+    ///     Specifies a transaction group mode with rollback behavior for a Revit command.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, all changes made within the transaction group are rolled back
+    ///     upon completion of the command. This ensures that no changes are permanently applied
+    ///     to the Revit model, providing a safe way to execute commands that may require temporary
+    ///     modifications.
+    /// </remarks>
+    TransactionGroupWithRollback,
+
+    /// <summary>
+    ///     Specifies that the command should operate in read-only mode.
+    /// </summary>
+    /// <remarks>
+    ///     When this mode is used, the command is executed without any transaction and is expected
+    ///     to perform only read operations on the Revit model. No modifications are allowed.
+    ///     This is useful for commands that query or analyze the model without making changes.
+    /// </remarks>
+    ReadOnly
+}
+
+/// <summary>
+///     An attribute used to specify the transaction mode for a Revit command.
+/// </summary>
+/// <remarks>
+///     This attribute allows associating a specific <see cref="RevitTransactionMode" /> with a Revit command,
+///     indicating how transactions should be handled during the execution of the command.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Class)]
+public class RevitTransactionModeAttribute : Attribute
+{
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitTransactionModeAttribute" /> class with the default transaction mode.
+    /// </summary>
+    /// <remarks>
+    ///     This constructor sets the <see cref="Mode" /> property to its default value, 
+    ///     which is <see cref="RevitTransactionMode.Transaction" />.
+    /// </remarks>
+    public RevitTransactionModeAttribute()
+    {
+        
+    }
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitTransactionModeAttribute" /> class with the specified transaction mode.
+    /// </summary>
+    /// <param name="mode">
+    ///     The <see cref="RevitTransactionMode" /> to be associated with the Revit command, specifying how transactions
+    ///     should be handled during the execution of the command.
+    /// </param>
+    public RevitTransactionModeAttribute(RevitTransactionMode mode)
+    {
+        Mode = mode;
+    }
+    /// <summary>
+    ///     Gets or sets the transaction mode for the associated Revit command.
+    /// </summary>
+    /// <value>
+    ///     A value of type <see cref="RevitTransactionMode" /> that specifies how transactions
+    ///     should be handled during the execution of the command. The default value is
+    ///     <see cref="RevitTransactionMode.Transaction" />.
+    /// </value>
+    /// <remarks>
+    ///     This property allows configuring the transaction handling mode for a Revit command.
+    ///     It can be set to <see cref="RevitTransactionMode.None" />, <see cref="RevitTransactionMode.Transaction" />,
+    ///     or <see cref="RevitTransactionMode.TransactionGroup" /> depending on the desired behavior.
+    /// </remarks>
+    public RevitTransactionMode Mode { get; set; } = RevitTransactionMode.Transaction;
+}
 
 /// <summary>
 ///     Represents an abstract base class for Revit commands, implementing the
@@ -20,7 +144,12 @@ namespace Scotec.Revit;
 ///     This class provides a framework for handling Revit external commands, including failure preprocessing and
 ///     processing.
 ///     It includes methods that can be overridden to customize behavior during command execution and failure handling.
+///     During execution, this class creates a new scope for the DI container and adds the current <see cref="Document"/>
+///     if available, the current <see cref="View"/> if available, the <see cref="Autodesk.Revit.UI.UIApplication"/>,
+///     and the JournalData.
+///     Override <see cref="ConfigureServices"/> to apply custom services to the current scope.
 /// </remarks>
+[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
     /// <summary>
@@ -39,8 +168,23 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     When set to <c>true</c>, the command execution bypasses the automatic creation of a Revit transaction.
     ///     This allows the command to handle transactions explicitly, providing greater control over transaction
     ///     management during execution.
+    ///     This property is deprecated. Use the RevitTransactionModeAttribute to specify the transaction mode for your command class instead.
     /// </remarks>
+    [Obsolete("This property is deprecated. Use the RevitTransactionModeAttribute to specify the transaction mode for your command class instead.")]
     protected bool NoTransaction { get; set; }
+
+    /// <summary>
+    ///     Allows derived classes to add services to the DI container for the command's lifetime scope.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to which services can be added.</param>
+    /// <remarks>
+    ///     Override this method in derived classes to register additional services required for the command.
+    ///     The base implementation does not add any service to the DI container.
+    /// </remarks>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+        // Derived classes can override to add services.
+    }
 
     /// <summary>
     ///     Executes the external command within the Revit environment.
@@ -88,29 +232,63 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
                                               builder.RegisterInstance(commandData.Application).ExternallyOwned();
                                               builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
+
+                                              // Allow derived classes to add services
+                                              var services = new ServiceCollection();
+                                              ConfigureServices(services);
+                                              builder.Populate(services);
                                           });
 
+            var transactionMode = GetTransactionMode();
             var serviceProvider = scope.Resolve<IServiceProvider>();
-            if (document == null || NoTransaction)
+            
+            // Skip transaction management if no document is open or transaction is not required.
+            if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
-                // Skip transaction management if no document is open or transaction is not required.
                 return OnExecute(commandData, serviceProvider);
             }
 
-            using var transaction = new Transaction(document);
-            transaction.Start(CommandName);
-
-            var failureHandlingOptions = transaction.GetFailureHandlingOptions();
-            failureHandlingOptions.SetFailuresPreprocessor(this);
-            transaction.SetFailureHandlingOptions(failureHandlingOptions);
-
-            var result = OnExecute(commandData, serviceProvider);
-            if (result == Result.Succeeded)
+            switch (transactionMode)
             {
-                transaction.Commit();
+                case RevitTransactionMode.Transaction:
+                case RevitTransactionMode.TransactionWithRollback:
+                {
+                    using var transaction = new Transaction(document);
+                    transaction.Start(CommandName);
+
+                    var failureHandlingOptions = transaction.GetFailureHandlingOptions();
+                    failureHandlingOptions.SetFailuresPreprocessor(this);
+                    transaction.SetFailureHandlingOptions(failureHandlingOptions);
+
+                    var result = OnExecute(commandData, serviceProvider);
+                    
+                    // Do not commit on error or in rollback mode.
+                    if(result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
+                    {
+                        transaction.Commit();
+                    }
+
+                    return result;
+                }
+                case RevitTransactionMode.TransactionGroup:
+                case RevitTransactionMode.TransactionGroupWithRollback:
+                {
+                    using var transactionGroup = new TransactionGroup(document);
+                    transactionGroup.Start(CommandName);
+
+                    var result = OnExecute(commandData, serviceProvider);
+
+                    // Do not commit on error or in rollback mode.
+                    if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
+                    {
+                        transactionGroup.Assimilate();
+                    }
+
+                    return result;
+                }
             }
 
-            return result;
+            return Result.Failed;
         }
         catch (Exception)
         {
@@ -170,7 +348,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     This method invokes the <see cref="OnDismiss" /> method, which can be overridden
     ///     in derived classes to provide custom dismissal behavior.
     /// </remarks>
-    public void Dismiss(Document document)
+    void IFailuresProcessor.Dismiss(Document document)
     {
         OnDismiss(document);
     }
@@ -251,4 +429,26 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     Thrown if an unhandled exception occurs during the execution of the command logic.
     /// </exception>
     protected abstract Result OnExecute(ExternalCommandData commandData, IServiceProvider services);
+
+    private RevitTransactionMode GetTransactionMode()
+    {
+#pragma warning disable CS0618 // NoTransaction is obsolete
+        // We do not want to alter the behavior of legacy code.
+        // Therefore, if NoTransaction is set to true, we ignore the attribute and return RevitTransactionMode.None.
+        if (NoTransaction)
+        {
+            return RevitTransactionMode.None;
+        }
+#pragma warning restore CS0618
+        // Try to get the RevitTransactionModeAttribute
+        var type = GetType();
+        var attr = (RevitTransactionModeAttribute?)Attribute.GetCustomAttribute(type, typeof(RevitTransactionModeAttribute));
+        if (attr != null) // Since this attribute is assigned to the base class, it should always be present.
+        {
+            return attr.Mode;
+        }
+
+        // Return the default value.
+        return RevitTransactionMode.Transaction;
+    }
 }
