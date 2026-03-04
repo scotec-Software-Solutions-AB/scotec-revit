@@ -11,7 +11,6 @@ using {2};
 
 namespace {0}
 {{
-    [Transaction(TransactionMode.Manual)]
     public class {1}Factory : IExternalCommandAvailability
     {{
         private readonly IExternalCommandAvailability _instance;
