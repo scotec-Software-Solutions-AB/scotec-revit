@@ -14,6 +14,7 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
     private readonly Dictionary<string, string> _assemblyNameMap;
     //private readonly AssemblyDependencyResolver _resolver;
     private readonly IRevitAssemblyDependencyResolver _resolver;
+    private readonly IRevitAssemblyPreLoader _preLoader;
 
     public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
     {{
@@ -23,7 +24,8 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _resolver = new {1}();
         _resolver.Initialize(root);
-
+        _preLoader = new {2}();
+        _preLoader.PreLoad();
         CacheAssemblies();
     }}
 
@@ -176,6 +178,18 @@ file class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
     public string? ResolveUnmanagedDllToPath(string unmanagedDllName)
     {{
         return _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
+    }}
+}}
+
+internal interface IRevitAssemblyPreLoader
+{{
+    void PreLoad();
+}}
+
+file class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
+{{
+    public void PreLoad()
+    {{
     }}
 }}
 

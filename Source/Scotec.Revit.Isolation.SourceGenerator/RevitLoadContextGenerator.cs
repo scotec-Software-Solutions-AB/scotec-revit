@@ -2,6 +2,7 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -49,25 +50,14 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
-        string? resolverClassName = null;
-
-        // Look for class with RevitAssemblyDependencyResolverAttribute
-        foreach (var cls in compilation.SyntaxTrees
-                                       .SelectMany(tree => tree.GetRoot()
-                                                               .DescendantNodes()
-                                                               .OfType<ClassDeclarationSyntax>()))
+        if (!IsRevitAddinAssembly(compilation))
         {
-            var model = compilation.GetSemanticModel(cls.SyntaxTree);
-            if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol symbol &&
-                symbol.GetAttributes().Any(attr =>
-                    attr.AttributeClass?.Name == "RevitAssemblyDependencyResolverAttribute" ||
-                    attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAssemblyDependencyResolverAttribute") == true))
-            {
-                resolverClassName = symbol.ToDisplayString();
-                break;
-            }
+            return;
         }
 
+        // Look for class with RevitAssemblyDependencyResolverAttribute
+        string resolverClassName = resolverClassName = GetResolverClassName(compilation);
+        string preLoaderClassName = GetPreLoaderClassName(compilation);
 
         // If not found, search for a class derived from AssemblyDependencyResolver
         //if (resolverClassName == null)
@@ -87,14 +77,66 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         //    }
         //}
 
-        resolverClassName ??= "RevitAssemblyDependencyResolver";
-
         var template = LoadTemplate("RevitAssemblyLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
             var @namespace = compilation.Assembly.Name;
-            var content = string.Format(template, @namespace, resolverClassName);
+            var content = string.Format(template, @namespace, resolverClassName, preLoaderClassName);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
     }
+
+    private static string GetResolverClassName(Compilation compilation)
+    {
+        foreach (var cls in compilation.SyntaxTrees
+                                       .SelectMany(tree => tree.GetRoot()
+                                                               .DescendantNodes()
+                                                               .OfType<ClassDeclarationSyntax>()))
+        {
+            var model = compilation.GetSemanticModel(cls.SyntaxTree);
+            if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol symbol &&
+                symbol.GetAttributes().Any(attr =>
+                    attr.AttributeClass?.Name == "RevitAssemblyDependencyResolverAttribute" ||
+                    attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAssemblyDependencyResolverAttribute") == true))
+            {
+                return symbol.ToDisplayString();
+            }
+        }
+
+        return "RevitAssemblyDependencyResolver";
+    }
+
+    private static string GetPreLoaderClassName(Compilation compilation)
+    {
+        foreach (var cls in compilation.SyntaxTrees
+                                       .SelectMany(tree => tree.GetRoot()
+                                                               .DescendantNodes()
+                                                               .OfType<ClassDeclarationSyntax>()))
+        {
+            var model = compilation.GetSemanticModel(cls.SyntaxTree);
+            if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol symbol &&
+                symbol.GetAttributes().Any(attr =>
+                    attr.AttributeClass?.Name == "RevitAssemblyPreLoaderAttribute" ||
+                    attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAssemblyPreLoaderAttribute") == true))
+            {
+                return symbol.ToDisplayString();
+            }
+        }
+
+        return "RevitAssemblyPreLoader";
+    }
+
+    private bool IsRevitAddinAssembly(Compilation compilation)
+    {
+        //Debugger.Launch();
+        // Check if RevitAddinAssemblyAttribute is applied at the assembly level
+        var hasAddinAttribute = compilation.Assembly
+                                           .GetAttributes()
+                                           .Any(attr =>
+                                               attr.AttributeClass?.Name == "RevitAddinAssemblyAttribute" ||
+                                               attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAddinAssemblyAttribute") == true);
+
+        return hasAddinAttribute;
+    }
 }
+
