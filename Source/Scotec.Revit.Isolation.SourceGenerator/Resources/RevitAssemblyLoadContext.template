@@ -12,7 +12,8 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
-    private readonly AssemblyDependencyResolver _resolver;
+    //private readonly AssemblyDependencyResolver _resolver;
+    private readonly IRevitAssemblyDependencyResolver _resolver;
 
     public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
     {{
@@ -20,7 +21,8 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        _resolver = new AssemblyDependencyResolver(root);
+        _resolver = new {1}();
+        _resolver.Initialize(root);
 
         CacheAssemblies();
     }}
@@ -112,3 +114,69 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         return IntPtr.Zero;
     }}
 }}
+
+#nullable enable
+
+/// <summary>
+///     Defines the contract for resolving managed and unmanaged assembly dependencies
+///     for use within a <see cref="RevitAssemblyLoadContext" />.
+/// </summary>
+/// <remarks>
+///     Implementations of this interface provide mechanisms to resolve the file paths
+///     of managed assemblies and unmanaged libraries required by the Revit add-in.
+/// </remarks>
+internal interface IRevitAssemblyDependencyResolver
+{{
+    /// <summary>
+    ///     Initializes the resolver with the specified assembly path.
+    /// </summary>
+    /// <param name="assemblyPath">
+    ///     The file path to the root assembly or application.
+    /// </param>
+    void Initialize(string assemblyPath);
+
+    /// <summary>
+    ///     Resolves the file path to a managed assembly given its <see cref="AssemblyName"/>.
+    /// </summary>
+    /// <param name="assemblyName">
+    ///     The name of the managed assembly to resolve.
+    /// </param>
+    /// <returns>
+    ///     The file path to the resolved assembly, or <c>null</c> if not found.
+    /// </returns>
+    string? ResolveAssemblyToPath(AssemblyName assemblyName);
+
+    /// <summary>
+    ///     Resolves the file path to an unmanaged DLL given its name.
+    /// </summary>
+    /// <param name="unmanagedDllName">
+    ///     The name of the unmanaged library to resolve.
+    /// </param>
+    /// <returns>
+    ///     The file path to the resolved unmanaged library, or <c>null</c> if not found.
+    /// </returns>
+    string? ResolveUnmanagedDllToPath(string unmanagedDllName);
+}}
+
+
+file class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
+{{
+    private AssemblyDependencyResolver? _resolver;
+
+    public void Initialize(string assemblyPath)
+    {{
+        _resolver = new AssemblyDependencyResolver(assemblyPath);
+    }}
+
+    public string? ResolveAssemblyToPath(AssemblyName assemblyName)
+    {{
+        return _resolver?.ResolveAssemblyToPath(assemblyName);
+    }}
+
+    public string? ResolveUnmanagedDllToPath(string unmanagedDllName)
+    {{
+        return _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
+    }}
+}}
+
+#nullable restore

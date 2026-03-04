@@ -2,8 +2,10 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using System.Linq;
 using Microsoft.CodeAnalysis;
-
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+    
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
 /// <summary>
@@ -28,7 +30,6 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     protected override void OnInitialize()
     {
-        //Debugger.Launch();
         Context.RegisterSourceOutput(Context.CompilationProvider, Execute);
     }
 
@@ -48,11 +49,51 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
+        string? resolverClassName = null;
+
+        // Look for class with RevitAssemblyDependencyResolverAttribute
+        foreach (var cls in compilation.SyntaxTrees
+                                       .SelectMany(tree => tree.GetRoot()
+                                                               .DescendantNodes()
+                                                               .OfType<ClassDeclarationSyntax>()))
+        {
+            var model = compilation.GetSemanticModel(cls.SyntaxTree);
+            if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol symbol &&
+                symbol.GetAttributes().Any(attr =>
+                    attr.AttributeClass?.Name == "RevitAssemblyDependencyResolverAttribute" ||
+                    attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAssemblyDependencyResolverAttribute") == true))
+            {
+                resolverClassName = symbol.ToDisplayString();
+                break;
+            }
+        }
+
+
+        // If not found, search for a class derived from AssemblyDependencyResolver
+        //if (resolverClassName == null)
+        //{
+        //    foreach (var cls in compilation.SyntaxTrees
+        //                                   .SelectMany(tree => tree.GetRoot()
+        //                                                           .DescendantNodes()
+        //                                                           .OfType<ClassDeclarationSyntax>()))
+        //    {
+        //        var model = compilation.GetSemanticModel(cls.SyntaxTree);
+        //        if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol { BaseType: not null } symbol &&
+        //            symbol.BaseType.ToDisplayString() == "System.Runtime.Loader.AssemblyDependencyResolver")
+        //        {
+        //            resolverClassName = symbol.ToDisplayString();
+        //            break;
+        //        }
+        //    }
+        //}
+
+        resolverClassName ??= "RevitAssemblyDependencyResolver";
+
         var template = LoadTemplate("RevitAssemblyLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
             var @namespace = compilation.Assembly.Name;
-            var content = string.Format(template, @namespace);
+            var content = string.Format(template, @namespace, resolverClassName);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
     }
