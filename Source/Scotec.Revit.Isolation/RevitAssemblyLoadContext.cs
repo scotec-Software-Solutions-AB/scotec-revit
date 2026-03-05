@@ -19,7 +19,7 @@ namespace Scotec.Revit.Isolation;
 ///     resolving assemblies and unmanaged libraries using an
 ///     <see cref="System.Runtime.Loader.AssemblyDependencyResolver" />.
 /// </remarks>
-public class RevitAssemblyLoadContext : AssemblyLoadContext
+public sealed class RevitAssemblyLoadContext : AssemblyLoadContext
 {
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;

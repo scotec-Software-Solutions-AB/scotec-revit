@@ -15,7 +15,7 @@ namespace Scotec.Revit.Isolation;
 ///     to specify isolation behavior during Revit command availability checks.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitCommandAvailabilityIsolationAttribute : Attribute
+public sealed class RevitCommandAvailabilityIsolationAttribute : Attribute
 {
     /// <summary>
     ///     Gets or sets the name of the assembly load context used to execute the command availability check.
