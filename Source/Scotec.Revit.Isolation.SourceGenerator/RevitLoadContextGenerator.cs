@@ -50,7 +50,8 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
-        if (!IsRevitAddinAssembly(compilation))
+        //Debugger.Launch();
+        if (!TryGetRevitAddinContextName(compilation, out var contextName))
         {
             return;
         }
@@ -81,7 +82,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         if (!string.IsNullOrEmpty(template))
         {
             var @namespace = compilation.Assembly.Name;
-            var content = string.Format(template, @namespace, resolverClassName, preLoaderClassName);
+            var content = string.Format(template, @namespace, contextName, resolverClassName, preLoaderClassName);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
     }
@@ -126,17 +127,45 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         return "RevitAssemblyPreLoader";
     }
 
-    private bool IsRevitAddinAssembly(Compilation compilation)
+    private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName)
     {
-        //Debugger.Launch();
-        // Check if RevitAddinAssemblyAttribute is applied at the assembly level
-        var hasAddinAttribute = compilation.Assembly
-                                           .GetAttributes()
-                                           .Any(attr =>
-                                               attr.AttributeClass?.Name == "RevitAddinAssemblyAttribute" ||
-                                               attr.AttributeClass?.ToDisplayString().EndsWith(".RevitAddinAssemblyAttribute") == true);
+        contextName = null;
+        var attr = compilation.Assembly
+                              .GetAttributes()
+                              .FirstOrDefault(a =>
+                                  a.AttributeClass?.Name == "RevitAddinAssemblyAttribute" ||
+                                  a.AttributeClass?.ToDisplayString().EndsWith(".RevitAddinAssemblyAttribute") == true);
 
-        return hasAddinAttribute;
+        if (attr == null)
+        {
+            // Not a Revit add-in assembly.
+            return false;
+        }
+
+        // Look for a named argument called "Mode"
+        foreach (var namedArg in attr.NamedArguments)
+        {
+            if (namedArg.Key == "Mode")
+            {
+                contextName = namedArg.Value.Value?.ToString();
+                break;
+            }
+        }
+
+        // If Mode is a constructor argument (positional), check ConstructorArguments
+        // (Uncomment if Mode is a constructor parameter)
+        // if (attr.ConstructorArguments.Length > 0)
+        // {
+        //     return attr.ConstructorArguments[0].Value?.ToString();
+        // }
+
+        // Use the assembly name if no context name has been specified.
+        if (string.IsNullOrEmpty(contextName))
+        {
+            contextName = compilation.AssemblyName;
+        }
+
+        return true;
     }
 }
 

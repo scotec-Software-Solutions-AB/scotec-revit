@@ -4,10 +4,24 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
 
 namespace Scotec.Revit.Loader;
 
-internal class RevitAssemblyLoadContext : AssemblyLoadContext
+internal static class RevitAddinModuleInitializer
+{{
+    [ModuleInitializer]
+    public static void Initialize()
+    {{
+        var currentAssembly = typeof(RevitAddinModuleInitializer).Assembly;
+        var contextName = "{1}";
+
+        var loadContext = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+    }}
+}}
+
+
+internal sealed class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
@@ -22,9 +36,9 @@ internal class RevitAssemblyLoadContext : AssemblyLoadContext
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        _resolver = new {1}();
+        _resolver = new {2}();
         _resolver.Initialize(root);
-        _preLoader = new {2}();
+        _preLoader = new {3}();
         _preLoader.PreLoad();
         CacheAssemblies();
     }}
@@ -161,7 +175,7 @@ internal interface IRevitAssemblyDependencyResolver
 }}
 
 
-file class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
+file sealed class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
 {{
     private AssemblyDependencyResolver? _resolver;
 
@@ -186,7 +200,7 @@ internal interface IRevitAssemblyPreLoader
     void PreLoad();
 }}
 
-file class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
+file sealed class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
 {{
     public void PreLoad()
     {{

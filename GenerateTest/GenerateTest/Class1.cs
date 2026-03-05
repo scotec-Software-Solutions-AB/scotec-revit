@@ -7,7 +7,8 @@ using Scotec.Revit;
 using Scotec.Revit.Isolation;
 using System.Diagnostics;
 
-//[assembly: RevitAddinIsolationContext(ContextName = "TestContext")]
+[assembly: RevitAddinAssembly]
+
 
 namespace GenerateTest
 {

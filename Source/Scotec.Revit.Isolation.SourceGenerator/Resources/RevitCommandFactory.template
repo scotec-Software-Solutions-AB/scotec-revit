@@ -6,13 +6,13 @@ using System.Runtime.Loader;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Scotec.Revit.Loader;
+//using Scotec.Revit.Loader;
 using {2};
 
 namespace {0}
 {{
     [Transaction({4})]
-    public class {1}Factory : IExternalCommand
+    public sealed class {1}Factory : IExternalCommand
     {{
         private readonly IExternalCommand _instance;
 
@@ -28,7 +28,8 @@ namespace {0}
             var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
             if (context == null)
 			{{
-                context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+                //context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+                throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
 			}}
 
             var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);

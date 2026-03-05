@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
-using Scotec.Revit.Loader;
+//using Scotec.Revit.Loader;
 using {2};
 
 namespace {0}
@@ -13,7 +13,7 @@ namespace {0}
     /// <summary>
     /// Auto-generated factory to create instances of type <see RevitTestApp/>.
     /// </summary>
-    public class {1}Factory : IExternalDBApplication
+    public sealed class {1}Factory : IExternalDBApplication
     {{
         private IExternalDBApplication _instance;                            
                                       
@@ -29,7 +29,8 @@ namespace {0}
             var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
             if (context == null)
 			{{
-                context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+                //context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+                throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
 			}}
 
             var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);

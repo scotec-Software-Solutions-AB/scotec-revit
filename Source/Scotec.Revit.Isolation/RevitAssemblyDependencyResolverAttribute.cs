@@ -12,8 +12,12 @@ namespace Scotec.Revit.Isolation
     /// <remarks>
     ///     Classes decorated with this attribute are recognized by the source generator as candidates
     ///     for resolving managed and unmanaged assembly dependencies within a Revit add-in context.
+    ///     <br/><br/>
     ///     <b>Note:</b> Classes marked with this attribute must implement the <see cref="Scotec.Revit.Loader.IRevitAssemblyDependencyResolver"/> interface.
     ///     Only one class per assembly should be marked with this attribute.
+    ///     <br/>
+    ///     <b>Note:</b> The <see cref="Scotec.Revit.Loader.IRevitAssemblyDependencyResolver"/> interface is only available in assemblies marked with the
+    ///     <see cref="RevitAddinAssemblyAttribute"/>.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class)]
     public class RevitAssemblyDependencyResolverAttribute : Attribute
