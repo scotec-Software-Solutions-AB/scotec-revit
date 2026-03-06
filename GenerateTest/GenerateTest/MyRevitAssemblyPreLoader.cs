@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 using Scotec.Revit.Isolation;
@@ -13,7 +14,8 @@ namespace GenerateTest;
 [RevitAssemblyPreLoader]
 internal class MyRevitAssemblyPreLoader : IRevitAssemblyPreLoader
 {
-    public void PreLoad()
+    public void PreLoad(AssemblyLoadContext context)
     {
+        
     }
 }

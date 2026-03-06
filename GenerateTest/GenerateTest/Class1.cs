@@ -8,7 +8,7 @@ using Scotec.Revit.Isolation;
 using System.Diagnostics;
 
 [assembly: RevitAddinAssembly]
-
+[assembly: RevitSharedContext("UI.Context")]
 
 namespace GenerateTest
 {

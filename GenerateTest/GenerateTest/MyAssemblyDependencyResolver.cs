@@ -45,7 +45,7 @@ internal class MyAssemblyDependencyResolver : RevitAssemblyDependencyResolver
     {
     }
     
-    public override void Initialize(string assemblyPath)
+    public override void Initialize(string assemblyPath, AssemblyLoadContext context)
     {
         _blackList = new List<AssemblyName>
         {
@@ -57,7 +57,7 @@ internal class MyAssemblyDependencyResolver : RevitAssemblyDependencyResolver
             new AssemblyName("System.Threading.Tasks.Extensions")
         };
         _assemblyPath = assemblyPath;
-        base.Initialize(assemblyPath);
+        base.Initialize(assemblyPath, context);
     }
 
     public override string? ResolveAssemblyToPath(AssemblyName assemblyName)

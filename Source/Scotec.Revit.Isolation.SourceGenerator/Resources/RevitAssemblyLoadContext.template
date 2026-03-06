@@ -16,31 +16,56 @@ internal static class RevitAddinModuleInitializer
         var currentAssembly = typeof(RevitAddinModuleInitializer).Assembly;
         var contextName = "{1}";
 
-        var loadContext = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
+        if(!AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
+        {{
+            var resolver = new {2};
+            var loadContext = new RevitAddinAssemblyLoadContext(contextName, currentAssembly.Location, resolver);
+        }}
     }}
 }}
 
+file class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
+{{
+    public RevitAddinAssemblyLoadContext(string contextName, string rootAssembly, IRevitAssemblyDependencyResolver _resolver = null) : base(contextName, rootAssembly, resolver)
+    {{
+        IRevitAssemblyPreLoader preLoader = new {3}();
+        preLoader.PreLoad(this);
+    }}
 
-internal sealed class RevitAssemblyLoadContext : AssemblyLoadContext
+    protected override Assembly Load(AssemblyName assemblyName)
+    {{
+        System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
+
+        var resolvedPath = _resolver.ResolveAssemblyToPath(assemblyName);
+        if (resolvedPath != null)
+        {{
+            return LoadFromAssemblyPath(resolvedPath);
+        }}
+
+        return base.Load(assemblyName);
+    }}
+
+}}
+
+
+file class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
-    private readonly IRevitAssemblyDependencyResolver _resolver;
-    private readonly IRevitAssemblyPreLoader _preLoader;
 
-    public RevitAssemblyLoadContext(string contextName, string rootAssembly) : base(contextName)
+    public RevitAssemblyLoadContext(string contextName, string rootAssembly, IRevitAssemblyDependencyResolver resolver = null) : base(contextName)
     {{
         var root = Path.GetFullPath(rootAssembly);
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        _resolver = new {2}();
-        _resolver.Initialize(root);
-        _preLoader = new {3}();
-        _preLoader.PreLoad();
+        Resolver = resolver ?? new RevitAssemblyDependencyResolver();
+        Resolver.Initialize(root, this);
         CacheAssemblies();
     }}
+
+    protected IRevitAssemblyDependencyResolver Resolver{ get; }
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
@@ -152,7 +177,7 @@ internal interface IRevitAssemblyDependencyResolver
     /// <param name="assemblyPath">
     ///     The file path to the root assembly or application.
     /// </param>
-    void Initialize(string assemblyPath);
+    void Initialize(string assemblyPath, AssemblyLoadContext context);
 
     /// <summary>
     ///     Resolves the file path to a managed assembly given its <see cref="AssemblyName"/>.
@@ -199,6 +224,7 @@ internal interface IRevitAssemblyDependencyResolver
 internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
 {{
     private AssemblyDependencyResolver? _resolver;
+    private AssemblyLoadContext? _context;
 
     /// <summary>
     ///     Initializes the dependency resolver with the specified assembly path.
@@ -211,8 +237,9 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     ///     This method must be called before attempting to resolve any assemblies or unmanaged libraries.
     ///     It creates an internal <see cref="AssemblyDependencyResolver" /> instance for the specified path.
     /// </remarks>
-    public virtual void Initialize(string assemblyPath)
+    public virtual void Initialize(string assemblyPath, AssemblyLoadContext context)
     {{
+        _context = context;
         _resolver = new AssemblyDependencyResolver(assemblyPath);
     }}
 
@@ -278,12 +305,12 @@ internal interface IRevitAssemblyPreLoader
     ///     necessary to ensure that the assembly loading process proceeds smoothly.
     /// </remarks>
 
-    void PreLoad();
+    void PreLoad(AssemblyLoadContext context);
 }}
 
 internal class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
 {{
-    public virtual void PreLoad()
+    public virtual void PreLoad(AssemblyLoadContext context)
     {{
     }}
 }}
