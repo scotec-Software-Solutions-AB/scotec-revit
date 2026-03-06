@@ -7,16 +7,13 @@ using Scotec.Revit.Isolation;
 using Scotec.Revit.Loader;
 
 
+namespace GenerateTest;
 
-namespace GenerateTest
+
+[RevitAssemblyPreLoader]
+internal class MyRevitAssemblyPreLoader : IRevitAssemblyPreLoader
 {
-    [RevitAssemblyPreLoader]
-    internal class MyRevitAssemblyPreLoader : IRevitAssemblyPreLoader
+    public void PreLoad()
     {
-        public void PreLoad()
-        {
-        }
     }
 }
-
-

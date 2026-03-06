@@ -20,7 +20,7 @@ namespace Scotec.Revit.Isolation;
 public sealed class RevitAddinAssemblyAttribute : Attribute
 {
     /// <summary>
-    ///     Gets or setsvthe name of the context associated with the Revit add-in assembly.
+    ///     Gets or sets the name of the context associated with the Revit add-in assembly.
     /// </summary>
     /// <value>
     ///     A <see cref="string" /> representing the context name. This value provides additional

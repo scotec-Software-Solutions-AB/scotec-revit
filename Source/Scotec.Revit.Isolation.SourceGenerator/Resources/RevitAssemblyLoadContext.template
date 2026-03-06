@@ -26,7 +26,6 @@ internal sealed class RevitAssemblyLoadContext : AssemblyLoadContext
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
-    //private readonly AssemblyDependencyResolver _resolver;
     private readonly IRevitAssemblyDependencyResolver _resolver;
     private readonly IRevitAssemblyPreLoader _preLoader;
 
@@ -140,6 +139,10 @@ internal sealed class RevitAssemblyLoadContext : AssemblyLoadContext
 /// <remarks>
 ///     Implementations of this interface provide mechanisms to resolve the file paths
 ///     of managed assemblies and unmanaged libraries required by the Revit add-in.
+///     <br/><br/>
+///     <b>Note:</b> This interface is only available in
+///     assemblies marked with the <see cref="RevitAddinAssemblyAttribute" />.
+
 /// </remarks>
 internal interface IRevitAssemblyDependencyResolver
 {{
@@ -175,34 +178,112 @@ internal interface IRevitAssemblyDependencyResolver
 }}
 
 
-file sealed class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
+/// <summary>
+///     Provides a default implementation of <see cref="IRevitAssemblyDependencyResolver" /> that uses
+///     <see cref="System.Runtime.Loader.AssemblyDependencyResolver" /> to resolve managed and unmanaged
+///     assembly dependencies for a Revit add-in.
+/// </summary>
+/// <remarks>
+///     This class encapsulates the logic for resolving assembly and unmanaged library paths using the
+///     .NET runtime's <see cref="AssemblyDependencyResolver" />. It is intended to be used within a
+///     <see cref="RevitAssemblyLoadContext" /> to support custom dependency resolution scenarios for
+///     Revit add-ins.
+///     <br/><br/>
+///     <b>Note:</b> This implementation assumes that the dependency context is correctly configured
+///     for the add-in and that all required assemblies and native libraries are discoverable by the
+///     resolver.
+///     <br/><br/>
+///     <b>Note:</b> This class is only available in
+///     assemblies marked with the <see cref="RevitAddinAssemblyAttribute" />.
+/// </remarks>
+internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
 {{
     private AssemblyDependencyResolver? _resolver;
 
-    public void Initialize(string assemblyPath)
+    /// <summary>
+    ///     Initializes the dependency resolver with the specified assembly path.
+    /// </summary>
+    /// <param name="assemblyPath">
+    ///     The file path to the root assembly or application. This path is used by
+    ///     <see cref="AssemblyDependencyResolver" /> to locate dependencies.
+    /// </param>
+    /// <remarks>
+    ///     This method must be called before attempting to resolve any assemblies or unmanaged libraries.
+    ///     It creates an internal <see cref="AssemblyDependencyResolver" /> instance for the specified path.
+    /// </remarks>
+    public virtual void Initialize(string assemblyPath)
     {{
         _resolver = new AssemblyDependencyResolver(assemblyPath);
     }}
 
-    public string? ResolveAssemblyToPath(AssemblyName assemblyName)
+        /// </summary>
+    /// <param name="assemblyName">
+    ///     The name of the managed assembly to resolve.
+    /// </param>
+    /// <returns>
+    ///     The file path to the resolved assembly, or <c>null</c> if not found.
+    /// </returns>
+    /// <remarks>
+    ///     This method delegates to the underlying <see cref="AssemblyDependencyResolver" /> to locate
+    ///     the requested assembly. If the assembly cannot be resolved, <c>null</c> is returned.
+    /// </remarks>
+    public virtual string? ResolveAssemblyToPath(AssemblyName assemblyName)
     {{
         return _resolver?.ResolveAssemblyToPath(assemblyName);
     }}
 
-    public string? ResolveUnmanagedDllToPath(string unmanagedDllName)
+    /// <summary>
+    ///     Resolves the file path to an unmanaged DLL given its name.
+    /// </summary>
+    /// <param name="unmanagedDllName">
+    ///     The name of the unmanaged library to resolve.
+    /// </param>
+    /// <returns>
+    ///     The file path to the resolved unmanaged library, or <c>null</c> if not found.
+    /// </returns>
+    /// <remarks>
+    ///     This method delegates to the underlying <see cref="AssemblyDependencyResolver" /> to locate
+    ///     the requested unmanaged library. If the library cannot be resolved, <c>null</c> is returned.
+    /// </remarks>
+    public virtual string? ResolveUnmanagedDllToPath(string unmanagedDllName)
     {{
         return _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
     }}
 }}
 
+/// <summary>
+///     Defines a contract for pre-loading assemblies or performing initialization logic
+///     before the main assembly loading process in a <see cref="RevitAssemblyLoadContext" />.
+/// </summary>
+/// <remarks>
+///     Implementations of this interface can be used to execute custom logic—such as loading
+///     required dependencies, setting up environment variables, or performing validation—prior
+///     to the resolution and loading of assemblies by the <see cref="RevitAssemblyLoadContext" />.
+///     This is useful for scenarios where certain assemblies or resources must be available
+///     before the main application logic executes.
+///     <br/><br/>
+///     <b>Note:</b> This interface is only available in
+///     assemblies marked with the <see cref="RevitAddinAssemblyAttribute" />.
+
+/// </remarks>
 internal interface IRevitAssemblyPreLoader
 {{
+    /// <summary>
+    ///     Performs pre-loading or initialization logic before the main assembly loading process.
+    /// </summary>
+    /// <remarks>
+    ///     This method is called prior to resolving and loading assemblies in the
+    ///     <see cref="RevitAssemblyLoadContext" />. Implementations can use this method to
+    ///     load required dependencies, set up environment variables, or perform any setup
+    ///     necessary to ensure that the assembly loading process proceeds smoothly.
+    /// </remarks>
+
     void PreLoad();
 }}
 
-file sealed class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
+internal class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
 {{
-    public void PreLoad()
+    public virtual void PreLoad()
     {{
     }}
 }}
