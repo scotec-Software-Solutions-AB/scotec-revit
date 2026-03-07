@@ -31,4 +31,6 @@ public sealed class RevitAddinAssemblyAttribute : Attribute
     ///     or purpose within the scope of Revit add-ins.
     /// </remarks>
     public string? ContextName { get; set; }
+
+    public string? SharedContextName { get; set; }
 }

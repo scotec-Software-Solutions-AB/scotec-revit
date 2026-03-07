@@ -51,7 +51,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
         //Debugger.Launch();
-        if (!TryGetRevitAddinContextName(compilation, out var contextName))
+        if (!TryGetRevitAddinContextName(compilation, out var contextName, out var sharedContextName))
         {
             return;
         }
@@ -82,7 +82,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         if (!string.IsNullOrEmpty(template))
         {
             var @namespace = compilation.Assembly.Name;
-            var content = string.Format(template, @namespace, contextName, resolverClassName, preLoaderClassName);
+            var content = string.Format(template, @namespace, contextName, sharedContextName, resolverClassName, preLoaderClassName);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
     }
@@ -127,9 +127,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         return "RevitAssemblyPreLoader";
     }
 
-    private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName)
+    private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName, out string? sharedContextName)
     {
         contextName = null;
+        sharedContextName = null;
         var attr = compilation.Assembly
                               .GetAttributes()
                               .FirstOrDefault(a =>
@@ -145,10 +146,13 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         // Look for a named argument called "Mode"
         foreach (var namedArg in attr.NamedArguments)
         {
-            if (namedArg.Key == "Mode")
+            if (namedArg.Key == "ContextName")
             {
                 contextName = namedArg.Value.Value?.ToString();
-                break;
+            }
+            if (namedArg.Key == "SharedContextName")
+            {
+                sharedContextName = namedArg.Value.Value?.ToString();
             }
         }
 
@@ -163,6 +167,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         if (string.IsNullOrEmpty(contextName))
         {
             contextName = compilation.AssemblyName;
+        }
+        if (sharedContextName is null)
+        {
+            contextName = string.Empty;
         }
 
         return true;
