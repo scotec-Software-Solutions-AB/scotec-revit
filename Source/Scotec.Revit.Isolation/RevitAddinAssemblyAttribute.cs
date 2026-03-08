@@ -32,5 +32,13 @@ public sealed class RevitAddinAssemblyAttribute : Attribute
     /// </remarks>
     public string? ContextName { get; set; }
 
+    /// <summary>
+    /// Gets or sets the name of the shared context associated with the Revit add-in assembly.
+    /// </summary>
+    /// <remarks>
+    /// This property provides a mechanism to specify a shared context name that can be used to
+    /// group or identify related Revit add-in assemblies. It is particularly useful in scenarios
+    /// where multiple assemblies need to share a common context or metadata.
+    /// </remarks>
     public string? SharedContextName { get; set; }
 }

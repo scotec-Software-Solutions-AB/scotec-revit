@@ -17,6 +17,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Resources\RevitAddinAssemblyLoadContext.template" />
+	  <EmbeddedResource Include="Resources\RevitAddinSharedAssemblyLoadContext.template" />
+	  <EmbeddedResource Include="Resources\RevitAssemblyLoadContextInitializer.template" />
 	  <EmbeddedResource Include="Resources\RevitAssemblyLoadContext.template" />
 	</ItemGroup>
 

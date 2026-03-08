@@ -2,10 +2,11 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
+using System.Diagnostics;
+using System.Linq;
     
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
@@ -50,57 +51,84 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
-        //Debugger.Launch();
-        if (!TryGetRevitAddinContextName(compilation, out var contextName, out var sharedContextName))
+        var @namespace = compilation.Assembly.Name;
+        GenerateAssemblyLoadContext(context, @namespace);
+        
+        var (contextName, usedSharedContextName) = GenerateAddinLoadContext(context, compilation, @namespace);
+        var sharedContextName = GenerateAddinSharedLoadContext(context, compilation, @namespace);
+
+        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, usedSharedContextName);
+    }
+
+    private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName, string usedSharedContextName)
+    {
+        var template = LoadTemplate("RevitAssemblyLoadContextInitializer");
+        if (!string.IsNullOrEmpty(template))
         {
-            return;
+            var content = string.Format(template, @namespace, sharedContextName, contextName, usedSharedContextName);
+            context.AddSource("RevitAssemblyLoadContextInitializer.g.cs", content);
+        }
+    }
+
+    private (string conext, string sharedContext) GenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace)
+    {
+        if (!TryGetRevitAddinContextName(compilation, out var contextName, out var sharedContextName) || string.IsNullOrEmpty(contextName) || string.IsNullOrEmpty(sharedContextName))
+        {
+            return (string.Empty, string.Empty);
         }
 
-        // If not found, search for a class derived from AssemblyDependencyResolver
-        //if (resolverClassName == null)
-        //{
-        //    foreach (var cls in compilation.SyntaxTrees
-        //                                   .SelectMany(tree => tree.GetRoot()
-        //                                                           .DescendantNodes()
-        //                                                           .OfType<ClassDeclarationSyntax>()))
-        //    {
-        //        var model = compilation.GetSemanticModel(cls.SyntaxTree);
-        //        if (model.GetDeclaredSymbol(cls) is INamedTypeSymbol { BaseType: not null } symbol &&
-        //            symbol.BaseType.ToDisplayString() == "System.Runtime.Loader.AssemblyDependencyResolver")
-        //        {
-        //            resolverClassName = symbol.ToDisplayString();
-        //            break;
-        //        }
-        //    }
-        //}
+        var template = LoadTemplate("RevitAddinAssemblyLoadContext");
+        if (!string.IsNullOrEmpty(template))
+        {
+            var content = string.Format(template, @namespace);
+            context.AddSource("RevitAddinAssemblyLoadContext.g.cs", content);
+            return (contextName!, sharedContextName!);
+        }
 
+        return (string.Empty, string.Empty);
+    }
+    private string GenerateAddinSharedLoadContext(SourceProductionContext context, Compilation compilation, string @namespace)
+    {
+        if (!TryGetRevitAddinSharedContextName(compilation, out var sharedContextName) || string.IsNullOrEmpty(sharedContextName))
+        {
+            return string.Empty;
+        }
+
+        var template = LoadTemplate("RevitAddinSharedAssemblyLoadContext");
+        if (!string.IsNullOrEmpty(template))
+        {
+            var content = string.Format(template, @namespace);
+            context.AddSource("RevitAddinSharedAssemblyLoadContext.g.cs", content);
+            return sharedContextName!;
+        }
+
+        return string.Empty;
+    }
+
+    private void GenerateAssemblyLoadContext(SourceProductionContext context, string @namespace)
+    {
         var template = LoadTemplate("RevitAssemblyLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
-            var @namespace = compilation.Assembly.Name;
-            var content = string.Format(template, @namespace, contextName, sharedContextName);
+            var content = string.Format(template, @namespace);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
+
     }
 
     private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName, out string? sharedContextName)
     {
         contextName = null;
         sharedContextName = null;
-        var attr = compilation.Assembly
-                              .GetAttributes()
-                              .FirstOrDefault(a =>
-                                  a.AttributeClass?.Name == "RevitAddinAssemblyAttribute" ||
-                                  a.AttributeClass?.ToDisplayString().EndsWith(".RevitAddinAssemblyAttribute") == true);
 
-        if (attr == null)
+        if (!TryGetAttributeData(compilation, "RevitAddinAssemblyAttribute", out var attributeData) || attributeData is null)
         {
-            // Not a Revit add-in assembly.
             return false;
         }
+        
 
         // Look for a named argument called "Mode"
-        foreach (var namedArg in attr.NamedArguments)
+        foreach (var namedArg in attributeData.NamedArguments)
         {
             if (namedArg.Key == "ContextName")
             {
@@ -112,24 +140,42 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
             }
         }
 
-        // If Mode is a constructor argument (positional), check ConstructorArguments
-        // (Uncomment if Mode is a constructor parameter)
-        // if (attr.ConstructorArguments.Length > 0)
-        // {
-        //     return attr.ConstructorArguments[0].Value?.ToString();
-        // }
-
         // Use the assembly name if no context name has been specified.
         if (string.IsNullOrEmpty(contextName))
         {
             contextName = compilation.AssemblyName;
         }
-        if (sharedContextName is null)
-        {
-            sharedContextName = string.Empty;
-        }
+        
+        sharedContextName ??= string.Empty;
 
         return true;
+    }
+    private bool TryGetRevitAddinSharedContextName(Compilation compilation, out string? sharedContextName)
+    {
+        sharedContextName = null;
+        if (!TryGetAttributeData(compilation, "RevitSharedContextAttribute", out var attributeData) || attributeData is null)
+        {
+            return false;
+        }
+
+
+        // Check ConstructorArguments
+        if (attributeData.ConstructorArguments.Length > 0)
+        {
+            sharedContextName = attributeData.ConstructorArguments[0].Value?.ToString();
+        }
+
+        return !string.IsNullOrEmpty(sharedContextName);
+    }
+
+    private static bool TryGetAttributeData(Compilation compilation, string attributeName, out AttributeData? attributeData)
+    {
+        attributeData = compilation.Assembly
+                                       .GetAttributes()
+                                       .FirstOrDefault(a =>
+                                           a.AttributeClass?.Name ==  attributeName ||
+                                           a.AttributeClass?.ToDisplayString().EndsWith($".{attributeName}") == true);
+        return attributeData is not null;
     }
 }
 

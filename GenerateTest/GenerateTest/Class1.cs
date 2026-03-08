@@ -19,10 +19,10 @@ namespace GenerateTest;
 
 partial class RevitAddinAssemblyLoadContext
 {
-    partial void OnInitialize()
-    {
+    //partial void OnInitialize()
+    //{
        
-    }
+    //}
 }
 
 [RevitCommandIsolation(ContextName = "TestContext3")]
