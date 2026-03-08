@@ -6,6 +6,7 @@
 	  <ImplicitUsings>enable</ImplicitUsings>
 	  <Nullable>enable</Nullable>
 	  <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+	  <!--<LangVersion>13.0</LangVersion>-->
   </PropertyGroup>
 
 	<ItemGroup>

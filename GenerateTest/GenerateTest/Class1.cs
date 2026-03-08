@@ -1,66 +1,74 @@
-﻿
-using Autodesk.Revit.ApplicationServices;
+﻿using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Scotec.Revit;
 using Scotec.Revit.Isolation;
+using Scotec.Revit.Loader;
 using System.Diagnostics;
+using static Autodesk.Internal.Windows.SwfMediaPlayer;
 
 [assembly: RevitAddinAssembly]
 [assembly: RevitSharedContext("UI.Context")]
 
-namespace GenerateTest
+
+
+
+
+namespace GenerateTest;
+
+partial class RevitAddinAssemblyLoadContext
 {
-    [RevitCommandIsolation(ContextName = "TestContext3")]
-    [RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
-    //[Transaction(TransactionMode.Manual)]
-
-    public class Class1 : IExternalCommand
+    partial void OnInitialze()
     {
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    [RevitCommandAvailabilityIsolation()]
-    public class Class2 : IExternalCommandAvailability
-    {
-        public bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
-        {
-            throw new NotImplementedException();
-        }
-    }
-    [RevitApplicationIsolation]
-    public class Class3: IExternalApplication
-    {
-        public Result OnStartup(UIControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Result OnShutdown(UIControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    [RevitDbApplicationIsolation]
-
-    public class Class4: IExternalDBApplication
-    {
-        public ExternalDBApplicationResult OnStartup(ControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
+        this.
     }
 }
 
+[RevitCommandIsolation(ContextName = "TestContext3")]
+[RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
+//[Transaction(TransactionMode.Manual)]
+public class Class1 : IExternalCommand
+{
+    public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {
+        throw new NotImplementedException();
+    }
+}
 
+[RevitCommandAvailabilityIsolation()]
+public class Class2 : IExternalCommandAvailability
+{
+    public bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    {
+        throw new NotImplementedException();
+    }
+}
 
+[RevitApplicationIsolation]
+public class Class3 : IExternalApplication
+{
+    public Result OnStartup(UIControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OnShutdown(UIControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+[RevitDbApplicationIsolation]
+public class Class4 : IExternalDBApplication
+{
+    public ExternalDBApplicationResult OnStartup(ControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+}

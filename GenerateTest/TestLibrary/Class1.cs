@@ -10,14 +10,9 @@ namespace TestLibrary
     //[RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
     ////[Transaction(TransactionMode.Manual)]
 
-    public class Class1 //: IExternalCommand
+    public partial class Class1 //: IExternalCommand
     {
-        public void Test()
-        {
-        }
-        //public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        //{
-        //    throw new NotImplementedException();
-        //}
+
     }
+
 }
