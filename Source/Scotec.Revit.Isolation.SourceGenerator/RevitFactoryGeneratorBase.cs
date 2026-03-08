@@ -163,7 +163,7 @@ public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
         //}
     }
 
-    protected virtual object?[] OnExecute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
+    protected virtual object?[]     OnExecute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
     {
         return [];
     }
