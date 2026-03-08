@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
 
-namespace Scotec.Revit.Loader;
+namespace {0};
 
 internal static class RevitAddinModuleInitializer
 {{
@@ -17,45 +17,80 @@ internal static class RevitAddinModuleInitializer
         var contextName = "{1}";
         var sharedContextName = {2};
 
+        if(!AssemblyLoadContext.All.Any(alc => alc.Name == sharedContextName))
+        {{
+            var loadContext = new RevitAddinSharedAssemblyLoadContext(sharedContextName, currentAssembly.Location);
+            loadContext.Initialze();
+        }}
+
         if(!AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
         {{
-            var resolver = new {3};
-            var loadContext = new RevitAddinAssemblyLoadContext(contextName, sharedContextName, currentAssembly.Location, resolver);
+            var loadContext = new RevitAddinAssemblyLoadContext(contextName, sharedContextName, currentAssembly.Location);
+            loadContext.Initialize();
         }}
     }}
 }}
 
-file class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
+internal sealed partial class RevitAddinSharedAssemblyLoadContext : RevitAssemblyLoadContext
+{{
+    public RevitSharedAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly)
+        : base(contextName, rootAssembly)
+    {{
+    }}
+
+    partial void OnInitialze();
+    public override void Initialize()
+    {{
+        OnInitialize()
+    }}
+
+}}
+
+internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
 {{
     private string _sharedContextName;
     private AssemblyLoadContext _sharedContext;
 
-    public RevitAddinAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly, IRevitAssemblyDependencyResolver _resolver = null)
-        : base(contextName, sharedContextName, rootAssembly, resolver)
+    public RevitAddinAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly)
+        : base(contextName, sharedContextName, rootAssembly)
     {{
         // IRevitAssemblyPreLoader preLoader = new {4}();
         // preLoader.PreLoad(this);
     }}
 
+    partial void OnInitialze();
+    public override void Initialize()
+    {{
+        _sharedContext = AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == _sharedContextName);
+
+        OnInitialize()
+
+        BlackListedAssemblies ??= new HashSet<string>();
+        SharedAssemblies ??= new HashSet<string>();
+        Resolver ??= new RevitAssemblyDependencyResolver();
+        Resolver.Initialize(root, this);
+    }}
+
+    private HashSet<string> SharedAssemblies {{ get; set; }}
+    private Hashset<string> BlackListedAssemblies {{ get; set; }}
+
     protected override Assembly Load(AssemblyName assemblyName)
     {{
-        if(_sharedContext is null)
+        if(BlackListedAssemblies.Contains(assemblyName.Name))
         {{
-            _sharedContext = AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == _sharedContextName);
-        }}  
+            return null;
+        }}
 
-        if(_sharedContext is not null)
+        if(SharedAssemblies.Contains(assemblyName.Name))
         {{
+            if(_sharedContext is null)
+            {{
+                return null;
+            }}
             var sharedAssembly = _sharedContext.Assemblies.FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
-            if (sharedAssembly is not null)
-            {{
-                return sharedAssembly;
-            }}
-            sharedAssembly = _sharedContext.Load(assemblyName);
-            if(sharedAssembly is not null)
-            {{
-                return sharedAssembly;
-            }}
+            sharedAssembly ??= _sharedContext.Load(assemblyName);
+
+            return sharedAssembly;
         }}
         var resolvedPath = _resolver.ResolveAssemblyToPath(assemblyName);
         if (resolvedPath != null)
@@ -68,25 +103,24 @@ file class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
 }}
 
 
-file abstract class RevitAssemblyLoadContext : AssemblyLoadContext
+internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private readonly string _pluginRoot;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
 
-    public RevitAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly, IRevitAssemblyDependencyResolver resolver = null) 
+    protected RevitAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly) 
         : base(contextName)
     {{
         var root = Path.GetFullPath(rootAssembly);
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        Resolver = resolver ?? new RevitAssemblyDependencyResolver();
-        Resolver.Initialize(root, this);
         CacheAssemblies();
     }}
 
-    protected IRevitAssemblyDependencyResolver Resolver{ get; }
+    public abstract void Initialize();
+    protected IRevitAssemblyDependencyResolver Resolver{{ get; set; }}
 
     protected override Assembly Load(AssemblyName assemblyName)
     {{
@@ -296,43 +330,6 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     public virtual string? ResolveUnmanagedDllToPath(string unmanagedDllName)
     {{
         return _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
-    }}
-}}
-
-/// <summary>
-///     Defines a contract for pre-loading assemblies or performing initialization logic
-///     before the main assembly loading process in a <see cref="RevitAssemblyLoadContext" />.
-/// </summary>
-/// <remarks>
-///     Implementations of this interface can be used to execute custom logic—such as loading
-///     required dependencies, setting up environment variables, or performing validation—prior
-///     to the resolution and loading of assemblies by the <see cref="RevitAssemblyLoadContext" />.
-///     This is useful for scenarios where certain assemblies or resources must be available
-///     before the main application logic executes.
-///     <br/><br/>
-///     <b>Note:</b> This interface is only available in
-///     assemblies marked with the <see cref="RevitAddinAssemblyAttribute" />.
-
-/// </remarks>
-internal interface IRevitAssemblyPreLoader
-{{
-    /// <summary>
-    ///     Performs pre-loading or initialization logic before the main assembly loading process.
-    /// </summary>
-    /// <remarks>
-    ///     This method is called prior to resolving and loading assemblies in the
-    ///     <see cref="RevitAssemblyLoadContext" />. Implementations can use this method to
-    ///     load required dependencies, set up environment variables, or perform any setup
-    ///     necessary to ensure that the assembly loading process proceeds smoothly.
-    /// </remarks>
-
-    void PreLoad(AssemblyLoadContext context);
-}}
-
-internal class RevitAssemblyPreLoader : IRevitAssemblyPreLoader
-{{
-    public virtual void PreLoad(AssemblyLoadContext context)
-    {{
     }}
 }}
 
