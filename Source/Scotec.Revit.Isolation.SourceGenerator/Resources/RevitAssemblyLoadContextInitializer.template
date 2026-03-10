@@ -16,7 +16,7 @@ internal static class RevitAddinModuleInitializer
         var currentAssembly = typeof(RevitAddinModuleInitializer).Assembly;
         var sharedContextName = "{1}";
         var contextName = "{2}";
-        var usedSharedContextName = "{3}";
+        var useSharedContext = "{3}";
 
         if(!string.IsNullOrEmpty(sharedContextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == sharedContextName))
         {{
@@ -26,7 +26,7 @@ internal static class RevitAddinModuleInitializer
 
         if(!string.IsNullOrEmpty(contextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
         {{
-            var loadContext = new RevitAddinAssemblyLoadContext(contextName, usedSharedContextName, currentAssembly.Location);
+            var loadContext = new RevitAddinAssemblyLoadContext(contextName, useSharedContext, currentAssembly.Location);
             loadContext.Initialize();
         }}
     }}

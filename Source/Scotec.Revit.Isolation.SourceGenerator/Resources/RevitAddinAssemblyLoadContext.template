@@ -22,7 +22,10 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
     partial void OnInitialize();
     public override void Initialize()
     {{
-        _sharedContext = AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == _sharedContextName);
+        if(!string.IsNullOrEmpty(_sharedContextName))
+        {{
+            _sharedContext = AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == _sharedContextName);
+        }}
 
         OnInitialize();
 

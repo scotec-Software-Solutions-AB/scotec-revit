@@ -1,12 +1,8 @@
 ﻿using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using OpenMcdf;
 using Scotec.Revit;
 using Scotec.Revit.Isolation;
-using System.Diagnostics;
-using static Autodesk.Internal.Windows.SwfMediaPlayer;
 
 [assembly: RevitAddinAssembly(SharedContextName = "UI.Context")]
 [assembly: RevitSharedContext("UI.Context")]

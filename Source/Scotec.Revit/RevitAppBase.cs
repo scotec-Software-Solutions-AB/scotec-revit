@@ -234,7 +234,7 @@ public abstract class RevitAppBase
             loadContext.Resolving += LoadContextOnResolving;
         }
 
-        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
+        //AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
 
         AddInId = addInId.GetGUID();
 

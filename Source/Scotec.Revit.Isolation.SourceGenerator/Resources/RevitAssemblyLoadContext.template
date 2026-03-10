@@ -11,12 +11,14 @@ namespace {0};
 internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private readonly string _pluginRoot;
+    private readonly string _rootAssembly;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
 
     protected RevitAssemblyLoadContext(string contextName, string rootAssembly) 
         : base(contextName)
     {{
+        _rootAssembly = rootAssembly;
         var root = Path.GetFullPath(rootAssembly);
         _pluginRoot = Path.GetDirectoryName(root);
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -27,7 +29,8 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     public virtual void Initialize()
     {{
         Resolver ??= new RevitAssemblyDependencyResolver();
-        Resolver.Initialize(_pluginRoot, this);
+        //Resolver.Initialize(_pluginRoot, this);
+        Resolver.Initialize(_rootAssembly, this);
 
     }}
     protected IRevitAssemblyDependencyResolver Resolver{{ get; set; }}
@@ -132,7 +135,6 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 ///     <br/><br/>
 ///     <b>Note:</b> This interface is only available in
 ///     assemblies marked with the <see cref="RevitAddinAssemblyAttribute" />.
-
 /// </remarks>
 internal interface IRevitAssemblyDependencyResolver
 {{
@@ -208,7 +210,9 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         _resolver = new AssemblyDependencyResolver(assemblyPath);
     }}
 
-        /// </summary>
+    /// <summary>
+    ///     Resolves the file path to an managed DLL given its name.
+    /// </summary>
     /// <param name="assemblyName">
     ///     The name of the managed assembly to resolve.
     /// </param>

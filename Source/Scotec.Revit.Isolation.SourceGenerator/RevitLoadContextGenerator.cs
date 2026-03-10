@@ -52,12 +52,22 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
         var @namespace = compilation.Assembly.Name;
-        GenerateAssemblyLoadContext(context, @namespace);
         
-        var (contextName, usedSharedContextName) = GenerateAddinLoadContext(context, compilation, @namespace);
-        var sharedContextName = GenerateAddinSharedLoadContext(context, compilation, @namespace);
+        var hasAddinContext = TryGenerateAddinLoadContext(context, compilation, @namespace, out var contextName, out var useSharedContext);
+        var hasSharedContext = TryGenerateAddinSharedLoadContext(context, compilation, @namespace, out var sharedContextName);
 
-        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, usedSharedContextName);
+        if((!hasAddinContext || string.IsNullOrEmpty(contextName)) && (!hasSharedContext || string.IsNullOrEmpty(sharedContextName)))
+        {
+            return;
+        }
+        
+        GenerateAssemblyLoadContext(context, @namespace);
+
+        contextName ??= string.Empty;
+        sharedContextName ??= string.Empty;
+        useSharedContext ??= string.Empty;
+        
+        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, useSharedContext);
     }
 
     private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName, string usedSharedContextName)
@@ -70,11 +80,11 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         }
     }
 
-    private (string conext, string sharedContext) GenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace)
+    private bool TryGenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName, out string? sharedContextName)
     {
-        if (!TryGetRevitAddinContextName(compilation, out var contextName, out var sharedContextName) || string.IsNullOrEmpty(contextName) || string.IsNullOrEmpty(sharedContextName))
+        if (!TryGetRevitAddinContextName(compilation, out contextName, out sharedContextName) || string.IsNullOrEmpty(contextName))
         {
-            return (string.Empty, string.Empty);
+            return false;
         }
 
         var template = LoadTemplate("RevitAddinAssemblyLoadContext");
@@ -82,16 +92,17 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         {
             var content = string.Format(template, @namespace);
             context.AddSource("RevitAddinAssemblyLoadContext.g.cs", content);
-            return (contextName!, sharedContextName!);
+            return true;
         }
 
-        return (string.Empty, string.Empty);
+        return false;
     }
-    private string GenerateAddinSharedLoadContext(SourceProductionContext context, Compilation compilation, string @namespace)
+    
+    private bool TryGenerateAddinSharedLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName)
     {
-        if (!TryGetRevitAddinSharedContextName(compilation, out var sharedContextName) || string.IsNullOrEmpty(sharedContextName))
+        if (!TryGetRevitAddinSharedContextName(compilation, out contextName) || string.IsNullOrEmpty(contextName))
         {
-            return string.Empty;
+            return false;
         }
 
         var template = LoadTemplate("RevitAddinSharedAssemblyLoadContext");
@@ -99,10 +110,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         {
             var content = string.Format(template, @namespace);
             context.AddSource("RevitAddinSharedAssemblyLoadContext.g.cs", content);
-            return sharedContextName!;
+            return true;
         }
 
-        return string.Empty;
+        return false;
     }
 
     private void GenerateAssemblyLoadContext(SourceProductionContext context, string @namespace)
@@ -146,10 +157,9 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
             contextName = compilation.AssemblyName;
         }
         
-        sharedContextName ??= string.Empty;
-
         return true;
     }
+    
     private bool TryGetRevitAddinSharedContextName(Compilation compilation, out string? sharedContextName)
     {
         sharedContextName = null;
