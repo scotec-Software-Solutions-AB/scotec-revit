@@ -163,7 +163,24 @@ public abstract class RevitFactoryGeneratorBase : RevitIncrementalGenerator
         //}
     }
 
-    protected virtual object?[]     OnExecute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
+    /// <summary>
+    /// Executes custom logic during the source generation process.
+    /// </summary>
+    /// <param name="sourceContext">
+    /// The context for source production, providing methods for adding source files and reporting diagnostics.
+    /// </param>
+    /// <param name="syntaxContext">
+    /// The context for syntax analysis, providing access to the semantic model and syntax node being analyzed.
+    /// </param>
+    /// <returns>
+    /// An array of additional parameters to be used during template processing. The default implementation returns an empty array.
+    /// </returns>
+    /// <remarks>
+    /// This method is intended to be overridden in derived classes to provide specific logic for processing
+    /// source generation contexts and syntax analysis results. The returned parameters are combined with
+    /// other parameters to populate the template used for source generation.
+    /// </remarks>
+    protected virtual object?[] OnExecute(SourceProductionContext sourceContext, GeneratorAttributeSyntaxContext syntaxContext)
     {
         return [];
     }

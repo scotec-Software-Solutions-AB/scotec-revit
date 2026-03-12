@@ -8,12 +8,14 @@ using System.Runtime.CompilerServices;
 
 namespace {0};
 
+#nullable enable
+
 internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
 {{
-    private string _sharedContextName;
-    private AssemblyLoadContext _sharedContext;
+    private string? _sharedContextName;
+    private AssemblyLoadContext? _sharedContext;
 
-    public RevitAddinAssemblyLoadContext(string contextName, string sharedContextName, string rootAssembly)
+    public RevitAddinAssemblyLoadContext(string contextName, string? sharedContextName, string? rootAssembly)
         : base(contextName, rootAssembly)
     {{
         _sharedContextName = sharedContextName;
@@ -35,28 +37,36 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
         base.Initialize();
     }}
 
-    private HashSet<string> SharedAssemblies {{ get; set; }}
-    private HashSet<string> BlackListedAssemblies {{ get; set; }}
+    private HashSet<string>? SharedAssemblies {{ get; set; }}
+    private HashSet<string>? BlackListedAssemblies {{ get; set; }}
 
-    protected override Assembly Load(AssemblyName assemblyName)
+    protected override Assembly? Load(AssemblyName assemblyName)
     {{
-        if(BlackListedAssemblies.Contains(assemblyName.Name))
+        var name = assemblyName.Name;
+        if(string.IsNullOrEmpty(name))
         {{
             return null;
         }}
 
-        if(SharedAssemblies.Contains(assemblyName.Name))
+        if(BlackListedAssemblies is not null && BlackListedAssemblies.Contains(name))
+        {{
+            return null;
+        }}
+
+        if(SharedAssemblies is not null && SharedAssemblies.Contains(name))
         {{
             if(_sharedContext is null)
             {{
                 return null;
             }}
-            var sharedAssembly = _sharedContext.Assemblies.FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
+
+            var sharedAssembly = _sharedContext.Assemblies.FirstOrDefault(a => a.GetName().Name == name);
             sharedAssembly ??= _sharedContext.LoadFromAssemblyName(assemblyName);
 
             return sharedAssembly;
         }}
-        var resolvedPath = Resolver.ResolveAssemblyToPath(assemblyName);
+
+        var resolvedPath = Resolver?.ResolveAssemblyToPath(assemblyName);
         if (resolvedPath != null)
         {{
             return LoadFromAssemblyPath(resolvedPath);
@@ -65,3 +75,5 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
         return base.Load(assemblyName);
     }}
 }}
+
+#nullable restore

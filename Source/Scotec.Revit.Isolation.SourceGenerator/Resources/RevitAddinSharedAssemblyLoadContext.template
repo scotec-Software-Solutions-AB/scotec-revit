@@ -8,9 +8,11 @@ using System.Runtime.CompilerServices;
 
 namespace {0};
 
+#nullable enable
+
 internal sealed partial class RevitAddinSharedAssemblyLoadContext : RevitAssemblyLoadContext
 {{
-    public RevitAddinSharedAssemblyLoadContext(string contextName, string rootAssembly)
+    public RevitAddinSharedAssemblyLoadContext(string contextName, string? rootAssembly)
         : base(contextName, rootAssembly)
     {{
     }}
@@ -21,5 +23,6 @@ internal sealed partial class RevitAddinSharedAssemblyLoadContext : RevitAssembl
         OnInitialize();
         base.Initialize();
     }}
-
 }}
+
+#nullable restore
