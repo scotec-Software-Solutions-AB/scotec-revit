@@ -401,7 +401,6 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
                     System.Diagnostics.Debug.WriteLine(
                         $"[ALC:{{_context.Name}}] [Warning] Duplicate native DLL '{{name}}' at {{file}}, keeping first: {{_nativeDllMap[name]}}");
                 }}
-
             }}
         }}
         catch (BadImageFormatException)
