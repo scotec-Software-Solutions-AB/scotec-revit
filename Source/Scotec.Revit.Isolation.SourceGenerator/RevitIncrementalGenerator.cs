@@ -61,7 +61,7 @@ public abstract class RevitIncrementalGenerator : IIncrementalGenerator
         var assembly = Assembly.GetExecutingAssembly();
         var resourcePath = assembly
                            .GetManifestResourceNames()
-                           .FirstOrDefault(name => name.Contains(templateName));
+                           .FirstOrDefault(name => name == $"Scotec.Revit.Isolation.SourceGenerator.Resources.{templateName}.template");
 
         if (resourcePath == null)
         {

@@ -1,65 +1,104 @@
-﻿
+﻿using System.Diagnostics;
 using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Scotec.Revit;
 using Scotec.Revit.Isolation;
-using System.Diagnostics;
+using System.Runtime.Loader;
 
-//[assembly: RevitAddinIsolationContext(ContextName = "TestContext")]
+[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
+[assembly: RevitSharedIsolationContext("UI.Context")]
 
-namespace GenerateTest
+namespace GenerateTest;
+
+
+public interface IA
 {
-    [RevitCommandIsolation(ContextName = "TestContext3")]
-    [RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
-    //[Transaction(TransactionMode.Manual)]
-
-    public class Class1 : IExternalCommand
+    void M1();
+    void M2()
     {
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    [RevitCommandAvailabilityIsolation()]
-    public class Class2 : IExternalCommandAvailability
-    {
-        public bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
-        {
-            throw new NotImplementedException();
-        }
-    }
-    [RevitApplicationIsolation]
-    public class Class3: IExternalApplication
-    {
-        public Result OnStartup(UIControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Result OnShutdown(UIControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    [RevitDbApplicationIsolation]
-
-    public class Class4: IExternalDBApplication
-    {
-        public ExternalDBApplicationResult OnStartup(ControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
-        {
-            throw new NotImplementedException();
-        }
+        // default implementation
     }
 }
 
+public class A : IA
+{
+    public void M1()
+    {
+        var d = new Dictionary<string, string>();
+        
+        
+        throw new InvalidOperationException();
+        Debugger.Launch();
+    }
+
+    // Does not need to implement M2.
+}
 
 
+partial class RevitAddinAssemblyLoadContext
+{
+    partial void OnInitialize()
+    {
+        SharedAssemblies = ["My.Shared.Wpf.Assembly"];
+        BlackListedAssemblies = ["Never.Load.This.Assembly"];
+        RootAssembly = "Path to root assembly";
+        Resolver = new RevitAssemblyDependencyResolver();
+    }
+}
+
+              
+partial class RevitSharedAssemblyLoadContext
+{
+    partial void OnInitialize()
+    {
+    }
+}
+
+[RevitCommandIsolation(ContextName = "TestContext3")]
+[RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
+//[Transaction(TransactionMode.Manual)]
+public class Class1 : IExternalCommand
+{
+    public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+[RevitCommandAvailabilityIsolation()]
+public class Class2 : IExternalCommandAvailability
+{
+    public bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+[RevitApplicationIsolation]
+public class Class3 : IExternalApplication
+{
+    public Result OnStartup(UIControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OnShutdown(UIControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+[RevitDbApplicationIsolation]
+public class Class4 : IExternalDBApplication
+{
+    public ExternalDBApplicationResult OnStartup(ControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
+    {
+        throw new NotImplementedException();
+    }
+}

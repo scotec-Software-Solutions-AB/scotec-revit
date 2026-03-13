@@ -3,6 +3,8 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -12,23 +14,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="RevitAssemblyLoadContext.cs" />
-	  <None Include="RevitAssemblyLoadContext.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\Scotec.Revit.Isolation.SourceGenerator\Scotec.Revit.Isolation.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All">
 			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll" />
+		<None Remove="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll"
-			Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(RevitYear)' == '2025'">

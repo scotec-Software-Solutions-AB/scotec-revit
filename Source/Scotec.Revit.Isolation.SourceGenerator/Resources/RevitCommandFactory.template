@@ -6,43 +6,69 @@ using System.Runtime.Loader;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Scotec.Revit.Loader;
 using {2};
 
-namespace {0}
+namespace {0};
+
+/// <summary>
+///     Auto-generated factory to create instances of type <see cref="{1}"/> implementing <see cref="IExternalCommand"/>.
+/// </summary>
+/// <remarks>
+///     This factory is responsible for instantiating the target Revit external command type (<see cref="{1}"/>) 
+///     within the correct <see cref="AssemblyLoadContext"/>. It ensures that the command logic is executed 
+///     in the appropriate context, supporting isolation and contextual reflection for Revit add-in scenarios.
+/// </remarks>
+[Transaction({4})]
+public sealed class {1}Factory : IExternalCommand
 {{
-    [Transaction({4})]
-    public class {1}Factory : IExternalCommand
-    {{
-        private readonly IExternalCommand _instance;
+    private readonly IExternalCommand _instance;
 
-        public {1}Factory()
-        {{  
-            var contextName = "{3}";
-            var currentAssembly = GetType().Assembly;
+        /// <summary>
+    ///     Initializes a new instance of the <see cref="{1}Factory"/> class.
+    /// </summary>
+    /// <remarks>
+    ///     The constructor locates the appropriate <see cref="AssemblyLoadContext"/> by name, loads the target assembly,
+    ///     and creates an instance of the external command type. If the context cannot be found, an exception is thrown.
+    /// </remarks>
+    public {1}Factory()
+    {{  
+        var contextName = "{3}";
+        var currentAssembly = GetType().Assembly;
 
-            if(string.IsNullOrEmpty(contextName))
-            {{
-				contextName = currentAssembly.GetName().Name;
-			}}
-            var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
-            if (context == null)
-			{{
-                //var resolver = new AssemblyDependencyResolver(Path.GetDirectoryName(currentAssembly.Location));
-                context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
-			}}
-
-            var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
-            var types = assembly.GetTypes();
-            var type = types.First(type => type.Name == "{1}");
-            _instance = (IExternalCommand)Activator.CreateInstance(type);
-        }}
-
-        Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        if(string.IsNullOrEmpty(contextName))
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
-            return _instance.Execute(commandData, ref message, elements);
-        }}
+			contextName = currentAssembly.GetName().Name;
+		}}
+        var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
+        if (context == null)
+		{{
+            throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
+		}}
+
+        var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
+        using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+        var types = assembly.GetTypes();
+        var type = types.First(type => type.Name == "{1}");
+        _instance = (IExternalCommand)Activator.CreateInstance(type);
+    }}
+
+    /// <summary>
+    ///     Executes the external command in the Revit environment.
+    /// </summary>
+    /// <param name="commandData">An <see cref="ExternalCommandData"/> object which contains reference to Application and View needed by external command.</param>
+    /// <param name="message">A message that can be set by the command in case of failure.</param>
+    /// <param name="elements">A set of elements to highlight in case of failure.</param>
+    /// <returns>
+    ///     A <see cref="Result"/> value that signifies whether the command succeeded, failed, or was cancelled.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses contextual reflection to ensure that the call is made in the correct assembly load context.
+    ///     The actual logic is delegated to the wrapped <see cref="IExternalCommand"/> instance.
+    /// </remarks>
+    Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {{
+        using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+        return _instance.Execute(commandData, ref message, elements);
     }}
 }}
+
