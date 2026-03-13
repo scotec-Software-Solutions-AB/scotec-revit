@@ -5,6 +5,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 
 namespace {0};
 
@@ -21,10 +24,6 @@ namespace {0};
 /// </remarks>
 internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
-    private string? _pluginRootPath;
-    private readonly Dictionary<string, string> _assemblyFullNameMap;
-    private readonly Dictionary<string, string> _assemblyNameMap;
-
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitAssemblyLoadContext"/> class.
     /// </summary>
@@ -38,8 +37,6 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         : base(contextName)
     {{
         RootAssembly = rootAssembly;
-        _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }}
 
         /// <summary>
@@ -51,15 +48,9 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     /// </remarks>
     public virtual void Initialize()
     {{
-        RootAssembly ??= typeof(RevitAddinModuleInitializer).Assembly.Location;
+        RootAssembly ??= GetType().Assembly.Location;
         Resolver ??= new RevitAssemblyDependencyResolver();
-        //Resolver.Initialize(_pluginRootPath, this);
         Resolver.Initialize(RootAssembly, this);
-
-        var rootPath = Path.GetFullPath(RootAssembly);
-        _pluginRootPath = Path.GetDirectoryName(rootPath);
-
-        CacheAssemblies();
     }}
         
     /// <summary>
@@ -70,7 +61,7 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     /// </remarks>
     protected string? RootAssembly {{ get; set; }}
 
-        /// <summary>
+    /// <summary>
     ///     Gets or sets the dependency resolver used for managed and unmanaged assembly resolution.
     /// </summary>
     /// <remarks>
@@ -78,7 +69,7 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     /// </remarks>
     protected IRevitAssemblyDependencyResolver? Resolver {{ get; set; }}
 
-        /// <summary>
+    /// <summary>
     ///     Loads a managed assembly by its <see cref="AssemblyName"/>.
     /// </summary>
     /// <param name="assemblyName">The name of the assembly to load.</param>
@@ -102,83 +93,6 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     }}
 
     /// <summary>
-    ///     Caches available assemblies in the plugin root and RID-specific directories for fast lookup.
-    /// </summary>
-    /// <remarks>
-    ///     This method scans the plugin root and runtime-specific directories for assemblies,
-    ///     preferring RID-specific assemblies over root assemblies to avoid duplicates.
-    /// </remarks>
-    private void CacheAssemblies()
-    {{
-        var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
-        var runtimeDir = Path.Combine(_pluginRootPath!, "runtimes", runtimeId, "lib");
-            
-        // 1. Prefer assemblies under runtimes/<rid>/lib/*
-        if (Directory.Exists(runtimeDir))
-        {{
-            foreach (var file in Directory.EnumerateFiles(runtimeDir, "*.dll", SearchOption.AllDirectories))
-            {{
-                TryAddAssembly(file, "[RID-specific]");
-            }}
-        }}
-
-        // 2. Cache assemblies directly in plugin root, but skip those that also exist in runtimes/<rid>/*
-        foreach (var file in Directory.EnumerateFiles(_pluginRootPath!, "*.dll", SearchOption.TopDirectoryOnly))
-        {{
-            var assemblyName = AssemblyName.GetAssemblyName(file);
-            if (_assemblyNameMap.ContainsKey(assemblyName.Name!))
-            {{
-                System.Diagnostics.Debug.WriteLine(
-                    $"[ALC:{{Name}}] Skipping root assembly '{{assemblyName.Name}}' because a RID-specific version is already cached.");
-                continue;
-            }}
-
-            TryAddAssembly(file, "[root]");
-        }}
-    }}
-
-     /// <summary>
-    ///     Attempts to add an assembly to the internal cache.
-    /// </summary>
-    /// <param name="file">The file path of the assembly.</param>
-    /// <param name="origin">A string indicating the origin of the assembly (e.g., "[RID-specific]", "[root]").</param>
-    /// <remarks>
-    ///     This method adds the assembly to both the full name and simple name maps if not already present.
-    ///     Duplicate assemblies are logged and ignored.
-    /// </remarks>
-    private void TryAddAssembly(string file, string origin)
-    {{
-        try
-        {{
-            var assemblyName = AssemblyName.GetAssemblyName(file);
-
-            if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
-            {{
-                _assemblyFullNameMap.Add(assemblyName.FullName, file);
-                if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
-                {{
-                    _assemblyNameMap.Add(assemblyName.Name!, file);
-                }}
-
-                System.Diagnostics.Debug.WriteLine($"[ALC:{{Name}}] Cached {{origin}} assembly {{assemblyName.Name}} at {{file}}");
-            }}
-            else
-            {{
-                System.Diagnostics.Debug.WriteLine(
-                    $"[ALC:{{Name}}] [Warning] Duplicate assembly '{{assemblyName.FullName}}' at {{file}}, keeping first: {{_assemblyFullNameMap[assemblyName.FullName]}}");
-            }}
-        }}
-        catch (BadImageFormatException)
-        {{
-            // Not a managed .NET assembly → skip
-        }}
-        catch (FileLoadException)
-        {{
-            // File exists but is not a valid .NET assembly → skip
-        }}
-    }}
-
-    /// <summary>
     ///     Loads an unmanaged DLL by its name.
     /// </summary>
     /// <param name="unmanagedDllName">The name of the unmanaged library to load.</param>
@@ -191,7 +105,7 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {{
         var libraryPath = Resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
-        if (libraryPath != null)
+        if (libraryPath is not null)
         {{
             return LoadUnmanagedDllFromPath(libraryPath);
         }}
@@ -266,12 +180,22 @@ internal interface IRevitAssemblyDependencyResolver
 internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolver
 {{
     private AssemblyDependencyResolver? _resolver;
-    private AssemblyLoadContext? _context;
+    private AssemblyLoadContext _context = null!;
+    private readonly Dictionary<string, string> _assemblyFullNameMap;
+    private readonly Dictionary<string, string> _assemblyNameMap;
+    private readonly Dictionary<string, string> _nativeDllMap;
+
+    public RevitAssemblyDependencyResolver()
+    {{
+        _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _nativeDllMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }}
 
     /// <summary>
     ///     Initializes the dependency resolver with the specified assembly path.
     /// </summary>
-    /// <param name="assemblyPath">
+    /// <param name="rootAssembly">
     ///     The file path to the root assembly or application. This path is used by
     ///     <see cref="AssemblyDependencyResolver" /> to locate dependencies.
     /// </param>
@@ -279,10 +203,18 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     ///     This method must be called before attempting to resolve any assemblies or unmanaged libraries.
     ///     It creates an internal <see cref="AssemblyDependencyResolver" /> instance for the specified path.
     /// </remarks>
-    public virtual void Initialize(string assemblyPath, AssemblyLoadContext context)
+    public virtual void Initialize(string rootAssembly, AssemblyLoadContext context)
     {{
         _context = context;
-        _resolver = new AssemblyDependencyResolver(assemblyPath);
+        RootAssembly = rootAssembly;
+        _resolver = new AssemblyDependencyResolver(rootAssembly);
+
+        var fullPath = Path.GetFullPath(rootAssembly);
+        var rootPath = Path.GetDirectoryName(fullPath);
+        if(rootPath is not null)
+        {{
+            CacheAssemblies(rootPath);
+        }}
     }}
 
     /// <summary>
@@ -300,7 +232,13 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     /// </remarks>
     public virtual string? ResolveAssemblyToPath(AssemblyName assemblyName)
     {{
-        return _resolver?.ResolveAssemblyToPath(assemblyName);
+        var assemblyPath = _resolver?.ResolveAssemblyToPath(assemblyName);
+        if(string.IsNullOrEmpty(assemblyPath))
+        {{
+            _assemblyNameMap.TryGetValue(assemblyName.Name!, out assemblyPath);
+        }}
+
+        return assemblyPath;
     }}
 
     /// <summary>
@@ -318,8 +256,164 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     /// </remarks>
     public virtual string? ResolveUnmanagedDllToPath(string unmanagedDllName)
     {{
-        return _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
+        var unmanagedDllPath = _resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
+        if(string.IsNullOrEmpty(unmanagedDllPath))
+        {{
+            _nativeDllMap.TryGetValue(unmanagedDllName, out unmanagedDllPath);
+        }}
+
+        return unmanagedDllPath;
     }}
+
+    /// <summary>
+    ///     Gets or sets the path to the root assembly for this context.
+    /// </summary>
+    /// <remarks>
+    ///     Used to determine the plugin root directory.
+    /// </remarks>
+    protected string RootAssembly {{ get; set;}} = string.Empty;
+
+    /// <summary>
+    ///     Caches available assemblies in the plugin root and RID-specific directories for fast lookup.
+    /// </summary>
+    /// <remarks>
+    ///     This method scans the plugin root and runtime-specific directories for assemblies,
+    ///     preferring RID-specific assemblies over root assemblies to avoid duplicates.
+    /// </remarks>
+    private void CacheAssemblies(string rootPath)
+    {{
+        var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+        //var runtimeDir = Path.Combine(rootPath!, "runtimes", runtimeId, "lib");
+        var runtimeDir = Path.Combine(rootPath!, "runtimes", runtimeId);
+            
+        // 1. Prefer assemblies under runtimes/<rid>/lib/*
+        if (Directory.Exists(runtimeDir))
+        {{
+            foreach (var file in Directory.EnumerateFiles(runtimeDir, "*.dll", SearchOption.AllDirectories))
+            {{
+                TryAddAssembly(file, "[RID-specific]");
+            }}
+        }}
+
+        // 2. Cache assemblies directly in plugin root, but skip those that also exist in runtimes/<rid>/*
+        foreach (var file in Directory.EnumerateFiles(rootPath!, "*.dll", SearchOption.TopDirectoryOnly))
+        {{
+            var assemblyName = AssemblyName.GetAssemblyName(file);
+            if (_assemblyNameMap.ContainsKey(assemblyName.Name!))
+            {{
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ALC:{{_context.Name}}] Skipping root assembly '{{assemblyName.Name}}' because a RID-specific version is already cached.");
+                continue;
+            }}
+
+            TryAddAssembly(file, "[root]");
+      }}
+    }}
+
+    /// <summary>
+    ///     Determines whether the specified file is a valid .NET managed assembly.
+    /// </summary>
+    /// <param name="path">
+    ///     The file path to check.
+    /// </param>
+    /// <returns>
+    ///     <c>true</c> if the file is a managed .NET assembly with an assembly manifest; otherwise, <c>false</c>.
+    /// </returns>
+    /// <remarks>
+    ///     This method attempts to open the file as a PE (Portable Executable) and checks for the presence of CLI metadata.
+    ///     It returns <c>false</c> for native DLLs or files that do not contain a .NET assembly manifest.
+    ///     <para>
+    ///     Use this method to distinguish between managed assemblies and native/unmanaged binaries when scanning directories
+    ///     for dependencies.
+    ///     </para>
+    ///     <para>
+    ///     <b>Note:</b> Exceptions thrown during file access or parsing (such as <see cref="BadImageFormatException"/> or <see cref="FileLoadException"/>) 
+    ///     are not caught by this method and will propagate to the caller.
+    ///     </para>
+    /// </remarks>
+    public static bool IsDotNetAssembly(string path)
+    {{
+        using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite);
+
+        using var peReader = new PEReader(stream);
+
+        // Native DLL or other PE without CLI metadata
+        if (!peReader.HasMetadata)
+        {{
+            return false;
+        }}
+
+        var mdReader = peReader.GetMetadataReader();
+
+        // True only for real managed assemblies with an assembly manifest
+        return mdReader.IsAssembly;
+    }}
+
+    /// <summary>
+    ///     Attempts to add an assembly to the internal cache.
+    /// </summary>
+    /// <param name="file">The file path of the assembly.</param>
+    /// <param name="origin">A string indicating the origin of the assembly (e.g., "[RID-specific]", "[root]").</param>
+    /// <remarks>
+    ///     This method adds the assembly to both the full name and simple name maps if not already present.
+    ///     Duplicate assemblies are logged and ignored.
+    /// </remarks>
+    private void TryAddAssembly(string file, string origin)
+    {{
+        try
+        {{
+            if(IsDotNetAssembly(file))
+            {{
+                var assemblyName = AssemblyName.GetAssemblyName(file);
+
+                if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
+                {{
+                    _assemblyFullNameMap.Add(assemblyName.FullName, file);
+                    if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
+                    {{
+                        _assemblyNameMap.Add(assemblyName.Name!, file);
+                    }}
+
+                    System.Diagnostics.Debug.WriteLine($"[ALC:{{_context.Name}}] Cached {{origin}} assembly {{assemblyName.Name}} at {{file}}");
+                }}
+                else
+                {{
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ALC:{{_context.Name}}] [Warning] Duplicate assembly '{{assemblyName.FullName}}' at {{file}}, keeping first: {{_assemblyFullNameMap[assemblyName.FullName]}}");
+                }}
+            }}
+            else
+            {{
+                var name = Path.GetFileNameWithoutExtension(file);
+                
+                if (!_nativeDllMap.ContainsKey(name))
+                {{
+                    _nativeDllMap.Add(name, file);
+
+                    System.Diagnostics.Debug.WriteLine($"[ALC:{{_context.Name}}] Cached {{origin}} binary DLL {{name}} at {{file}}");
+                }}
+                else
+                {{
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ALC:{{_context.Name}}] [Warning] Duplicate native DLL '{{name}}' at {{file}}, keeping first: {{_nativeDllMap[name]}}");
+                }}
+
+            }}
+        }}
+        catch (BadImageFormatException)
+        {{
+            // Not a valid binary → skip
+        }}
+        catch (FileLoadException)
+        {{
+            // File exists but is not a valid binary → skip
+        }}
+    }}
+
 }}
 
 #nullable restore

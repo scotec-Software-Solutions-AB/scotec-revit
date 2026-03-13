@@ -1,18 +1,49 @@
-﻿using Autodesk.Revit.ApplicationServices;
+﻿using System.Diagnostics;
+using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Scotec.Revit;
 using Scotec.Revit.Isolation;
+using System.Runtime.Loader;
 
-[assembly: RevitAddinIsolationContext(SharedContextName = "UI.Context")]
+[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
 [assembly: RevitSharedIsolationContext("UI.Context")]
 
 namespace GenerateTest;
+
+
+public interface IA
+{
+    void M1();
+    void M2()
+    {
+        // default implementation
+    }
+}
+
+public class A : IA
+{
+    public void M1()
+    {
+        var d = new Dictionary<string, string>();
+        
+        
+        throw new InvalidOperationException();
+        Debugger.Launch();
+    }
+
+    // Does not need to implement M2.
+}
+
 
 partial class RevitAddinAssemblyLoadContext
 {
     partial void OnInitialize()
     {
+        SharedAssemblies = ["My.Shared.Wpf.Assembly"];
+        BlackListedAssemblies = ["Never.Load.This.Assembly"];
+        RootAssembly = "Path to root assembly";
+        Resolver = new RevitAssemblyDependencyResolver();
     }
 }
 
