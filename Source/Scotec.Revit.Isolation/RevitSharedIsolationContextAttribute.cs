@@ -14,10 +14,10 @@ namespace Scotec.Revit.Isolation;
 ///     This attribute is intended to be applied to elements that require a specific shared context
 ///     to be identified and utilized during execution. The context name is provided during initialization.
 /// </remarks>
-public class RevitSharedContextAttribute : Attribute
+public class RevitSharedIsolationContextAttribute : Attribute
 {
     /// <summary>
-    ///     Initializes a new instance of the <see cref="RevitSharedContextAttribute" /> class with the specified context name.
+    ///     Initializes a new instance of the <see cref="RevitSharedIsolationContextAttribute" /> class with the specified context name.
     /// </summary>
     /// <param name="contextName">
     ///     The name of the shared <see cref="AssemblyLoadContext" /> to be used within the Revit environment.
@@ -26,7 +26,7 @@ public class RevitSharedContextAttribute : Attribute
     ///     The <paramref name="contextName" /> parameter identifies the specific shared <see cref="AssemblyLoadContext" />
     ///     required for execution. This ensures proper isolation and context management.
     /// </remarks>
-    public RevitSharedContextAttribute(string contextName)
+    public RevitSharedIsolationContextAttribute(string contextName)
     {
         ContextName = contextName;
     }

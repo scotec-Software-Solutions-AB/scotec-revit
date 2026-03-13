@@ -3,11 +3,7 @@
 // This file is licensed to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Diagnostics;
-using System.Linq;
-    
+
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
 /// <summary>
@@ -52,25 +48,26 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
         var @namespace = compilation.Assembly.Name;
-        
+
         var hasAddinContext = TryGenerateAddinLoadContext(context, compilation, @namespace, out var contextName, out var useSharedContext);
         var hasSharedContext = TryGenerateAddinSharedLoadContext(context, compilation, @namespace, out var sharedContextName);
 
-        if((!hasAddinContext || string.IsNullOrEmpty(contextName)) && (!hasSharedContext || string.IsNullOrEmpty(sharedContextName)))
+        if ((!hasAddinContext || string.IsNullOrEmpty(contextName)) && (!hasSharedContext || string.IsNullOrEmpty(sharedContextName)))
         {
             return;
         }
-        
+
         GenerateAssemblyLoadContext(context, @namespace);
 
         contextName ??= string.Empty;
         sharedContextName ??= string.Empty;
         useSharedContext ??= string.Empty;
-        
+
         GenerateContextInitializer(context, @namespace, sharedContextName, contextName, useSharedContext);
     }
 
-    private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName, string usedSharedContextName)
+    private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName,
+                                                   string usedSharedContextName)
     {
         var template = LoadTemplate("RevitAssemblyLoadContextInitializer");
         if (!string.IsNullOrEmpty(template))
@@ -80,7 +77,8 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         }
     }
 
-    private bool TryGenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName, out string? sharedContextName)
+    private bool TryGenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName,
+                                             out string? sharedContextName)
     {
         if (!TryGetRevitAddinContextName(compilation, out contextName, out sharedContextName) || string.IsNullOrEmpty(contextName))
         {
@@ -97,7 +95,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
 
         return false;
     }
-    
+
     private bool TryGenerateAddinSharedLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName)
     {
         if (!TryGetRevitAddinSharedContextName(compilation, out contextName) || string.IsNullOrEmpty(contextName))
@@ -105,11 +103,11 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
             return false;
         }
 
-        var template = LoadTemplate("RevitAddinSharedAssemblyLoadContext");
+        var template = LoadTemplate("RevitSharedAssemblyLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
             var content = string.Format(template, @namespace);
-            context.AddSource("RevitAddinSharedAssemblyLoadContext.g.cs", content);
+            context.AddSource("RevitSharedAssemblyLoadContext.g.cs", content);
             return true;
         }
 
@@ -124,7 +122,6 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
             var content = string.Format(template, @namespace);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
-
     }
 
     private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName, out string? sharedContextName)
@@ -132,11 +129,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         contextName = null;
         sharedContextName = null;
 
-        if (!TryGetAttributeData(compilation, "RevitAddinAssemblyAttribute", out var attributeData) || attributeData is null)
+        if (!TryGetAttributeData(compilation, "RevitAddinIsolationContextAttribute", out var attributeData) || attributeData is null)
         {
             return false;
         }
-        
 
         // Look for a named argument called "Mode"
         foreach (var namedArg in attributeData.NamedArguments)
@@ -145,6 +141,7 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
             {
                 contextName = namedArg.Value.Value?.ToString();
             }
+
             if (namedArg.Key == "SharedContextName")
             {
                 sharedContextName = namedArg.Value.Value?.ToString();
@@ -156,18 +153,17 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         {
             contextName = compilation.AssemblyName;
         }
-        
+
         return true;
     }
-    
+
     private bool TryGetRevitAddinSharedContextName(Compilation compilation, out string? sharedContextName)
     {
         sharedContextName = null;
-        if (!TryGetAttributeData(compilation, "RevitSharedContextAttribute", out var attributeData) || attributeData is null)
+        if (!TryGetAttributeData(compilation, "RevitSharedIsolationContextAttribute", out var attributeData) || attributeData is null)
         {
             return false;
         }
-
 
         // Check ConstructorArguments
         if (attributeData.ConstructorArguments.Length > 0)
@@ -181,11 +177,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     private static bool TryGetAttributeData(Compilation compilation, string attributeName, out AttributeData? attributeData)
     {
         attributeData = compilation.Assembly
-                                       .GetAttributes()
-                                       .FirstOrDefault(a =>
-                                           a.AttributeClass?.Name ==  attributeName ||
-                                           a.AttributeClass?.ToDisplayString().EndsWith($".{attributeName}") == true);
+                                   .GetAttributes()
+                                   .FirstOrDefault(a =>
+                                       a.AttributeClass?.Name == attributeName ||
+                                       a.AttributeClass?.ToDisplayString().EndsWith($".{attributeName}") == true);
         return attributeData is not null;
     }
 }
-

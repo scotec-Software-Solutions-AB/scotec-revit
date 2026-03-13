@@ -10,18 +10,49 @@ namespace {0};
 
 #nullable enable
 
+/// <summary>
+///     Provides a sealed implementation of <see cref="RevitAssemblyLoadContext"/> for loading Revit add-in assemblies,
+///     supporting shared and blacklisted assemblies as well as integration with a shared context.
+/// </summary>
+/// <remarks>
+///     This class enables advanced isolation and sharing scenarios for Revit add-ins, allowing certain assemblies
+///     to be loaded from a shared context while others are blacklisted or loaded privately.
+/// </remarks>
 internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
 {{
     private string? _sharedContextName;
     private AssemblyLoadContext? _sharedContext;
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitAddinAssemblyLoadContext"/> class.
+    /// </summary>
+    /// <param name="contextName">The name of this assembly load context.</param>
+    /// <param name="sharedContextName">The name of the shared context for shared assemblies, or <c>null</c> if not used.</param>
+    /// <param name="rootAssembly">The path to the root assembly, or <c>null</c> to use the current assembly.</param>
+    /// <remarks>
+    ///     The shared context name allows for sharing assemblies between multiple add-in contexts.
+    /// </remarks>
     public RevitAddinAssemblyLoadContext(string contextName, string? sharedContextName, string? rootAssembly)
         : base(contextName, rootAssembly)
     {{
         _sharedContextName = sharedContextName;
     }}
 
+    /// <summary>
+    ///     Partial method invoked during initialization for custom logic.
+    /// </summary>
+    /// <remarks>
+    ///     Implement this method in a partial class to inject custom initialization logic before the base initialization.
+    /// </remarks>
     partial void OnInitialize();
+
+    /// <summary>
+    ///     Initializes the assembly load context, resolving the shared context and setting up assembly lists.
+    /// </summary>
+    /// <remarks>
+    ///     This method resolves the shared context by name, initializes blacklisted and shared assembly sets,
+    ///     invokes custom initialization logic, and then calls the base initialization.
+    /// </remarks>
     public override void Initialize()
     {{
         if(!string.IsNullOrEmpty(_sharedContextName))
@@ -37,9 +68,35 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
         base.Initialize();
     }}
 
+    /// <summary>
+    ///     Gets or sets the set of assembly names that should be loaded from the shared context.
+    /// </summary>
+    /// <remarks>
+    ///     Assemblies listed here will be loaded from <see cref="_sharedContext"/> if available.
+    /// </remarks>
     private HashSet<string>? SharedAssemblies {{ get; set; }}
+
+    /// <summary>
+    ///     Gets or sets the set of assembly names that are blacklisted and should not be loaded.
+    /// </summary>
+    /// <remarks>
+    ///     Assemblies listed here will be ignored by the load context.
+    ///     Note: This does not prevent the assembly from being loaded in other load contexts.
+    /// </remarks>
     private HashSet<string>? BlackListedAssemblies {{ get; set; }}
 
+    /// <summary>
+    ///     Loads a managed assembly by its <see cref="AssemblyName"/>, supporting blacklisting and shared context loading.
+    /// </summary>
+    /// <param name="assemblyName">The name of the assembly to load.</param>
+    /// <returns>
+    ///     The loaded <see cref="Assembly"/>, or <c>null</c> if the assembly is blacklisted or could not be resolved.
+    /// </returns>
+    /// <remarks>
+    ///     This method first checks if the assembly is blacklisted, then attempts to load from the shared context
+    ///     if the assembly is listed as shared. If not found, it resolves the assembly path using the resolver,
+    ///     or falls back to the base implementation.
+    /// </remarks>
     protected override Assembly? Load(AssemblyName assemblyName)
     {{
         var name = assemblyName.Name;

@@ -8,8 +8,27 @@ using System.Runtime.CompilerServices;
 
 namespace {0};
 
+/// <summary>
+///     Provides a module initializer for Revit add-in assembly load contexts.
+/// </summary>
+/// <remarks>
+///     This static class is responsible for initializing and registering the required
+///     <c>AssemblyLoadContext</c> instances for the Revit add-in at module load time.
+///     It ensures that both shared and per-addin contexts are created and initialized
+///     only if they do not already exist. This supports isolation and sharing of assemblies
+///     as required by the add-in architecture.
+/// </remarks>
 internal static class RevitAddinModuleInitializer
 {{
+    /// <summary>
+    ///     Module initializer that sets up the required assembly load contexts for the Revit add-in.
+    /// </summary>
+    /// <remarks>
+    ///     This method is automatically invoked by the .NET runtime when the module is loaded.
+    ///     It checks for the existence of the shared and per-addin <see cref="AssemblyLoadContext"/>s,
+    ///     and creates and initializes them if necessary. This enables proper isolation and sharing
+    ///     of assemblies between different parts of the add-in system.
+    /// </remarks>
     [ModuleInitializer]
     public static void Initialize()
     {{
@@ -18,12 +37,14 @@ internal static class RevitAddinModuleInitializer
         var contextName = "{2}";
         var useSharedContext = "{3}";
 
+        // Initialize the shared context if specified and not already present.
         if(!string.IsNullOrEmpty(sharedContextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == sharedContextName))
         {{
-            var loadContext = new RevitAddinSharedAssemblyLoadContext(sharedContextName, currentAssembly.Location);
+            var loadContext = new RevitSharedAssemblyLoadContext(sharedContextName, currentAssembly.Location);
             loadContext.Initialize();
         }}
 
+        // Initialize the per-addin context if specified and not already present.
         if(!string.IsNullOrEmpty(contextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
         {{
             var loadContext = new RevitAddinAssemblyLoadContext(contextName, useSharedContext, currentAssembly.Location);

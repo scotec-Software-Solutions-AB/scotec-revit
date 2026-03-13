@@ -17,7 +17,7 @@ namespace Scotec.Revit.Isolation;
 ///     <b>Usage:</b> This attribute should be applied at the assembly level.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Assembly)]
-public sealed class RevitAddinAssemblyAttribute : Attribute
+public sealed class RevitAddinIsolationContextAttribute : Attribute
 {
     /// <summary>
     ///     Gets or sets the name of the context associated with the Revit add-in assembly.

@@ -4,21 +4,24 @@ using Autodesk.Revit.UI;
 using Scotec.Revit;
 using Scotec.Revit.Isolation;
 
-[assembly: RevitAddinAssembly(SharedContextName = "UI.Context")]
-[assembly: RevitSharedContext("UI.Context")]
-
-
-
-
+[assembly: RevitAddinIsolationContext(SharedContextName = "UI.Context")]
+[assembly: RevitSharedIsolationContext("UI.Context")]
 
 namespace GenerateTest;
 
 partial class RevitAddinAssemblyLoadContext
 {
-    //partial void OnInitialize()
-    //{
-       
-    //}
+    partial void OnInitialize()
+    {
+    }
+}
+
+              
+partial class RevitSharedAssemblyLoadContext
+{
+    partial void OnInitialize()
+    {
+    }
 }
 
 [RevitCommandIsolation(ContextName = "TestContext3")]

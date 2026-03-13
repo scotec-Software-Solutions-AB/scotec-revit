@@ -10,12 +10,30 @@ namespace {0};
 
 #nullable enable
 
+/// <summary>
+///     Provides an abstract base for a custom <see cref="AssemblyLoadContext"/> that supports
+///     advanced assembly and unmanaged library resolution for Revit add-ins.
+/// </summary>
+/// <remarks>
+///     This class manages the loading and caching of managed and unmanaged assemblies,
+///     supporting runtime identifier (RID)-specific resolution and plugin root directory scanning.
+///     It is intended to be subclassed for specific Revit add-in isolation scenarios.
+/// </remarks>
 internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 {{
     private string? _pluginRootPath;
     private readonly Dictionary<string, string> _assemblyFullNameMap;
     private readonly Dictionary<string, string> _assemblyNameMap;
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitAssemblyLoadContext"/> class.
+    /// </summary>
+    /// <param name="contextName">The name of the assembly load context.</param>
+    /// <param name="rootAssembly">The path to the root assembly, or <c>null</c> to use the current assembly.</param>
+    /// <remarks>
+    ///     The context name is used for identification and debugging. The root assembly path is used to determine
+    ///     the plugin root directory for assembly resolution.
+    /// </remarks>
     protected RevitAssemblyLoadContext(string contextName, string? rootAssembly) 
         : base(contextName)
     {{
@@ -24,6 +42,13 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         _assemblyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }}
 
+        /// <summary>
+    ///     Initializes the assembly load context, setting up the resolver and caching assemblies.
+    /// </summary>
+    /// <remarks>
+    ///     This method must be called before attempting to load assemblies. It configures the resolver,
+    ///     determines the plugin root path, and caches available assemblies for fast lookup.
+    /// </remarks>
     public virtual void Initialize()
     {{
         RootAssembly ??= typeof(RevitAddinModuleInitializer).Assembly.Location;
@@ -37,10 +62,33 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         CacheAssemblies();
     }}
 
+    
+    /// <summary>
+    ///     Gets or sets the path to the root assembly for this context.
+    /// </summary>
+    /// <remarks>
+    ///     Used to determine the plugin root directory and for resolver initialization.
+    /// </remarks>
     protected string? RootAssembly {{ get; set; }}
 
+        /// <summary>
+    ///     Gets or sets the dependency resolver used for managed and unmanaged assembly resolution.
+    /// </summary>
+    /// <remarks>
+    ///     The resolver is responsible for mapping assembly and library names to file paths.
+    /// </remarks>
     protected IRevitAssemblyDependencyResolver? Resolver {{ get; set; }}
 
+        /// <summary>
+    ///     Loads a managed assembly by its <see cref="AssemblyName"/>.
+    /// </summary>
+    /// <param name="assemblyName">The name of the assembly to load.</param>
+    /// <returns>
+    ///     The loaded <see cref="Assembly"/>, or <c>null</c> if the assembly could not be resolved.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses the configured resolver to locate the assembly file path and loads it into the context.
+    /// </remarks>
     protected override Assembly? Load(AssemblyName assemblyName)
     {{
         System.Diagnostics.Debug.WriteLine($"Try loading assembly {{assemblyName.FullName}} from ALC '{{Name}}'.");
@@ -54,6 +102,13 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         return null;
     }}
 
+    /// <summary>
+    ///     Caches available assemblies in the plugin root and RID-specific directories for fast lookup.
+    /// </summary>
+    /// <remarks>
+    ///     This method scans the plugin root and runtime-specific directories for assemblies,
+    ///     preferring RID-specific assemblies over root assemblies to avoid duplicates.
+    /// </remarks>
     private void CacheAssemblies()
     {{
         var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
@@ -83,7 +138,15 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         }}
     }}
 
-
+     /// <summary>
+    ///     Attempts to add an assembly to the internal cache.
+    /// </summary>
+    /// <param name="file">The file path of the assembly.</param>
+    /// <param name="origin">A string indicating the origin of the assembly (e.g., "[RID-specific]", "[root]").</param>
+    /// <remarks>
+    ///     This method adds the assembly to both the full name and simple name maps if not already present.
+    ///     Duplicate assemblies are logged and ignored.
+    /// </remarks>
     private void TryAddAssembly(string file, string origin)
     {{
         try
@@ -116,7 +179,16 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
         }}
     }}
 
-
+    /// <summary>
+    ///     Loads an unmanaged DLL by its name.
+    /// </summary>
+    /// <param name="unmanagedDllName">The name of the unmanaged library to load.</param>
+    /// <returns>
+    ///     A pointer to the loaded library, or <see cref="IntPtr.Zero"/> if the library could not be resolved.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses the configured resolver to locate the unmanaged library file path and loads it into the context.
+    /// </remarks>
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {{
         var libraryPath = Resolver?.ResolveUnmanagedDllToPath(unmanagedDllName);

@@ -5,51 +5,81 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
-//using Scotec.Revit.Loader;
 using {2};
 
-namespace {0}
+namespace {0};
+
+/// <summary>
+///     Auto-generated factory to create instances of type <see cref="{1}"/> implementing <see cref="IExternalDBApplication"/>.
+/// </summary>
+/// <remarks>
+///     This factory is responsible for instantiating the target Revit external DB application type (<see cref="{1}"/>)
+///     within the correct <see cref="AssemblyLoadContext"/>. It ensures that the application logic is executed
+///     in the appropriate context, supporting isolation and contextual reflection for Revit add-in scenarios.
+/// </remarks>
+public sealed class {1}Factory : IExternalDBApplication
 {{
+    private IExternalDBApplication _instance;                            
+    
     /// <summary>
-    /// Auto-generated factory to create instances of type <see RevitTestApp/>.
+    ///     Initializes a new instance of the <see cref="{1}Factory"/> class.
     /// </summary>
-    public sealed class {1}Factory : IExternalDBApplication
+    /// <remarks>
+    ///     The constructor locates the appropriate <see cref="AssemblyLoadContext"/> by name, loads the target assembly,
+    ///     and creates an instance of the external DB application type. If the context cannot be found, an exception is thrown.
+    /// </remarks>
+    public {1}Factory()
     {{
-        private IExternalDBApplication _instance;                            
-                                      
-        public {1}Factory()
-        {{
-            var contextName = "{3}";
-            var currentAssembly = GetType().Assembly;
+        var contextName = "{3}";
+        var currentAssembly = GetType().Assembly;
 
-            if(string.IsNullOrEmpty(contextName))
-            {{
-				contextName = currentAssembly.GetName().Name;
-			}}
-            var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
-            if (context == null)
-			{{
-                //context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
-                throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
-			}}
+        if(string.IsNullOrEmpty(contextName))
+        {{
+			contextName = currentAssembly.GetName().Name;
+		}}
+        var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
+        if (context == null)
+		{{
+            throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
+		}}
 
-            var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
-            var types = assembly.GetTypes();
-            var type = types.First(type => type.Name == "{1}");
-            _instance = (IExternalDBApplication)Activator.CreateInstance(type);
-        }}
-                                    
-        public ExternalDBApplicationResult OnStartup(ControlledApplication application)
-        {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
-            return _instance.OnStartup(application);
-        }}
-                                    
-        public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
-        {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
-            return _instance.OnShutdown(application);
-        }}
+        var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
+        using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+        var types = assembly.GetTypes();
+        var type = types.First(type => type.Name == "{1}");
+        _instance = (IExternalDBApplication)Activator.CreateInstance(type);
+    }}
+    
+    /// <summary>
+    ///     Invokes the <see cref="IExternalDBApplication.OnStartup"/> method on the actual add-in instance.
+    /// </summary>
+    /// <param name="application">The Revit controlled application.</param>
+    /// <returns>
+    ///     The result of the add-in's <see cref="IExternalDBApplication.OnStartup"/> method.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses contextual reflection to ensure that the call is made in the correct assembly load context.
+    /// </remarks>
+    public ExternalDBApplicationResult OnStartup(ControlledApplication application)
+    {{
+        using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+        return _instance.OnStartup(application);
+    }}
+    
+    /// <summary>
+    ///     Invokes the <see cref="IExternalDBApplication.OnShutdown"/> method on the actual add-in instance.
+    /// </summary>
+    /// <param name="application">The Revit controlled application.</param>
+    /// <returns>
+    ///     The result of the add-in's <see cref="IExternalDBApplication.OnShutdown"/> method.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses contextual reflection to ensure that the call is made in the correct assembly load context.
+    /// </remarks>
+    public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
+    {{
+        using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+        return _instance.OnShutdown(application);
     }}
 }}
+
