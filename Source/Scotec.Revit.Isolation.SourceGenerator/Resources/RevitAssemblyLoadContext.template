@@ -61,8 +61,7 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 
         CacheAssemblies();
     }}
-
-    
+        
     /// <summary>
     ///     Gets or sets the path to the root assembly for this context.
     /// </summary>
