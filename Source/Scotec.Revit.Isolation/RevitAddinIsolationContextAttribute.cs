@@ -3,18 +3,19 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Runtime.Loader;
 
 namespace Scotec.Revit.Isolation;
 
 /// <summary>
-///     Marks an assembly as a Revit add-in assembly.
+///     An attribute used to define and provide metadata about the isolation context of a Revit add-in assembly.
 /// </summary>
 /// <remarks>
-///     Assemblies decorated with this attribute are identified as containing components or functionality
-///     specific to Revit add-ins. This attribute can be used to provide additional context or metadata
-///     for the assembly, such as the <see cref="ContextName" /> property.
+///     This attribute is intended to mark an assembly as a Revit add-in and to specify additional
+///     context-related information, such as the <see cref="ContextName" /> and <see cref="SharedContextName" />.
 ///     <br /><br />
-///     <b>Usage:</b> This attribute should be applied at the assembly level.
+///     <b>Usage:</b> Apply this attribute at the assembly level to associate the assembly with a specific
+///     <see cref="AssemblyLoadContext" /> in the Revit environment.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Assembly)]
 public sealed class RevitAddinIsolationContextAttribute : Attribute
