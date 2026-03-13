@@ -261,6 +261,8 @@ This ensures that these assemblies are resolved from the shared context instead 
 
 If an assembly is configured as a shared assembly for one add-in specific load context, it must also be configured as a shared assembly for every other load context that needs to use that assembly. Otherwise, the same assembly may be loaded into different contexts, which can lead to inconsistent or undefined behavior. This is especially important for frameworks such as WPF, where loading the same assembly into multiple contexts can result in type identity issues, resource resolution problems, or other runtime errors.
 
+In practice, shared UI or contract assemblies should be maintained in a central list or shared configuration used by all add-ins to ensure consistent load context behavior.
+
 ---
 
 ## When to Use Shared Contexts
