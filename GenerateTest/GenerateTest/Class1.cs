@@ -6,7 +6,7 @@ using Scotec.Revit;
 using Scotec.Revit.Isolation;
 using System.Runtime.Loader;
 
-[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
+//[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
 [assembly: RevitSharedIsolationContext("UI.Context")]
 
 namespace GenerateTest;
@@ -48,12 +48,12 @@ partial class RevitAddinAssemblyLoadContext
 }
 
               
-partial class RevitSharedAssemblyLoadContext
-{
-    partial void OnInitialize()
-    {
-    }
-}
+//partial class RevitSharedAssemblyLoadContext
+//{
+//    partial void OnInitialize()
+//    {
+//    }
+//}
 
 [RevitCommandIsolation(ContextName = "TestContext3")]
 [RevitTransactionMode(Mode = RevitTransactionMode.TransactionGroup)]
