@@ -63,16 +63,16 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
         sharedContextName ??= string.Empty;
         useSharedContext ??= string.Empty;
 
-        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, useSharedContext);
+        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, useSharedContext, hasAddinContext, hasSharedContext);
     }
 
     private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName,
-                                                   string usedSharedContextName)
+                                                   string usedSharedContextName, bool hasAddinContext, bool hasSharedContext)
     {
         var template = LoadTemplate("RevitAssemblyLoadContextInitializer");
         if (!string.IsNullOrEmpty(template))
         {
-            var content = string.Format(template, @namespace, sharedContextName, contextName, usedSharedContextName);
+            var content = string.Format(template, @namespace, sharedContextName, contextName, usedSharedContextName, hasAddinContext.ToString(), hasSharedContext.ToString());
             context.AddSource("RevitAssemblyLoadContextInitializer.g.cs", content);
         }
     }

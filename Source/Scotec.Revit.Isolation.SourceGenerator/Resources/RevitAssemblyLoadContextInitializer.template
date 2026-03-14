@@ -37,19 +37,23 @@ internal static class RevitAddinModuleInitializer
         var contextName = "{2}";
         var useSharedContext = "{3}";
 
+#if ({5})
         // Initialize the shared context if specified and not already present.
         if(!string.IsNullOrEmpty(sharedContextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == sharedContextName))
         {{
             var loadContext = new RevitSharedAssemblyLoadContext(sharedContextName, currentAssembly.Location);
             loadContext.Initialize();
         }}
+#endif
 
+#if ({4})
         // Initialize the per-addin context if specified and not already present.
         if(!string.IsNullOrEmpty(contextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
         {{
             var loadContext = new RevitAddinAssemblyLoadContext(contextName, useSharedContext, currentAssembly.Location);
             loadContext.Initialize();
         }}
+#endif
     }}
 }}
 
