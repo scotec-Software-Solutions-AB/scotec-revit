@@ -4,6 +4,7 @@
 
 using Autodesk.Revit.UI;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Windows;
@@ -21,6 +22,8 @@ namespace Scotec.Revit.Wpf;
 /// </remarks>
 public class RevitWindow : Window
 {
+    private IDisposable? _contextualReflectionScope;
+
     /// <summary>
     ///     The constructor. Sets the main window as the owner of this window.
     /// </summary>
@@ -31,12 +34,33 @@ public class RevitWindow : Window
         Owner = mainWindow;
     }
 
-    private IDisposable? _contextualReflectionScope;
+    /// <summary>
+    ///     Begins the initialization process for the <see cref="RevitWindow" />.
+    /// </summary>
+    /// <remarks>
+    ///     This method overrides <see cref="Window.BeginInit" /> to enter a contextual reflection scope
+    ///     for the assembly containing the <see cref="RevitWindow" />. This ensures proper loading
+    ///     and reflection behavior within the Revit environment.
+    /// </remarks>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown if the initialization process encounters an issue.
+    /// </exception>
     public override void BeginInit()
     {
         _contextualReflectionScope = AssemblyLoadContext.EnterContextualReflection(GetType().Assembly);
         base.BeginInit();
     }
+    /// <summary>
+    ///     Completes the initialization process for the <see cref="RevitWindow" />.
+    /// </summary>
+    /// <remarks>
+    ///     This method overrides <see cref="Window.EndInit" /> to dispose of the contextual reflection scope
+    ///     entered during <see cref="BeginInit" />. This ensures proper cleanup of resources used during
+    ///     the initialization process.
+    /// </remarks>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown if the finalization process encounters an issue.
+    /// </exception>
     public override void EndInit()
     {
         base.EndInit();
@@ -71,7 +95,7 @@ public class RevitWindow : Window
     /// </remarks>
     public void HideMinimizeAndMaximizeButtons()
     {
-        SourceInitialized += (s, e) =>
+        SourceInitialized += (_, _) =>
         {
             var hwnd = new WindowInteropHelper(this).Handle;
             var currentStyle = GetWindowLong(hwnd, GWL_STYLE);
@@ -146,6 +170,7 @@ public class RevitWindow : Window
     ///     This constant is used in conjunction with Windows API functions, such as <c>GetWindowLong</c>
     ///     and <c>SetWindowLong</c>, to modify the style of a window and control the visibility of the maximize button.
     /// </remarks>
+    [SuppressMessage("ReSharper", "IdentifierTypo")]
     private const int WS_MAXIMIZEBOX = 0x10000;
 
     /// <summary>
@@ -156,6 +181,7 @@ public class RevitWindow : Window
     ///     and <c>SetWindowLong</c>, to modify the style of a window. Specifically, it controls the
     ///     visibility and functionality of the minimize button.
     /// </remarks>
+    [SuppressMessage("ReSharper", "IdentifierTypo")] 
     private const int WS_MINIMIZEBOX = 0x20000;
     // ReSharper restore InconsistentNaming
 }
