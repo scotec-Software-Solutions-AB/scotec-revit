@@ -66,6 +66,7 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
         SharedAssemblies ??= new HashSet<string>();
         PreloadedAssemblies ??= new HashSet<string>();
 
+        // ALC must be fully initialized before preloading assemblies.
         base.Initialize();
 
         foreach(var assembly in PreloadedAssemblies)
