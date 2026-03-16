@@ -1,4 +1,3 @@
-
 # Revit Add-in Isolation
 
 Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from a newer version, a `TypeLoadException` will be thrown. Similar errors can occur if methods are missing or their signatures have changed.
@@ -125,6 +124,12 @@ partial class RevitAddinAssemblyLoadContext
     {
         SharedAssemblies = ["My.Shared.Wpf.Assembly"];
 
+        PreloadedAssemblies =
+        [
+            "My.Shared.Wpf.Assembly",
+            "My.Product.Ui"
+        ];
+
         BlackListedAssemblies = ["Never.Load.This.Assembly"];
 
         RootAssembly = "Path to root assembly";
@@ -177,12 +182,32 @@ This is typically used for assemblies that must have a **single type identity ac
 
 ---
 
+### PreloadedAssemblies
+
+Defines assemblies that must be loaded immediately after the load context has been initialized.
+
+Preloading can be useful for assemblies that should be available as early as possible, for example because they are known to be required during startup, contain UI infrastructure that should already be loaded, or should be resolved deterministically before other components trigger assembly loading.
+
+If an assembly listed in `PreloadedAssemblies` is also contained in `SharedAssemblies`, it will be preloaded into the **shared context** rather than the add-in specific context.
+
+If an assembly listed in `PreloadedAssemblies` is also contained in `BlackListedAssemblies`, it will **not** be loaded.
+
+In other words, the effective behavior is:
+
+- assemblies in `PreloadedAssemblies` are loaded immediately after initialization
+- if the assembly is also shared, it is loaded into the shared context
+- if the assembly is blacklisted, the blacklist wins and the assembly is not loaded
+
+---
+
 ### BlackListedAssemblies
 
 Defines assemblies that must **never be loaded into this context**.
 
 This is useful when certain assemblies must always resolve from another  
 context (for example the default context).
+
+When an assembly is listed in both `PreloadedAssemblies` and `BlackListedAssemblies`, it is not loaded.
 
 ---
 
@@ -253,11 +278,18 @@ partial class RevitAddinAssemblyLoadContext
             "Company.Shared.Ui",
             "Company.Shared.Contracts"
         ];
+
+        PreloadedAssemblies =
+        [
+            "Company.Shared.Ui"
+        ];
     }
 }
 ```
 
 This ensures that these assemblies are resolved from the shared context instead of being loaded independently into the add-in specific context.
+
+If a shared assembly is also listed in `PreloadedAssemblies`, it will be preloaded into the shared context immediately after initialization.
 
 If an assembly is configured as a shared assembly for one add-in specific load context, it must also be configured as a shared assembly for every other load context that needs to use that assembly. Otherwise, the same assembly may be loaded into different contexts, which can lead to inconsistent or undefined behavior. This is especially important for frameworks such as WPF, where loading the same assembly into multiple contexts can result in type identity issues, resource resolution problems, or other runtime errors.
 
