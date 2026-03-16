@@ -249,7 +249,7 @@ Shared contexts are typically enabled by applying the following attributes in th
 [assembly: RevitAddinIsolationContext(
     ContextName = "MyAddin.Context",
     SharedContextName = "Company.Shared.Ui")]
-[assembly: RevitSharedIsolationContext]
+[assembly: RevitSharedIsolationContext("Company.Shared.Ui")]
 ```
 
 The `RevitSharedIsolationContextAttribute` forces the source generator to create a **shared AssemblyLoadContext** that can be used by multiple add-ins.

@@ -42,5 +42,5 @@ public class RevitSharedIsolationContextAttribute : Attribute
     ///     The context name is used to identify and manage the specific shared <see cref="AssemblyLoadContext" />
     ///     required for proper isolation and execution.
     /// </remarks>
-    private string ContextName { get; }
+    public string ContextName { get; }
 }
