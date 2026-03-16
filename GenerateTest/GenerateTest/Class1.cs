@@ -6,7 +6,7 @@ using Scotec.Revit;
 using Scotec.Revit.Isolation;
 using System.Runtime.Loader;
 
-//[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
+[assembly: RevitAddinIsolationContext(ContextName = "My.Addin.Comtext", SharedContextName = "UI.Context")]
 [assembly: RevitSharedIsolationContext("UI.Context")]
 
 namespace GenerateTest;

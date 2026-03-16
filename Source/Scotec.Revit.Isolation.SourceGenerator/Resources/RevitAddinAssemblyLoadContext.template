@@ -64,8 +64,14 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
 
         BlackListedAssemblies ??= new HashSet<string>();
         SharedAssemblies ??= new HashSet<string>();
+        PreloadedAssemblies ??= new HashSet<string>();
 
         base.Initialize();
+
+        foreach(var assembly in PreloadedAssemblies)
+        {{
+            Load(new AssemblyName(assembly));
+        }}
     }}
 
     /// <summary>
@@ -84,6 +90,15 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
     ///     Note: This does not prevent the assembly from being loaded in other load contexts.
     /// </remarks>
     private HashSet<string>? BlackListedAssemblies {{ get; set; }}
+
+    /// <summary>
+    ///     Gets or sets the set of assembly names that shall be preloaded directly after the load context has been created.
+    /// </summary>
+    /// <remarks>
+    ///     Assemblies listed here will be ignored by the load context.
+    ///     Note: This does not prevent the assembly from being loaded in other load contexts.
+    /// </remarks>
+    private HashSet<string>? PreloadedAssemblies {{ get; set; }}
 
     /// <summary>
     ///     Loads a managed assembly by its <see cref="AssemblyName"/>, supporting blacklisting and shared context loading.

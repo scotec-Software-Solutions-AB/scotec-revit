@@ -2,11 +2,12 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using Autodesk.Revit.UI;
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Windows;
 using System.Windows.Interop;
-using Autodesk.Revit.UI;
 
 namespace Scotec.Revit.Wpf;
 
@@ -28,6 +29,19 @@ public class RevitWindow : Window
         var hwndSource = HwndSource.FromHwnd(revitApplication.MainWindowHandle);
         var mainWindow = hwndSource!.RootVisual as Window;
         Owner = mainWindow;
+    }
+
+    private IDisposable? _contextualReflectionScope;
+    public override void BeginInit()
+    {
+        _contextualReflectionScope = AssemblyLoadContext.EnterContextualReflection(GetType().Assembly);
+        base.BeginInit();
+    }
+    public override void EndInit()
+    {
+        base.EndInit();
+        _contextualReflectionScope?.Dispose();
+        _contextualReflectionScope = null;
     }
 
     /// <summary>
