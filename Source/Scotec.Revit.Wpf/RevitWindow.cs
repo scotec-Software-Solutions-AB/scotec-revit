@@ -38,7 +38,7 @@ public class RevitWindow : Window
     ///     Begins the initialization process for the <see cref="RevitWindow" />.
     /// </summary>
     /// <remarks>
-    ///     This method overrides <see cref="Window.BeginInit" /> to enter a contextual reflection scope
+    ///     This method overrides <see cref="FrameworkElement.BeginInit" /> to enter a contextual reflection scope
     ///     for the assembly containing the <see cref="RevitWindow" />. This ensures proper loading
     ///     and reflection behavior within the Revit environment.
     /// </remarks>
@@ -54,7 +54,7 @@ public class RevitWindow : Window
     ///     Completes the initialization process for the <see cref="RevitWindow" />.
     /// </summary>
     /// <remarks>
-    ///     This method overrides <see cref="Window.EndInit" /> to dispose of the contextual reflection scope
+    ///     This method overrides <see cref="FrameworkElement.EndInit" /> to dispose of the contextual reflection scope
     ///     entered during <see cref="BeginInit" />. This ensures proper cleanup of resources used during
     ///     the initialization process.
     /// </remarks>

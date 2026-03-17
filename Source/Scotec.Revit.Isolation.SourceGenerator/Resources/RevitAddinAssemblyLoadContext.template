@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
-using System.Runtime.CompilerServices;
 
 namespace {0};
 
@@ -20,7 +15,7 @@ namespace {0};
 /// </remarks>
 internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadContext
 {{
-    private string? _sharedContextName;
+    private readonly string? _sharedContextName;
     private AssemblyLoadContext? _sharedContext;
 
     /// <summary>

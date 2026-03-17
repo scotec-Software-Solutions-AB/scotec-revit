@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Runtime.CompilerServices;
-
-namespace {0};
+﻿namespace {0};
 
 #nullable enable
 

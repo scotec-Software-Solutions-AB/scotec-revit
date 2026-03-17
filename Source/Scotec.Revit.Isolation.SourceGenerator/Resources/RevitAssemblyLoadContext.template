@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
-using System.Runtime.CompilerServices;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 namespace {0};
 
@@ -128,11 +120,18 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 internal interface IRevitAssemblyDependencyResolver
 {{
     /// <summary>
-    ///     Initializes the resolver with the specified assembly path.
+    /// Initializes the dependency resolver with the specified root assembly and assembly load context.
     /// </summary>
     /// <param name="assemblyPath">
-    ///     The file path to the root assembly or application.
+    /// The file path to the root assembly. This path is used to locate dependencies.
     /// </param>
+    /// <param name="context">
+    /// The <see cref="AssemblyLoadContext"/> in which the dependencies will be resolved.
+    /// </param>
+    /// <remarks>
+    /// This method sets up the internal dependency resolver for the specified root assembly.
+    /// It must be called before resolving any assemblies or unmanaged libraries.
+    /// </remarks>
     void Initialize(string assemblyPath, AssemblyLoadContext context);
 
     /// <summary>
@@ -185,6 +184,15 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     private readonly Dictionary<string, string> _assemblyNameMap;
     private readonly Dictionary<string, string> _nativeDllMap;
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitAssemblyDependencyResolver"/> class.
+    /// </summary>
+    /// <remarks>
+    ///     This constructor sets up the internal dictionaries used for mapping assembly and native library
+    ///     dependencies. These mappings are case-insensitive and are intended to facilitate efficient
+    ///     resolution of dependencies for Revit add-ins.
+    /// </remarks>
+
     public RevitAssemblyDependencyResolver()
     {{
         _assemblyFullNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -193,15 +201,17 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     }}
 
     /// <summary>
-    ///     Initializes the dependency resolver with the specified assembly path.
+    /// Initializes the dependency resolver with the specified root assembly and assembly load context.
     /// </summary>
     /// <param name="rootAssembly">
-    ///     The file path to the root assembly or application. This path is used by
-    ///     <see cref="AssemblyDependencyResolver" /> to locate dependencies.
+    /// The file path to the root assembly. This path is used to locate dependencies.
+    /// </param>
+    /// <param name="context">
+    /// The <see cref="AssemblyLoadContext"/> in which the dependencies will be resolved.
     /// </param>
     /// <remarks>
-    ///     This method must be called before attempting to resolve any assemblies or unmanaged libraries.
-    ///     It creates an internal <see cref="AssemblyDependencyResolver" /> instance for the specified path.
+    /// This method sets up the internal dependency resolver for the specified root assembly.
+    /// It must be called before resolving any assemblies or unmanaged libraries.
     /// </remarks>
     public virtual void Initialize(string rootAssembly, AssemblyLoadContext context)
     {{
@@ -261,7 +271,7 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         {{
             _nativeDllMap.TryGetValue(unmanagedDllName, out unmanagedDllPath);
         }}
-
+            
         return unmanagedDllPath;
     }}
 
@@ -283,8 +293,7 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     private void CacheAssemblies(string rootPath)
     {{
         var runtimeId = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
-        //var runtimeDir = Path.Combine(rootPath!, "runtimes", runtimeId, "lib");
-        var runtimeDir = Path.Combine(rootPath!, "runtimes", runtimeId);
+        var runtimeDir = Path.Combine(rootPath, "runtimes", runtimeId);
             
         // 1. Prefer assemblies under runtimes/<rid>/lib/*
         if (Directory.Exists(runtimeDir))
@@ -296,7 +305,7 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         }}
 
         // 2. Cache assemblies directly in plugin root, but skip those that also exist in runtimes/<rid>/*
-        foreach (var file in Directory.EnumerateFiles(rootPath!, "*.dll", SearchOption.TopDirectoryOnly))
+        foreach (var file in Directory.EnumerateFiles(rootPath, "*.dll", SearchOption.TopDirectoryOnly))
         {{
             var assemblyName = AssemblyName.GetAssemblyName(file);
             if (_assemblyNameMap.ContainsKey(assemblyName.Name!))
@@ -416,14 +425,6 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         return clrHeaderRva != 0 && clrHeaderSize != 0;
     }}
 
-
-
-
-
-
-
-
-
     /// <summary>
     ///     Attempts to add an assembly to the internal cache.
     /// </summary>
@@ -442,14 +443,9 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
             {{
                 var assemblyName = AssemblyName.GetAssemblyName(file);
 
-                if (!_assemblyFullNameMap.ContainsKey(assemblyName.FullName))
+                if (_assemblyFullNameMap.TryAdd(assemblyName.FullName, file))
                 {{
-                    _assemblyFullNameMap.Add(assemblyName.FullName, file);
-                    if (!_assemblyNameMap.ContainsKey(assemblyName.Name!))
-                    {{
-                        _assemblyNameMap.Add(assemblyName.Name!, file);
-                    }}
-
+                    _assemblyNameMap.TryAdd(assemblyName.Name!, file);
                     System.Diagnostics.Debug.WriteLine($"[ALC:{{_context.Name}}] Cached {{origin}} assembly {{assemblyName.Name}} at {{file}}");
                 }}
                 else
@@ -462,10 +458,8 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
             {{
                 var name = Path.GetFileNameWithoutExtension(file);
                 
-                if (!_nativeDllMap.ContainsKey(name))
+                if (_nativeDllMap.TryAdd(name, file))
                 {{
-                    _nativeDllMap.Add(name, file);
-
                     System.Diagnostics.Debug.WriteLine($"[ALC:{{_context.Name}}] Cached {{origin}} binary DLL {{name}} at {{file}}");
                 }}
                 else

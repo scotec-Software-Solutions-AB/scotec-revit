@@ -11,32 +11,7 @@ using System.Runtime.Loader;
 
 namespace GenerateTest;
 
-
-public interface IA
-{
-    void M1();
-    void M2()
-    {
-        // default implementation
-    }
-}
-
-public class A : IA
-{
-    public void M1()
-    {
-        var d = new Dictionary<string, string>();
-        
-        
-        throw new InvalidOperationException();
-        Debugger.Launch();
-    }
-
-    // Does not need to implement M2.
-}
-
-
-partial class RevitAddinAssemblyLoadContext
+internal partial class RevitAddinAssemblyLoadContext
 {
     partial void OnInitialize()
     {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.Loader;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace Scotec.Revit.Wpf;
@@ -23,7 +24,7 @@ public class RevitUserControl : UserControl
     /// Begins the initialization process for the <see cref="RevitUserControl"/>.
     /// </summary>
     /// <remarks>
-    /// This method overrides the base <see cref="UserControl.BeginInit"/> method to enter a contextual reflection scope
+    /// This method overrides the base <see cref="FrameworkElement.BeginInit"/> method to enter a contextual reflection scope
     /// specific to the assembly of the current <see cref="RevitUserControl"/>. This ensures proper handling of assembly
     /// loading in the Revit environment.
     /// </remarks>
@@ -39,7 +40,7 @@ public class RevitUserControl : UserControl
     /// Completes the initialization process for the <see cref="RevitUserControl"/>.
     /// </summary>
     /// <remarks>
-    /// This method overrides the base <see cref="UserControl.EndInit"/> method to exit the contextual reflection scope
+    /// This method overrides the base <see cref="FrameworkElement.EndInit"/> method to exit the contextual reflection scope
     /// that was entered during the <see cref="BeginInit"/> method. It ensures proper cleanup of resources
     /// and maintains the integrity of assembly loading in the Revit environment.
     /// </remarks>
