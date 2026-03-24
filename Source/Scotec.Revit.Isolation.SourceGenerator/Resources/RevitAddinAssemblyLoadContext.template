@@ -22,6 +22,9 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
 {{
     private readonly string? _sharedContextName;
     private AssemblyLoadContext? _sharedContext;
+    private HashSet<string> _sharedAssemblies = new HashSet<string>();
+    private HashSet<string> _blackListedAssemblies = new HashSet<string>();
+    private HashSet<string> _preloadedAssemblies = new HashSet<string>();
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitAddinAssemblyLoadContext"/> class.
@@ -50,8 +53,7 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
     ///     Initializes the assembly load context, resolving the shared context and setting up assembly lists.
     /// </summary>
     /// <remarks>
-    ///     This method resolves the shared context by name, initializes blacklisted and shared assembly sets,
-    ///     invokes custom initialization logic, and then calls the base initialization.
+    ///     This method resolves the shared context by name, invokes custom initialization logic, and then calls the base initialization.
     /// </remarks>
     public override void Initialize()
     {{
@@ -62,44 +64,58 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
 
         OnInitialize();
 
-        BlackListedAssemblies ??= new HashSet<string>();
-        SharedAssemblies ??= new HashSet<string>();
-        PreloadedAssemblies ??= new HashSet<string>();
-
         // ALC must be fully initialized before preloading assemblies.
         base.Initialize();
 
-        foreach(var assembly in PreloadedAssemblies)
+        foreach(var assembly in _preloadedAssemblies)
         {{
             Load(new AssemblyName(assembly));
         }}
     }}
 
     /// <summary>
-    ///     Gets or sets the set of assembly names that should be loaded from the shared context.
+    ///     Adds a set of assembly names that should be loaded from the shared context.
     /// </summary>
     /// <remarks>
     ///     Assemblies listed here will be loaded from <see cref="_sharedContext"/> if available.
     /// </remarks>
-    private HashSet<string>? SharedAssemblies {{ get; set; }}
+    private void AddSharedAssemblies(IEnumerable<string> assemblies)
+    {{
+        foreach (var assembly in assemblies)
+        {{
+            _sharedAssemblies.Add(assembly);
+        }}
+    }}
 
     /// <summary>
-    ///     Gets or sets the set of assembly names that are blacklisted and should not be loaded.
+    ///     Adds a set of assembly names that are blacklisted and should not be loaded.
     /// </summary>
     /// <remarks>
     ///     Assemblies listed here will be ignored by the load context.
     ///     Note: This does not prevent the assembly from being loaded in other load contexts.
     /// </remarks>
-    private HashSet<string>? BlackListedAssemblies {{ get; set; }}
+    private void AddBlackListedAssemblies(IEnumerable<string> assemblies)
+    {{
+        foreach (var assembly in assemblies)
+        {{
+            _blackListedAssemblies.Add(assembly);
+        }}
+    }}
 
     /// <summary>
-    ///     Gets or sets the set of assembly names that shall be preloaded directly after the load context has been created.
+    ///     Adds a set of assembly names that shall be preloaded directly after the load context has been created.
     /// </summary>
     /// <remarks>
     ///     Assemblies listed here will be ignored by the load context.
     ///     Note: This does not prevent the assembly from being loaded in other load contexts.
     /// </remarks>
-    private HashSet<string>? PreloadedAssemblies {{ get; set; }}
+    private void AddPreloadedAssemblies(IEnumerable<string> assemblies)
+    {{
+        foreach (var assembly in assemblies)
+        {{
+            _preloadedAssemblies.Add(assembly);
+        }}
+    }}
 
     /// <summary>
     ///     Loads a managed assembly by its <see cref="AssemblyName"/>, supporting blacklisting and shared context loading.
@@ -121,12 +137,12 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
             return null;
         }}
 
-        if(BlackListedAssemblies is not null && BlackListedAssemblies.Contains(name))
+        if(_blackListedAssemblies.Contains(name))
         {{
             return null;
         }}
 
-        if(SharedAssemblies is not null && SharedAssemblies.Contains(name))
+        if(_sharedAssemblies.Contains(name))
         {{
             if(_sharedContext is null)
             {{
