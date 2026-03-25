@@ -122,15 +122,15 @@ partial class RevitAddinAssemblyLoadContext
 {
     partial void OnInitialize()
     {
-        SharedAssemblies = ["My.Shared.Wpf.Assembly"];
+        AddSharedAssemblies(["My.Shared.Wpf.Assembly"]);
 
-        PreloadedAssemblies =
+        AddPreloadedAssemblies(
         [
             "My.Shared.Wpf.Assembly",
             "My.Product.Ui"
-        ];
+        ]);
 
-        BlackListedAssemblies = ["Never.Load.This.Assembly"];
+        AddBlackListedAssemblies(["Never.Load.This.Assembly"]);
 
         RootAssembly = "Path to root assembly";
 
@@ -169,9 +169,11 @@ Typical use cases include:
 
 ---
 
-### SharedAssemblies
+### AddSharedAssemblies
 
-Defines assemblies that must be loaded from the **shared context** rather than the add-in context.
+Adds assemblies that must be loaded from the **shared context** rather than the add-in context.
+
+Use `AddSharedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
 
 This is typically used for assemblies that must have a **single type identity across multiple add-ins**, such as:
 
@@ -182,32 +184,36 @@ This is typically used for assemblies that must have a **single type identity ac
 
 ---
 
-### PreloadedAssemblies
+### AddPreloadedAssemblies
 
-Defines assemblies that must be loaded immediately after the load context has been initialized.
+Adds assemblies that must be loaded immediately after the load context has been initialized.
+
+Use `AddPreloadedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
 
 Preloading can be useful for assemblies that should be available as early as possible, for example because they are known to be required during startup, contain UI infrastructure that should already be loaded, or should be resolved deterministically before other components trigger assembly loading.
 
-If an assembly listed in `PreloadedAssemblies` is also contained in `SharedAssemblies`, it will be preloaded into the **shared context** rather than the add-in specific context.
+If an assembly added through `AddPreloadedAssemblies(...)` is also contained in the shared assemblies, it will be preloaded into the **shared context** rather than the add-in specific context.
 
-If an assembly listed in `PreloadedAssemblies` is also contained in `BlackListedAssemblies`, it will **not** be loaded.
+If an assembly added through `AddPreloadedAssemblies(...)` is also contained in the blacklisted assemblies, it will **not** be loaded.
 
 In other words, the effective behavior is:
 
-- assemblies in `PreloadedAssemblies` are loaded immediately after initialization
+- assemblies added through `AddPreloadedAssemblies(...)` are loaded immediately after initialization
 - if the assembly is also shared, it is loaded into the shared context
 - if the assembly is blacklisted, the blacklist wins and the assembly is not loaded
 
 ---
 
-### BlackListedAssemblies
+### AddBlackListedAssemblies
 
-Defines assemblies that must **never be loaded into this context**.
+Adds assemblies that must **never be loaded into this context**.
+
+Use `AddBlackListedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
 
 This is useful when certain assemblies must always resolve from another  
 context (for example the default context).
 
-When an assembly is listed in both `PreloadedAssemblies` and `BlackListedAssemblies`, it is not loaded.
+When an assembly is listed in both the preloaded assemblies and the blacklisted assemblies, it is not loaded.
 
 ---
 
@@ -273,23 +279,23 @@ partial class RevitAddinAssemblyLoadContext
 {
     partial void OnInitialize()
     {
-        SharedAssemblies =
+        AddSharedAssemblies(
         [
             "Company.Shared.Ui",
             "Company.Shared.Contracts"
-        ];
+        ]);
 
-        PreloadedAssemblies =
+        AddPreloadedAssemblies(
         [
             "Company.Shared.Ui"
-        ];
+        ]);
     }
 }
 ```
 
 This ensures that these assemblies are resolved from the shared context instead of being loaded independently into the add-in specific context.
 
-If a shared assembly is also listed in `PreloadedAssemblies`, it will be preloaded into the shared context immediately after initialization.
+If a shared assembly is also added through `AddPreloadedAssemblies(...)`, it will be preloaded into the shared context immediately after initialization.
 
 If an assembly is configured as a shared assembly for one add-in specific load context, it must also be configured as a shared assembly for every other load context that needs to use that assembly. Otherwise, the same assembly may be loaded into different contexts, which can lead to inconsistent or undefined behavior. This is especially important for frameworks such as WPF, where loading the same assembly into multiple contexts can result in type identity issues, resource resolution problems, or other runtime errors.
 
