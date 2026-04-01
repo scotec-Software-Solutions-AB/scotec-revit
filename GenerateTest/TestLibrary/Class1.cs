@@ -16,6 +16,7 @@ namespace GenerateTest;
 /// </remarks>
 internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
 {
+    
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitAssemblyLoadContext"/> class.
     /// </summary>
@@ -28,6 +29,12 @@ internal abstract class RevitAssemblyLoadContext : AssemblyLoadContext
     protected RevitAssemblyLoadContext(string contextName, string? rootAssembly)
         : base(contextName)
     {
+        var h = new HashSet<string>();
+        IEnumerable<string> assemblies = [];
+        foreach (var assembly in assemblies)
+        {
+            h.Add(assembly);
+        }
         RootAssembly = rootAssembly;
     }
 
