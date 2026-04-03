@@ -6,43 +6,67 @@ using System.Runtime.Loader;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Scotec.Revit.Loader;
 using {2};
 
-namespace {0}
+namespace {0};
+
+/// <summary>
+///     Auto-generated factory to create instances of type <see cref="{1}"/> implementing <see cref="IExternalCommandAvailability"/>.
+/// </summary>
+/// <remarks>
+///     This factory is responsible for instantiating the target Revit command availability type (<see cref="{1}"/>) 
+///     within the correct <see cref="AssemblyLoadContext"/>. It ensures that the command availability logic is executed 
+///     in the appropriate context, supporting isolation and contextual reflection for Revit add-in scenarios.
+/// </remarks>
+public sealed class {1}Factory : IExternalCommandAvailability
 {{
-    [Transaction(TransactionMode.Manual)]
-    public class {1}Factory : IExternalCommandAvailability
-    {{
-        private readonly IExternalCommandAvailability _instance;
+    private readonly IExternalCommandAvailability _instance;
 
-        public {1}Factory()
-        {{  
-            var contextName = "{3}";
-            var currentAssembly = GetType().Assembly;
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="{1}Factory"/> class.
+    /// </summary>
+    /// <remarks>
+    ///     The constructor locates the appropriate <see cref="AssemblyLoadContext"/> by name, loads the target assembly,
+    ///     and creates an instance of the command availability type. If the context cannot be found, an exception is thrown.
+    /// </remarks>
+    public {1}Factory()
+    {{  
+        var contextName = "{3}";
+        var currentAssembly = GetType().Assembly;
 
-            if(string.IsNullOrEmpty(contextName))
-            {{
-				contextName = currentAssembly.GetName().Name;
-			}}
-            var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
-            if (context == null)
-			{{
-                //var resolver = new AssemblyDependencyResolver(Path.GetDirectoryName(currentAssembly.Location));
-                context = new RevitAssemblyLoadContext(contextName, currentAssembly.Location);
-			}}
-
-            var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
-            using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
-            var types = assembly.GetTypes();
-            var type = types.First(type => type.Name == "{1}");
-            _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);
-        }}
-
-        bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+        if(string.IsNullOrEmpty(contextName))
         {{
-            using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
-            return _instance.IsCommandAvailable(applicationData, selectedCategories);
-        }}
+			contextName = currentAssembly.GetName().Name;
+		}}
+        var context = AssemblyLoadContext.All.FirstOrDefault(c => c.Name == contextName);
+        if (context == null)
+		{{
+            throw new InvalidOperationException($"Assembly load context for context '{{contextName}}' not found.");
+		}}
+
+        var assembly = context.LoadFromAssemblyPath(currentAssembly.Location);
+        using var scope = AssemblyLoadContext.EnterContextualReflection(assembly);
+        var types = assembly.GetTypes();
+        var type = types.First(type => type.Name == "{1}");
+        _instance = (IExternalCommandAvailability)Activator.CreateInstance(type);
+    }}
+
+    /// <summary>
+    ///     Determines whether the external command is available for execution.
+    /// </summary>
+    /// <param name="applicationData">The Revit UI controlled application.</param>
+    /// <param name="selectedCategories">The set of currently selected categories.</param>
+    /// <returns>
+    ///     <c>true</c> if the command is available; otherwise, <c>false</c>.
+    /// </returns>
+    /// <remarks>
+    ///     This method uses contextual reflection to ensure that the call is made in the correct assembly load context.
+    ///     The actual logic is delegated to the wrapped <see cref="IExternalCommandAvailability"/> instance.
+    /// </remarks>
+    bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    {{
+        using var scope = AssemblyLoadContext.EnterContextualReflection(_instance.GetType().Assembly);
+        return _instance.IsCommandAvailable(applicationData, selectedCategories);
     }}
 }}
+

@@ -15,7 +15,7 @@ namespace Scotec.Revit.Isolation;
 ///     to specify isolation behavior during Revit application execution.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
-public class RevitApplicationIsolationAttribute : Attribute
+public sealed class RevitApplicationIsolationAttribute : Attribute
 {
     /// <summary>
     ///     Gets or sets the name of the assembly load context used to execute the Revit application.

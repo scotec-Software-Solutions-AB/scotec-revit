@@ -1,0 +1,60 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
+
+namespace {0};
+
+#nullable enable
+
+/// <summary>
+///     Provides a sealed implementation of <see cref="RevitAssemblyLoadContext"/> for loading shared assemblies
+///     in a Revit add-in environment.
+/// </summary>
+/// <remarks>
+///     This context is intended to be used for assemblies that are shared across multiple add-in contexts,
+///     enabling isolation and reuse of common dependencies. Custom initialization logic can be injected
+///     via the <see cref="OnInitialize"/> partial method.
+/// </remarks>
+internal sealed partial class RevitSharedAssemblyLoadContext : RevitAssemblyLoadContext
+{{
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="RevitSharedAssemblyLoadContext"/> class.
+    /// </summary>
+    /// <param name="contextName">The name of this assembly load context.</param>
+    /// <param name="rootAssembly">The path to the root assembly, or <c>null</c> to use the current assembly.</param>
+    /// <remarks>
+    ///     The context name is used for identification and debugging. The root assembly path is used to determine
+    ///     the plugin root directory for assembly resolution.
+    /// </remarks>
+    public RevitSharedAssemblyLoadContext(string contextName, string? rootAssembly)
+        : base(contextName, rootAssembly)
+    {{
+    }}
+
+    /// <summary>
+    ///     Partial method invoked during initialization for custom logic.
+    /// </summary>
+    /// <remarks>
+    ///     Implement this method in a partial class to inject custom initialization logic before the base initialization.
+    /// </remarks>
+    partial void OnInitialize();
+
+    /// <summary>
+    ///     Initializes the assembly load context, invoking custom logic and then performing base initialization.
+    /// </summary>
+    /// <remarks>
+    ///     This method first calls <see cref="OnInitialize"/> for any custom setup, then calls the base
+    ///     <see cref="RevitAssemblyLoadContext.Initialize"/> to perform standard initialization.
+    /// </remarks>
+    public override void Initialize()
+    {{
+        OnInitialize();
+        base.Initialize();
+    }}
+}}
+
+#nullable restore

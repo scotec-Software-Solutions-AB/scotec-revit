@@ -28,7 +28,6 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     protected override void OnInitialize()
     {
-        //Debugger.Launch();
         Context.RegisterSourceOutput(Context.CompilationProvider, Execute);
     }
 
@@ -48,12 +47,140 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// </remarks>
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
+        var @namespace = compilation.Assembly.Name;
+
+        var hasAddinContext = TryGenerateAddinLoadContext(context, compilation, @namespace, out var contextName, out var useSharedContext);
+        var hasSharedContext = TryGenerateAddinSharedLoadContext(context, compilation, @namespace, out var sharedContextName);
+
+        if ((!hasAddinContext || string.IsNullOrEmpty(contextName)) && (!hasSharedContext || string.IsNullOrEmpty(sharedContextName)))
+        {
+            return;
+        }
+
+        GenerateAssemblyLoadContext(context, @namespace);
+
+        contextName ??= string.Empty;
+        sharedContextName ??= string.Empty;
+        useSharedContext ??= string.Empty;
+
+        GenerateContextInitializer(context, @namespace, sharedContextName, contextName, useSharedContext, hasAddinContext, hasSharedContext);
+    }
+
+    private static void GenerateContextInitializer(SourceProductionContext context, string @namespace, string sharedContextName, string contextName,
+                                                   string usedSharedContextName, bool hasAddinContext, bool hasSharedContext)
+    {
+        var template = LoadTemplate("RevitAssemblyLoadContextInitializer");
+        if (!string.IsNullOrEmpty(template))
+        {
+            var content = string.Format(template, @namespace, sharedContextName, contextName, usedSharedContextName, hasAddinContext.ToString(), hasSharedContext.ToString());
+            context.AddSource("RevitAssemblyLoadContextInitializer.g.cs", content);
+        }
+    }
+
+    private bool TryGenerateAddinLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName,
+                                             out string? sharedContextName)
+    {
+        if (!TryGetRevitAddinContextName(compilation, out contextName, out sharedContextName) || string.IsNullOrEmpty(contextName))
+        {
+            return false;
+        }
+
+        var template = LoadTemplate("RevitAddinAssemblyLoadContext");
+        if (!string.IsNullOrEmpty(template))
+        {
+            var content = string.Format(template, @namespace);
+            context.AddSource("RevitAddinAssemblyLoadContext.g.cs", content);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGenerateAddinSharedLoadContext(SourceProductionContext context, Compilation compilation, string @namespace, out string? contextName)
+    {
+        if (!TryGetRevitAddinSharedContextName(compilation, out contextName) || string.IsNullOrEmpty(contextName))
+        {
+            return false;
+        }
+
+        var template = LoadTemplate("RevitSharedAssemblyLoadContext");
+        if (!string.IsNullOrEmpty(template))
+        {
+            var content = string.Format(template, @namespace);
+            context.AddSource("RevitSharedAssemblyLoadContext.g.cs", content);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void GenerateAssemblyLoadContext(SourceProductionContext context, string @namespace)
+    {
         var template = LoadTemplate("RevitAssemblyLoadContext");
         if (!string.IsNullOrEmpty(template))
         {
-            var @namespace = compilation.Assembly.Name;
             var content = string.Format(template, @namespace);
             context.AddSource("RevitAssemblyLoadContext.g.cs", content);
         }
+    }
+
+    private bool TryGetRevitAddinContextName(Compilation compilation, out string? contextName, out string? sharedContextName)
+    {
+        contextName = null;
+        sharedContextName = null;
+
+        if (!TryGetAttributeData(compilation, "RevitAddinIsolationContextAttribute", out var attributeData) || attributeData is null)
+        {
+            return false;
+        }
+
+        // Look for a named argument called "Mode"
+        foreach (var namedArg in attributeData.NamedArguments)
+        {
+            if (namedArg.Key == "ContextName")
+            {
+                contextName = namedArg.Value.Value?.ToString();
+            }
+
+            if (namedArg.Key == "SharedContextName")
+            {
+                sharedContextName = namedArg.Value.Value?.ToString();
+            }
+        }
+
+        // Use the assembly name if no context name has been specified.
+        if (string.IsNullOrEmpty(contextName))
+        {
+            contextName = compilation.AssemblyName;
+        }
+
+        return true;
+    }
+
+    private bool TryGetRevitAddinSharedContextName(Compilation compilation, out string? sharedContextName)
+    {
+        sharedContextName = null;
+        if (!TryGetAttributeData(compilation, "RevitSharedIsolationContextAttribute", out var attributeData) || attributeData is null)
+        {
+            return false;
+        }
+
+        // Check ConstructorArguments
+        if (attributeData.ConstructorArguments.Length > 0)
+        {
+            sharedContextName = attributeData.ConstructorArguments[0].Value?.ToString();
+        }
+
+        return !string.IsNullOrEmpty(sharedContextName);
+    }
+
+    private static bool TryGetAttributeData(Compilation compilation, string attributeName, out AttributeData? attributeData)
+    {
+        attributeData = compilation.Assembly
+                                   .GetAttributes()
+                                   .FirstOrDefault(a =>
+                                       a.AttributeClass?.Name == attributeName ||
+                                       a.AttributeClass?.ToDisplayString().EndsWith($".{attributeName}") == true);
+        return attributeData is not null;
     }
 }

@@ -7,8 +7,6 @@ schedule and run code that interacts with the Revit API, regardless of
 whether your calling code is on the Revit UI thread, a background
 thread, or from an external UI (such as WPF or WinForms).
 
-------------------------------------------------------------------------
-
 ## Understanding IExternalEventHandler and the Revit API Context
 
 ### Why is IExternalEventHandler Needed?
@@ -94,12 +92,8 @@ revitTask.Dispose();
 
 ## Threading and Context
 
-Revit is single-threaded with respect to its API.
-
-Even if your code runs on the main Windows UI thread, that does not
-automatically mean you are inside a valid Revit API context.
-
-`RevitTask` ensures your delegate is executed inside a proper
+Revit is single-threaded with respect to its API. Even if your code runs on the main Windows UI thread, that does not
+automatically mean you are inside a valid Revit API context. `RevitTask` ensures your delegate is executed inside a proper
 `IExternalEventHandler.Execute` call.
 
 

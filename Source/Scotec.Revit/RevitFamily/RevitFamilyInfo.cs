@@ -3,6 +3,7 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -32,7 +33,7 @@ public class RevitFamilyInfo : IDisposable
 
     private readonly Func<Stream> _familyStreamLoader;
     private readonly string? _infoStorageName;
-    private readonly Dictionary<string, Stream> _infoStreams = [];
+    private readonly ConcurrentDictionary<string, Stream> _infoStreams = [];
     private readonly object _initializationLock = new();
     private readonly ILogger? _logger;
     private Stream? _preview;
@@ -315,6 +316,11 @@ public class RevitFamilyInfo : IDisposable
     /// </exception>
     public bool TryGetStream(string path, [NotNullWhen(true)] out Stream? stream)
     {
+        if (!IsInitialized)
+        {
+            stream = null;
+            return false;
+        }
         using var root = RootStorage.Open(GetFamilyStream(), StorageModeFlags.LeaveOpen);
 
         return TryGetStream(root, path.Split('/'), out stream);

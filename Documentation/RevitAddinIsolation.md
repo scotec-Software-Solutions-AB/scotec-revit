@@ -1,68 +1,317 @@
 # Revit Add-in Isolation
-Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from the newer version, a TypeLoadException will be thrown. Similar errors can occur if methods are not found, or their parameters have changed. 
 
-Isolating Revit add-ins using ```AssemblyLoadContext``` provides an elegant and straightforward solution to avoiding DLL hell. The ```Scotec.Revit.Isolation``` library assists you in this process by automatically generating the required code when compiling your add-in. The factories created in this process then generate instances of your apps or commands in the add-in specific load context and ensure that Revit calls are forwarded accordingly.
+Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from a newer version, a `TypeLoadException` will be thrown. Similar errors can occur if methods are missing or their signatures have changed.
 
-To load an add-in into its own assembly load context, you only need to assign the ```RevitApplicationIsolation``` attribute to the Revit appplication class. 
+Isolating Revit add-ins using `AssemblyLoadContext` provides an effective way to avoid these conflicts. The **Scotec.Revit.Isolation** library supports this approach by automatically generating the required infrastructure at compile time.
+
+During compilation, source generators create factory classes and load context infrastructure that ensure your add-in is loaded into the correct `AssemblyLoadContext`. The generated factories instantiate your Revit applications and commands inside the isolated load context while still allowing Revit to call them as usual.
+
+---
+
+# Loading an Add-in into an Isolated Context
+
+To enable isolation for an add-in, the assembly must declare a **load context definition** using the following attribute:
 
 ```csharp
-[RevitApplicationIsolation]
+[assembly: RevitAddinIsolationContext]
+```
+
+This attribute is **required** and represents a breaking change compared to earlier versions of the library.
+
+The attribute defines the assembly load context that will be used for the add-in. It provides the following properties:
+
+| Property | Description |
+|--------|-------------|
+| `ContextName` | Optional name of the add-in specific load context. If not provided, the assembly name will be used. |
+| `SharedContextName` | Optional name of a shared context that can be used across multiple add-ins. |
+
+Example:
+
+```csharp
+[assembly: RevitAddinIsolationContext(
+    ContextName = "MyAddin.Context",
+    SharedContextName = "Company.Shared.Ui")]
+```
+
+If `ContextName` is omitted, the name of the assembly defining the attribute will automatically be used as the context name.
+
+---
+
+# Isolating Revit Entry Points
+
+Once the context is defined, individual Revit entry points can be isolated using the following attributes.  
+Each attribute must specify the **ContextName** of the load context that should be used.
+
+```csharp
+[RevitApplicationIsolation(ContextName = "MyAddin.Context")]
 public class RevitTestApp : IExternalApplication
 {
-	...
 }
 ```
 
-Corresponding attributes also exist for the DB application and commands:
-
 ```csharp
-[RevitDbApplicationIsolation]
+[RevitDbApplicationIsolation(ContextName = "MyAddin.Context")]
 public class RevitTestDbApp : IExternalDBApplication
+{
+}
 ```
 
 ```csharp
-[RevitCommandIsolation]
+[RevitCommandIsolation(ContextName = "MyAddin.Context")]
 public class RevitTestCommand : IExternalCommand
+{
+}
 ```
 
 ```csharp
-[RevitCommandAvailabilityIsolation]
+[RevitCommandAvailabilityIsolation(ContextName = "MyAddin.Context")]
 public class RevitTestCommandAvailability : IExternalCommandAvailability
+{
+}
 ```
 
-When using the attributes, factories are automatically generated, which instantiate the instances of the Revit apps and commands and load them into the load context. As Revit does not know anything about the load context, the generated factory types must be registered in Revit instead of your implementations. To do this, simply add ```Factory``` to the corresponding type name.
-For the examples above, this would be:
+These attributes instruct the source generator to create **factory classes** that load the corresponding implementation inside the specified `AssemblyLoadContext`.
 
-```csharp
-RevitTestAppFactory
-RevitTestDbAppFactory
-RevitTestCommandFactory
-RevitTestCommandAvailabilityFactory
-```
+---
+
+# Registering the Generated Factories
+
+Revit itself is unaware of the isolation infrastructure. Therefore, the generated **factory classes** must be registered in the `.addin` file instead of the actual implementation types.
+
+The generator creates factory classes by appending `Factory` to the original class name.
+
+Example:
+
+| Implementation | Generated factory |
+|---|---|
+| `RevitTestApp` | `RevitTestAppFactory` |
+| `RevitTestDbApp` | `RevitTestDbAppFactory` |
+| `RevitTestCommand` | `RevitTestCommandFactory` |
+| `RevitTestCommandAvailability` | `RevitTestCommandAvailabilityFactory` |
+
+Example `.addin` entry:
 
 ```xml
-<RevitAddIns>
-	<AddIn Type="Application">
-		<Name>Test</Name>
-		<FullClassName>Scotec.Revit.Test.RevitTestAppFactory</FullClassName>
-		<Assembly>.\Scotec.Revit.Test\Scotec.Revit.Test.dll</Assembly>
-		<AddInId>F2E1648B-7E1A-4518-95E9-92437EA941A6</AddInId>
-		<VendorId>scotec</VendorId>
-		<VendorDescription>scotec Software Solutions AB</VendorDescription>
-	</AddIn>
+<Test
+  Type="Application"
+  Assembly=".\Scotec.Revit.Test\Scotec.Revit.Test.dll"
+  FullClassName="Scotec.Revit.Test.RevitTestAppFactory"
+  AddInId="F2E1648B-7E1A-4518-95E9-92437EA941A6"
+  VendorId="scotec"
+  VendorDescription="scotec Software Solutions AB" />
 ```
 
+---
 
-You can find more information about Revit Add-in Isolation in my [blog article](https://www.scotec-software.com/en/blog/posts/Innovative-Revit-Addin-Development-Part-3).
+# Configuring the Assembly Load Context
 
-## User defined context name
-In previous versions of the ```Scotec.Revit.Isolation``` library, the Revit app and all commands had to reside in the same assembly to share the same assembly load context.
-Starting from version 2025.1.0, you can define a named load context that can be used across different assemblies.
-Therefore, the attributes now include a property called ```ContextName```. By setting a value for this property, you can define a named assembly load context that can be shared among multiple assemblies.
+For every defined load context, the source generator creates a **partial class** called:
+
+```
+RevitAddinAssemblyLoadContext
+```
+
+This class can be extended by the add-in to customize how assemblies are resolved and loaded.
+
+Configuration is done by implementing the partial method `OnInitialize()`.
+
+Example:
 
 ```csharp
-[RevitDbApplicationIsolation(ContextName = "My.LoadContext")]
-public class RevitTestDbApp : IExternalDBApplication
+partial class RevitAddinAssemblyLoadContext
+{
+    partial void OnInitialize()
+    {
+        AddSharedAssemblies(["My.Shared.Wpf.Assembly"]);
+
+        AddPreloadedAssemblies(
+        [
+            "My.Shared.Wpf.Assembly",
+            "My.Product.Ui"
+        ]);
+
+        AddBlackListedAssemblies(["Never.Load.This.Assembly"]);
+
+        RootAssembly = "Path to root assembly";
+
+        Resolver = new RevitAssemblyDependencyResolver();
+    }
+}
 ```
 
-It is recommended to use, for example, the Revit add-in name as the context name to avoid conflicts with other add-ins that might otherwise use the same context name.
+## Available Configuration Options
+
+### RootAssembly
+
+Defines the root assembly path that is used to initialize the assembly resolver.
+
+This setting is primarily relevant for resolvers such as `AssemblyDependencyResolver`, which are created with the path to the component or plugin entry assembly. The resolver then uses that assembly path together with the corresponding `.deps.json` file to determine how dependencies should be resolved.
+
+Use this option when the resolver should be initialized with a specific root assembly path rather than relying on the default assembly location.
+
+---
+
+### Resolver
+
+Defines the dependency resolver used to locate assemblies.
+
+The resolver must implement the `IRevitAssemblyDependencyResolver` interface.  
+This interface allows the load context infrastructure to query the resolver for assembly locations and control how dependencies are resolved.
+
+The default implementation `RevitAssemblyDependencyResolver` already supports common add-in deployment layouts. However, custom resolvers can be implemented when more advanced behavior is required.
+
+Typical use cases include:
+
+- loading assemblies from custom directories
+- resolving assemblies from plugin repositories
+- supporting custom version selection strategies
+- resolving assemblies from network locations or package caches
+
+---
+
+### AddSharedAssemblies
+
+Adds assemblies that must be loaded from the **shared context** rather than the add-in context.
+
+Use `AddSharedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
+
+This is typically used for assemblies that must have a **single type identity across multiple add-ins**, such as:
+
+- UI frameworks
+- shared contracts
+- shared services
+- cross-add-in communication libraries
+
+---
+
+### AddPreloadedAssemblies
+
+Adds assemblies that must be loaded immediately after the load context has been initialized.
+
+Use `AddPreloadedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
+
+Preloading can be useful for assemblies that should be available as early as possible, for example because they are known to be required during startup, contain UI infrastructure that should already be loaded, or should be resolved deterministically before other components trigger assembly loading.
+
+If an assembly added through `AddPreloadedAssemblies(...)` is also contained in the shared assemblies, it will be preloaded into the **shared context** rather than the add-in specific context.
+
+If an assembly added through `AddPreloadedAssemblies(...)` is also contained in the blacklisted assemblies, it will **not** be loaded.
+
+In other words, the effective behavior is:
+
+- assemblies added through `AddPreloadedAssemblies(...)` are loaded immediately after initialization
+- if the assembly is also shared, it is loaded into the shared context
+- if the assembly is blacklisted, the blacklist wins and the assembly is not loaded
+
+---
+
+### AddBlackListedAssemblies
+
+Adds assemblies that must **never be loaded into this context**.
+
+Use `AddBlackListedAssemblies(IEnumerable<string> assemblies)` to register one or more assembly names.
+
+This is useful when certain assemblies must always resolve from another  
+context (for example the default context).
+
+When an assembly is listed in both the preloaded assemblies and the blacklisted assemblies, it is not loaded.
+
+---
+
+# Shared Assembly Context
+
+In some scenarios, assemblies must be shared between multiple add-ins. Loading them separately into each add-in context would result in **multiple type identities**, which can cause runtime errors.
+
+Typical examples include:
+
+- shared UI frameworks
+- common view models
+- shared service contracts
+- inter-add-in communication libraries
+
+To support these scenarios, the isolation system allows the use of a **shared assembly load context**.
+
+---
+
+## Why Not Use the Default Context Instead
+
+At first glance, loading shared assemblies into the **default AssemblyLoadContext** might seem like a simple solution. However, this approach often leads to several architectural problems.
+
+The default context is global for the entire process. Once an assembly is loaded there, it cannot be unloaded and its version cannot be changed. This means that:
+
+- Different add-ins cannot use different versions of the same shared dependency.
+- Updating a shared component may require updating all add-ins at the same time.
+- Accidental dependencies may leak into the global environment.
+- Debugging assembly resolution problems becomes significantly harder.
+
+Using a **dedicated shared context** provides a controlled environment that still allows multiple add-ins to share assemblies while avoiding these global side effects.
+
+---
+
+## Using Shared Assemblies
+
+Shared contexts are typically enabled by applying the following attributes in the add-in assembly:
+
+```csharp
+[assembly: RevitAddinIsolationContext(
+    ContextName = "MyAddin.Context",
+    SharedContextName = "Company.Shared.Ui")]
+[assembly: RevitSharedIsolationContext("Company.Shared.Ui")]
+```
+
+The `RevitSharedIsolationContextAttribute` forces the source generator to create a **shared AssemblyLoadContext** that can be used by multiple add-ins.
+
+In many scenarios this attribute will be applied together with `RevitAddinIsolationContextAttribute` in the add-in assembly.
+
+### Load Order Considerations
+
+If the load order of the add-ins can be controlled, only the **first loaded add-in** needs to define the `RevitSharedIsolationContextAttribute`.
+
+If the load order cannot be controlled, it is recommended that **each participating add-in declares the attribute**. The isolation infrastructure ensures that the shared context is **created only once**, even if multiple add-ins declare it.
+
+---
+
+## Using Shared Assemblies in the Load Context
+
+Shared assemblies can optionally be defined explicitly in the add-in load context configuration:
+
+```csharp
+partial class RevitAddinAssemblyLoadContext
+{
+    partial void OnInitialize()
+    {
+        AddSharedAssemblies(
+        [
+            "Company.Shared.Ui",
+            "Company.Shared.Contracts"
+        ]);
+
+        AddPreloadedAssemblies(
+        [
+            "Company.Shared.Ui"
+        ]);
+    }
+}
+```
+
+This ensures that these assemblies are resolved from the shared context instead of being loaded independently into the add-in specific context.
+
+If a shared assembly is also added through `AddPreloadedAssemblies(...)`, it will be preloaded into the shared context immediately after initialization.
+
+If an assembly is configured as a shared assembly for one add-in specific load context, it must also be configured as a shared assembly for every other load context that needs to use that assembly. Otherwise, the same assembly may be loaded into different contexts, which can lead to inconsistent or undefined behavior. This is especially important for frameworks such as WPF, where loading the same assembly into multiple contexts can result in type identity issues, resource resolution problems, or other runtime errors.
+
+In practice, shared UI or contract assemblies should be maintained in a central list or shared configuration used by all add-ins to ensure consistent load context behavior.
+
+---
+
+## When to Use Shared Contexts
+
+Shared contexts should only be used when assemblies must maintain **a single type identity across add-ins**.
+
+Typical use cases include:
+
+- UI frameworks shared by multiple add-ins
+- shared service interfaces
+- common view models
+- cross-add-in communication layers
+
+For most other dependencies, keeping assemblies inside the add-in specific context provides better isolation and avoids version conflicts.
