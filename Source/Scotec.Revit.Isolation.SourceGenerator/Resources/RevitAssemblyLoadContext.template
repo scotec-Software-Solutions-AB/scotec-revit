@@ -224,7 +224,7 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     public virtual void Initialize(string rootAssembly, AssemblyLoadContext context)
     {{
         _context = context;
-        RootAssembly = rootAssembly;
+        RootAssembly = MakePathAbsolute(rootAssembly);
         _resolver = new AssemblyDependencyResolver(rootAssembly);
 
         var fullPath = Path.GetFullPath(rootAssembly);
