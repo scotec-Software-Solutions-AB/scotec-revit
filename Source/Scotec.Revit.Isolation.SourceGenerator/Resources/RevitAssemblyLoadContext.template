@@ -487,6 +487,47 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         }}
     }}
 
+    /// <summary>
+    ///     Converts a relative file path to an absolute path.
+    /// </summary>
+    /// <param name="path">
+    ///     The file path to convert. This can be a relative or absolute path.
+    /// </param>
+    /// <returns>
+    ///     The absolute path corresponding to the input <paramref name="path" />.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    ///     Thrown when the <paramref name="path" /> is null, empty, or consists only of white-space characters.
+    /// </exception>
+    /// <remarks>
+    ///     If the provided <paramref name="path" /> is already an absolute path, it is normalized and returned as is.
+    ///     Otherwise, the method combines the relative path with the directory of the executing assembly or the base
+    ///     application directory to compute the absolute path.
+    /// </remarks>
+    private static string MakePathAbsolute(string path)
+    {{
+        if (string.IsNullOrWhiteSpace(path))
+        {{
+            throw new ArgumentException("Path must not be null or empty.", nameof(path));
+        }}
+
+        // Already absolute → just normalize and return
+        if (Path.IsPathRooted(path))
+        {{
+            return Path.GetFullPath(path);
+        }}
+
+        // Get the directory of the executing assembly
+        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+
+        // Fallback in case Location is empty (can happen in some contexts)
+        var baseDirectory = string.IsNullOrEmpty(assemblyLocation)
+            ? AppContext.BaseDirectory
+            : Path.GetDirectoryName(assemblyLocation)!;
+
+        // Combine and normalize
+        return Path.GetFullPath(Path.Combine(baseDirectory, path));
+    }}
 }}
 
 #nullable restore
