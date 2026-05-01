@@ -22,15 +22,9 @@
 	<ItemGroup>
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
-<<<<<<< .mine
 		<PackageReference Include="OpenMcdf" Version="3.1.3" />
 		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.1" />
 		<PackageReference Include="Scotec.Extensions.Linq" Version="1.1.1" />
-=======
-		<PackageReference Include="OpenMcdf" Version="3.1.0" />
-		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.1" />
-		<PackageReference Include="Scotec.Extensions.Linq" Version="1.1.1" />
->>>>>>> .theirs
 	</ItemGroup>
 
 	<ItemGroup>

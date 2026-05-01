@@ -22,11 +22,11 @@
 
 
 	<PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-		<RevitLoadContextSharedRootAssembly>..\Shared\Naviate.Extensions.Ui.Abstractions</RevitLoadContextSharedRootAssembly>
+		<RevitLoadContextSharedRootAssembly>..\Shared\My.Shared.Root.dll</RevitLoadContextSharedRootAssembly>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<RevitLoadContextSharedAssemblies>Naviate.Extensions.Ui.Abstractions|MaterialDesignColors.NV|MaterialDesignExtensions.NV|MaterialDesignThemes.Wpf.NV</RevitLoadContextSharedAssemblies>
+		<RevitLoadContextSharedAssemblies>Shared.Assembly1|Shared.Assembly2|Shared.Assembly3|Shared.Assembly4</RevitLoadContextSharedAssemblies>
 	</PropertyGroup>
 
 </Project>
