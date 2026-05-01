@@ -62,6 +62,10 @@ internal sealed partial class RevitAddinAssemblyLoadContext : RevitAssemblyLoadC
             _sharedContext = AssemblyLoadContext.All.FirstOrDefault(alc => alc.Name == _sharedContextName);
         }}
 
+        AddSharedAssemblies({2});
+        AddBlackListedAssemblies({3});
+        AddPreloadedAssemblies({4});
+
         OnInitialize();
 
         // ALC must be fully initialized before preloading assemblies.
