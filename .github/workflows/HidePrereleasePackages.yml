@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       package_id:
-        description: 'NuGet package ID'
+        description: NuGet package ID
         required: true
-        default: 'Your.Package.Id'
+        default: Your.Package.Id
       keep_latest:
-        description: 'Keep latest prerelease version'
+        description: Keep latest prerelease version
         required: true
-        default: 'true'
+        default: "true"
 
 jobs:
   unlist-prereleases:
@@ -29,13 +29,10 @@ jobs:
           $packageIdLower = $packageId.ToLowerInvariant()
           $versionsUrl = "https://api.nuget.org/v3-flatcontainer/$packageIdLower/index.json"
 
-          Write-Host "Reading versions from $versionsUrl"
-
           $versions = (Invoke-RestMethod -Uri $versionsUrl).versions
 
           $preReleaseVersions = $versions |
-            Where-Object { $_ -like "*-*" } |
-            Sort-Object { [System.Management.Automation.SemanticVersion]$_ }
+            Where-Object { $_ -like "*-*" }
 
           if ($env:KEEP_LATEST -eq "true") {
             $versionsToUnlist = $preReleaseVersions | Select-Object -SkipLast 1
