@@ -29,7 +29,4 @@
 		<RevitLoadContextSharedAssemblies>Naviate.Extensions.Ui.Abstractions|MaterialDesignColors.NV|MaterialDesignExtensions.NV|MaterialDesignThemes.Wpf.NV</RevitLoadContextSharedAssemblies>
 	</PropertyGroup>
 
-	<!--<ItemGroup>
-		<CompilerVisibleProperty Include="LoadContextSharedAssemblies" />
-	</ItemGroup>-->
 </Project>
