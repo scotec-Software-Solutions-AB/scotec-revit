@@ -1,7 +1,7 @@
 name: Unlist NuGet prerelease versions
 
 on:
-  [workflow_dispatch]:
+  workflow_dispatch:
     inputs:
       package_id:
         description: 'NuGet package ID'
