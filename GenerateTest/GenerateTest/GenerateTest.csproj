@@ -20,4 +20,16 @@
 	  <ProjectReference Include="..\TestLibrary\TestLibrary.csproj" />
 	</ItemGroup>
 
+
+	<PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+		<RevitLoadContextSharedRootAssembly>..\Shared\Naviate.Extensions.Ui.Abstractions</RevitLoadContextSharedRootAssembly>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<RevitLoadContextSharedAssemblies>Naviate.Extensions.Ui.Abstractions|MaterialDesignColors.NV|MaterialDesignExtensions.NV|MaterialDesignThemes.Wpf.NV</RevitLoadContextSharedAssemblies>
+	</PropertyGroup>
+
+	<!--<ItemGroup>
+		<CompilerVisibleProperty Include="LoadContextSharedAssemblies" />
+	</ItemGroup>-->
 </Project>

@@ -2,8 +2,10 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System.Reflection;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using System;
+using System.Reflection;
 
 namespace Scotec.Revit.Isolation.SourceGenerator;
 
@@ -81,4 +83,14 @@ public abstract class RevitIncrementalGenerator : IIncrementalGenerator
     ///     during the generator's initialization. It is called after the initialization context is set.
     /// </remarks>
     protected abstract void OnInitialize();
+
+    protected IncrementalValueProvider<string?> GetBuildProperty(string propertyName)
+    {
+        IncrementalValueProvider<string?> value = Context.AnalyzerConfigOptionsProvider.Select((p, _) =>
+                                                              p.GlobalOptions.TryGetValue($"build_property.{propertyName.ToLowerInvariant()}", out var value)
+                                                                  ? value
+                                                                  : null);
+
+        return value;
+    }
 }
