@@ -4,13 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       package_id:
-        description: NuGet package ID
+        description: 'NuGet package ID'
         required: true
-        default: Your.Package.Id
+        type: string
+        default: 'Your.Package.Id'
       keep_latest:
-        description: Keep latest prerelease version
+        description: 'Keep latest prerelease version'
         required: true
-        default: "true"
+        type: boolean
+        default: true
 
 jobs:
   unlist-prereleases:
