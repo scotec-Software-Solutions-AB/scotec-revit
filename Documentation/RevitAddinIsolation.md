@@ -1,10 +1,112 @@
-# Revit Add-in Isolation
+﻿# Revit Add-in Isolation
 
 Version conflicts occur when two or more Revit add-ins reference the same assemblies but require different versions of those assemblies. For example, if an older version of an assembly is loaded, but the add-in requires types from a newer version, a `TypeLoadException` will be thrown. Similar errors can occur if methods are missing or their signatures have changed.
 
-Isolating Revit add-ins using `AssemblyLoadContext` provides an effective way to avoid these conflicts. The **Scotec.Revit.Isolation** library supports this approach by automatically generating the required infrastructure at compile time.
+Isolating Revit add-ins using `AssemblyLoadContext` provides an effective way to avoid these conflicts.  
+Starting with **Revit 2026**, a basic isolation mechanism is available out of the box. However, more advanced scenarios still require explicit control over the loading process.
+
+The **Scotec.Revit.Isolation** library supports advanced isolation scenarios by automatically generating the required infrastructure at compile time.
 
 During compilation, source generators create factory classes and load context infrastructure that ensure your add-in is loaded into the correct `AssemblyLoadContext`. The generated factories instantiate your Revit applications and commands inside the isolated load context while still allowing Revit to call them as usual.
+
+---
+
+# Revit 2026 Native Add-in Isolation
+
+Starting with **Revit 2026**, Autodesk introduced a built-in mechanism for add-in isolation based on `AssemblyLoadContext`.
+
+This means that, by default, each add-in can be loaded into its own isolated context, reducing the likelihood of version conflicts between add-ins.
+
+The native isolation provided by Revit offers:
+
+- separation of dependencies between add-ins  
+- reduced risk of `TypeLoadException` and binding conflicts  
+- simplified setup without requiring additional infrastructure  
+
+However, the built-in mechanism is intentionally limited in configurability.
+
+In particular:
+
+- there is no fine-grained control over assembly resolution  
+- there is no concept of shared contexts between add-ins  
+- dependency loading behavior is largely implicit and not customizable  
+- advanced scenarios such as preloading, blacklisting, or custom resolution strategies are not supported  
+
+---
+
+# When to Use Scotec.Revit.Isolation Instead
+
+While Revit 2026 provides basic isolation, the **Scotec.Revit.Isolation** library is designed for advanced and controlled scenarios.
+
+It is the better choice when:
+
+### ✔ Full control over assembly loading is required
+
+- define exactly where assemblies are loaded from  
+- implement custom dependency resolution logic  
+- support non-standard deployment layouts (e.g. plugin repositories, network locations)  
+
+---
+
+### ✔ Shared assemblies across add-ins are required
+
+Revit’s built-in isolation does not provide a mechanism for sharing assemblies with a single type identity.
+
+Scotec isolation enables:
+
+- shared `AssemblyLoadContext`  
+- safe sharing of:
+  - UI frameworks (e.g. WPF resources)  
+  - contracts and interfaces  
+  - communication layers between add-ins  
+
+---
+
+### ✔ Deterministic loading behavior is required
+
+With Scotec isolation, you can explicitly control:
+
+- preloaded assemblies (`AddPreloadedAssemblies`)  
+- shared assemblies (`AddSharedAssemblies`)  
+- blacklisted assemblies (`AddBlackListedAssemblies`)  
+
+This ensures:
+
+- predictable startup behavior  
+- avoidance of implicit or accidental loads  
+- easier debugging of resolution issues  
+
+---
+
+### ✔ Global side effects must be avoided
+
+Even with Revit’s isolation:
+
+- some frameworks (e.g. WPF) still rely on process-global state  
+- incorrect loading can still lead to:
+  - duplicated type identities  
+  - resource conflicts  
+  - subtle runtime errors  
+
+Scotec isolation provides explicit boundaries and governance for these scenarios.
+
+---
+
+### ✔ Advanced multi-add-in architectures are required
+
+Examples:
+
+- product suites with multiple cooperating add-ins  
+- shared UI platforms across products  
+- plugin ecosystems with independent versioning  
+
+These scenarios require:
+
+- controlled sharing  
+- strict isolation  
+- repeatable loading behavior  
+
+—all of which go beyond what Revit provides out of the box.
 
 ---
 

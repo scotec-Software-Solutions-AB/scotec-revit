@@ -38,12 +38,14 @@ internal static class RevitAddinModuleInitializer
         var sharedContextName = "{1}";
         var contextName = "{2}";
         var useSharedContext = "{3}";
+        var addInRootAssembly = string.IsNullOrEmpty(@"{6}") ? currentAssembly.Location : @"{6}";
+        var sharedRootAssembly = string.IsNullOrEmpty(@"{7}") ? currentAssembly.Location : @"{7}";
 
 #if ({5})
         // Initialize the shared context if specified and not already present.
         if(!string.IsNullOrEmpty(sharedContextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == sharedContextName))
         {{
-            var loadContext = new RevitSharedAssemblyLoadContext(sharedContextName, currentAssembly.Location);
+            var loadContext = new RevitSharedAssemblyLoadContext(sharedContextName, sharedRootAssembly);
             loadContext.Initialize();
         }}
 #endif
@@ -52,7 +54,7 @@ internal static class RevitAddinModuleInitializer
         // Initialize the per-addin context if specified and not already present.
         if(!string.IsNullOrEmpty(contextName) && !AssemblyLoadContext.All.Any(alc => alc.Name == contextName))
         {{
-            var loadContext = new RevitAddinAssemblyLoadContext(contextName, useSharedContext, currentAssembly.Location);
+            var loadContext = new RevitAddinAssemblyLoadContext(contextName, useSharedContext, addInRootAssembly);
             loadContext.Initialize();
         }}
 #endif

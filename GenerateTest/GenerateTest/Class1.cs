@@ -15,8 +15,8 @@ internal partial class RevitAddinAssemblyLoadContext
 {
     partial void OnInitialize()
     {
-        SharedAssemblies = ["My.Shared.Wpf.Assembly"];
-        BlackListedAssemblies = ["Never.Load.This.Assembly"];
+        AddSharedAssemblies( ["My.Shared.Wpf.Assembly"]);
+        AddBlackListedAssemblies (["Never.Load.This.Assembly"]);
         RootAssembly = "Path to root assembly";
         Resolver = new RevitAssemblyDependencyResolver();
     }

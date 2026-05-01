@@ -1,0 +1,9 @@
+<Project>
+	<ItemGroup>
+		<CompilerVisibleProperty Include="RevitLoadContextSharedAssemblies" />
+		<CompilerVisibleProperty Include="RevitLoadContextBlackListedAssemblies" />
+		<CompilerVisibleProperty Include="RevitLoadContextPreloadedAssemblies" />
+		<CompilerVisibleProperty Include="RevitLoadContextAddinRootAssembly" />
+		<CompilerVisibleProperty Include="RevitLoadContextSharedRootAssembly" />
+	</ItemGroup>
+</Project>

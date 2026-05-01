@@ -1,0 +1,58 @@
+name: Unlist NuGet prerelease versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_id:
+        description: 'NuGet package ID'
+        required: true
+        type: string
+        default: 'Your.Package.Id'
+      keep_latest:
+        description: 'Keep latest prerelease version'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  unlist-prereleases:
+    runs-on: windows-latest
+
+    steps:
+      - name: Unlist prerelease versions
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          PACKAGE_ID: ${{ github.event.inputs.package_id }}
+          KEEP_LATEST: ${{ github.event.inputs.keep_latest }}
+        run: |
+          $source = "https://api.nuget.org/v3/index.json"
+          $packageId = $env:PACKAGE_ID
+          $packageIdLower = $packageId.ToLowerInvariant()
+          $versionsUrl = "https://api.nuget.org/v3-flatcontainer/$packageIdLower/index.json"
+
+          $versions = (Invoke-RestMethod -Uri $versionsUrl).versions
+
+          $preReleaseVersions = $versions |
+            Where-Object { $_ -like "*-*" }
+
+          if ($env:KEEP_LATEST -eq "true") {
+            $versionsToUnlist = $preReleaseVersions | Select-Object -SkipLast 1
+          }
+          else {
+            $versionsToUnlist = $preReleaseVersions
+          }
+
+          if (-not $versionsToUnlist) {
+            Write-Host "No prerelease versions to unlist."
+            exit 0
+          }
+
+          foreach ($version in $versionsToUnlist) {
+            Write-Host "Unlisting $packageId $version"
+
+            dotnet nuget delete $packageId $version `
+              --source $source `
+              --api-key $env:NUGET_API_KEY `
+              --non-interactive
+          }

@@ -1,0 +1,43 @@
+<Project>
+
+	<!--
+    Defines assemblies that should be treated as shared by the Scotec.Revit.Isolation 
+	source generator.
+
+	This example demonstrates how to define MSBuild properties that are consumed by 
+	the source generator. Users can define these properties either directly in their
+	.csproj file or in a custom .props file.
+	
+	IMPORTANT:
+
+    1. The value MUST be on a single line.
+       MSBuild exposes properties marked with <CompilerVisibleProperty> to the compiler
+       via a generated .editorconfig file. The .editorconfig format is line-based and
+       does not reliably support multi-line values. If line breaks are used, the value
+       may be truncated or parsed incorrectly by Roslyn.
+
+    2. Use '|' as separator between entries.
+       The ';' character cannot be used because it starts a comment in .editorconfig.
+       Everything after ';' would be ignored, so only the first entry would be visible
+       to the source generator.
+
+    3. Do not use ',' as separator.
+       Although it may work in most cases, ',' is a valid character in file names and
+       could lead to ambiguous parsing.
+
+    The source generator reads this property and splits it using '|'.
+	-->
+  
+	<PropertyGroup>
+		<RevitLoadContextSharedAssemblies>Naviate.Extensions.Ui.Abstractions|MaterialDesignColors.NV|MaterialDesignExtensions.NV|MaterialDesignThemes.Wpf.NV</RevitLoadContextSharedAssemblies>
+	</PropertyGroup>
+
+	<!--
+	Defines the root assembly path used to initialize the AssemblyDependencyResolver
+	for the shared load context.
+	-->
+	<PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+		<RevitLoadContextSharedRootAssembly>..\Shared\Naviate.Extensions.Ui.Abstractions</RevitLoadContextSharedRootAssembly>
+	</PropertyGroup>
+
+</Project>

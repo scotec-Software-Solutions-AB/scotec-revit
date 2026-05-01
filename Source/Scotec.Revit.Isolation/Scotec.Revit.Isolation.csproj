@@ -27,6 +27,10 @@
 		<None Include="..\Scotec.Revit.Isolation.SourceGenerator\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Isolation.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="BuildTransitive\Scotec.Revit.Isolation.props" Pack="true" PackagePath="buildTransitive\Scotec.Revit.Isolation.props" />
+	</ItemGroup>
+
 	<ItemGroup Condition="'$(RevitYear)' == '2025'">
 		<PackageReference Include="Autodesk.Revit.SDK" Version="2025.0.2.419" />
 	</ItemGroup>

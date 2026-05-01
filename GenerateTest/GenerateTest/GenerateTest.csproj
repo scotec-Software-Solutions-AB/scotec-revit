@@ -20,4 +20,13 @@
 	  <ProjectReference Include="..\TestLibrary\TestLibrary.csproj" />
 	</ItemGroup>
 
+
+	<PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+		<RevitLoadContextSharedRootAssembly>..\Shared\My.Shared.Root.dll</RevitLoadContextSharedRootAssembly>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<RevitLoadContextSharedAssemblies>Shared.Assembly1|Shared.Assembly2|Shared.Assembly3|Shared.Assembly4</RevitLoadContextSharedAssemblies>
+	</PropertyGroup>
+
 </Project>
