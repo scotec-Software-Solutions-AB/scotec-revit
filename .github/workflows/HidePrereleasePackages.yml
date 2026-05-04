@@ -40,53 +40,79 @@ jobs:
 
           $registration = Invoke-RestMethod -Uri $registrationUrl -ErrorAction Stop
 
-          $entries = @()
+          $entries = New-Object System.Collections.Generic.List[object]
 
           foreach ($page in $registration.items) {
-            if ($page.items) {
-              $entries += $page.items
+            if ($null -ne $page.items) {
+              foreach ($item in $page.items) {
+                $entries.Add($item)
+              }
             }
             else {
+              Write-Host "Loading registration page $($page.'@id')"
               $pageData = Invoke-RestMethod -Uri $page.'@id' -ErrorAction Stop
-              $entries += $pageData.items
+
+              foreach ($item in $pageData.items) {
+                $entries.Add($item)
+              }
             }
           }
 
-          $listedPreReleaseVersions = $entries |
-            Where-Object {
-              $version = $_.catalogEntry.version
-              $listedProperty = $_.catalogEntry.PSObject.Properties["listed"]
+          Write-Host "Total registration entries found: $($entries.Count)"
 
-              $isPreRelease = $version -like "*-*"
-              $isListed = $null -eq $listedProperty -or $_.catalogEntry.listed -eq $true
+          $listedPreReleaseVersions = New-Object System.Collections.Generic.List[string]
 
-              $isPreRelease -and $isListed
-            } |
-            ForEach-Object { $_.catalogEntry.version } |
-            Sort-Object { [System.Management.Automation.SemanticVersion]$_ }
+          foreach ($entry in $entries) {
+            $catalogEntry = $entry.catalogEntry
 
-          if (-not $listedPreReleaseVersions) {
+            if ($null -eq $catalogEntry) {
+              continue
+            }
+
+            $version = [string]$catalogEntry.version
+
+            if ([string]::IsNullOrWhiteSpace($version)) {
+              continue
+            }
+
+            $isPreRelease = $version.Contains("-")
+
+            $listedProperty = $catalogEntry.PSObject.Properties["listed"]
+            $isListed = ($null -eq $listedProperty) -or ([bool]$catalogEntry.listed)
+
+            if ($isPreRelease -and $isListed) {
+              $listedPreReleaseVersions.Add($version)
+            }
+          }
+
+          Write-Host "Listed prerelease versions found: $($listedPreReleaseVersions.Count)"
+
+          if ($listedPreReleaseVersions.Count -eq 0) {
             Write-Host "No listed prerelease versions found."
             exit 0
           }
 
-          Write-Host "Listed prerelease versions found:"
-          $listedPreReleaseVersions | ForEach-Object { Write-Host " - $_" }
+          Write-Host "Listed prerelease versions:"
+          foreach ($version in $listedPreReleaseVersions) {
+            Write-Host " - $version"
+          }
 
           if ($env:KEEP_LATEST -eq "true") {
-            $versionsToUnlist = $listedPreReleaseVersions | Select-Object -SkipLast 1
+            $versionsToUnlist = @($listedPreReleaseVersions | Select-Object -SkipLast 1)
           }
           else {
-            $versionsToUnlist = $listedPreReleaseVersions
+            $versionsToUnlist = @($listedPreReleaseVersions)
           }
 
-          if (-not $versionsToUnlist) {
+          if ($versionsToUnlist.Count -eq 0) {
             Write-Host "No prerelease versions to unlist."
             exit 0
           }
 
-          Write-Host "Versions to unlist:"
-          $versionsToUnlist | ForEach-Object { Write-Host " - $_" }
+          Write-Host "Versions to unlist: $($versionsToUnlist.Count)"
+          foreach ($version in $versionsToUnlist) {
+            Write-Host " - $version"
+          }
 
           foreach ($version in $versionsToUnlist) {
             Write-Host "Unlisting $packageId $version"
