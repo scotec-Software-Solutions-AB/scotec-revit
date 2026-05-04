@@ -3,13 +3,13 @@ name: Unlist NuGet prerelease versions
 on:
   workflow_dispatch:
     inputs:
-      package_id:
-        description: 'NuGet package ID'
+      package_pattern:
+        description: 'NuGet package ID or wildcard pattern'
         required: true
         type: string
-        default: 'Your.Package.Id'
+        default: 'scotec.revit.*'
       keep_latest:
-        description: 'Keep latest prerelease version'
+        description: 'Keep latest prerelease version per package'
         required: true
         type: boolean
         default: true
@@ -23,102 +23,120 @@ jobs:
         shell: pwsh
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-          PACKAGE_ID: ${{ github.event.inputs.package_id }}
+          PACKAGE_PATTERN: ${{ github.event.inputs.package_pattern }}
           KEEP_LATEST: ${{ github.event.inputs.keep_latest }}
         run: |
           $source = "https://api.nuget.org/v3/index.json"
-          $packageId = $env:PACKAGE_ID.Trim()
+          $pattern = $env:PACKAGE_PATTERN.Trim()
 
-          if ([string]::IsNullOrWhiteSpace($packageId)) {
-            throw "Package ID is empty."
+          if ([string]::IsNullOrWhiteSpace($pattern)) {
+            throw "Package pattern is empty."
           }
 
-          $packageIdLower = $packageId.ToLowerInvariant()
-          $registrationUrl = "https://api.nuget.org/v3/registration5-gz-semver2/$packageIdLower/index.json"
-
-          Write-Host "Reading registration metadata from $registrationUrl"
-
-          $registration = Invoke-RestMethod -Uri $registrationUrl -ErrorAction Stop
-
-          $entries = New-Object System.Collections.Generic.List[object]
-
-          foreach ($page in $registration.items) {
-            if ($null -ne $page.items) {
-              foreach ($item in $page.items) {
-                $entries.Add($item)
-              }
-            }
-            else {
-              Write-Host "Loading registration page $($page.'@id')"
-              $pageData = Invoke-RestMethod -Uri $page.'@id' -ErrorAction Stop
-
-              foreach ($item in $pageData.items) {
-                $entries.Add($item)
-              }
-            }
-          }
-
-          Write-Host "Total registration entries found: $($entries.Count)"
-
-          $listedPreReleaseVersions = New-Object System.Collections.Generic.List[string]
-
-          foreach ($entry in $entries) {
-            $catalogEntry = $entry.catalogEntry
-
-            if ($null -eq $catalogEntry) {
-              continue
-            }
-
-            $version = [string]$catalogEntry.version
-
-            if ([string]::IsNullOrWhiteSpace($version)) {
-              continue
-            }
-
-            $isPreRelease = $version.Contains("-")
-
-            $listedProperty = $catalogEntry.PSObject.Properties["listed"]
-            $isListed = ($null -eq $listedProperty) -or ([bool]$catalogEntry.listed)
-
-            if ($isPreRelease -and $isListed) {
-              $listedPreReleaseVersions.Add($version)
-            }
-          }
-
-          Write-Host "Listed prerelease versions found: $($listedPreReleaseVersions.Count)"
-
-          if ($listedPreReleaseVersions.Count -eq 0) {
-            Write-Host "No listed prerelease versions found."
-            exit 0
-          }
-
-          Write-Host "Listed prerelease versions:"
-          foreach ($version in $listedPreReleaseVersions) {
-            Write-Host " - $version"
-          }
-
-          if ($env:KEEP_LATEST -eq "true") {
-            $versionsToUnlist = @($listedPreReleaseVersions | Select-Object -SkipLast 1)
+          if ($pattern.EndsWith(".*")) {
+            $prefix = $pattern.Substring(0, $pattern.Length - 2)
+            $packageRegex = "^" + [regex]::Escape($prefix) + "(\..+)?$"
+            $searchTerm = $prefix
           }
           else {
-            $versionsToUnlist = @($listedPreReleaseVersions)
+            $packageRegex = "^" + [regex]::Escape($pattern).Replace("\*", ".*") + "$"
+            $searchTerm = $pattern.Replace("*", "")
           }
 
-          if ($versionsToUnlist.Count -eq 0) {
-            Write-Host "No prerelease versions to unlist."
+          $encodedSearchTerm = [System.Uri]::EscapeDataString($searchTerm)
+          $searchUrl = "https://azuresearch-usnc.nuget.org/query?q=$encodedSearchTerm&take=1000"
+
+          Write-Host "Searching packages from $searchUrl"
+
+          $searchResult = Invoke-RestMethod -Uri $searchUrl -ErrorAction Stop
+
+          $packageIds = @(
+            $searchResult.data |
+              Where-Object { $_.id -match $packageRegex } |
+              ForEach-Object { $_.id } |
+              Sort-Object -Unique
+          )
+
+          if ($packageIds.Count -eq 0) {
+            Write-Host "No packages matched pattern '$pattern'."
             exit 0
           }
 
-          Write-Host "Versions to unlist: $($versionsToUnlist.Count)"
-          foreach ($version in $versionsToUnlist) {
-            Write-Host " - $version"
-          }
+          Write-Host "Matched packages:"
+          $packageIds | ForEach-Object { Write-Host " - $_" }
 
-          foreach ($version in $versionsToUnlist) {
-            Write-Host "Unlisting $packageId $version"
+          foreach ($packageId in $packageIds) {
+            Write-Host ""
+            Write-Host "Processing package: $packageId"
 
-            dotnet nuget delete $packageId $version `
-              --source $source `
-              --api-key $env:NUGET_API_KEY `
-              --non-interactive
+            $packageIdLower = $packageId.ToLowerInvariant()
+            $registrationUrl = "https://api.nuget.org/v3/registration5-gz-semver2/$packageIdLower/index.json"
+
+            $registration = Invoke-RestMethod -Uri $registrationUrl -ErrorAction Stop
+
+            $entries = New-Object System.Collections.Generic.List[object]
+
+            foreach ($page in $registration.items) {
+              if ($null -ne $page.items) {
+                foreach ($item in $page.items) {
+                  $entries.Add($item)
+                }
+              }
+              else {
+                $pageData = Invoke-RestMethod -Uri $page.'@id' -ErrorAction Stop
+                foreach ($item in $pageData.items) {
+                  $entries.Add($item)
+                }
+              }
+            }
+
+            $listedPreReleaseVersions = New-Object System.Collections.Generic.List[string]
+
+            foreach ($entry in $entries) {
+              $catalogEntry = $entry.catalogEntry
+              if ($null -eq $catalogEntry) {
+                continue
+              }
+
+              $version = [string]$catalogEntry.version
+              if ([string]::IsNullOrWhiteSpace($version)) {
+                continue
+              }
+
+              $listedProperty = $catalogEntry.PSObject.Properties["listed"]
+              $isListed = ($null -eq $listedProperty) -or ([bool]$catalogEntry.listed)
+
+              if ($version.Contains("-") -and $isListed) {
+                $listedPreReleaseVersions.Add($version)
+              }
+            }
+
+            if ($listedPreReleaseVersions.Count -eq 0) {
+              Write-Host "No listed prerelease versions found for $packageId."
+              continue
+            }
+
+            if ($env:KEEP_LATEST -eq "true") {
+              $versionsToUnlist = @($listedPreReleaseVersions | Select-Object -SkipLast 1)
+            }
+            else {
+              $versionsToUnlist = @($listedPreReleaseVersions)
+            }
+
+            if ($versionsToUnlist.Count -eq 0) {
+              Write-Host "No prerelease versions to unlist for $packageId."
+              continue
+            }
+
+            Write-Host "Versions to unlist for ${packageId}:"
+            $versionsToUnlist | ForEach-Object { Write-Host " - $_" }
+
+            foreach ($version in $versionsToUnlist) {
+              Write-Host "Unlisting $packageId $version"
+
+              dotnet nuget delete $packageId $version `
+                --source $source `
+                --api-key $env:NUGET_API_KEY `
+                --non-interactive
+            }
           }
