@@ -10,10 +10,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Configurations>Release;Revit2025;Revit2026</Configurations>
+		<Configurations>Release;Revit2025;Revit2026;Revit2027</Configurations>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Revit2025' Or '$(Configuration)' == 'Revit2026'">
+	<PropertyGroup Condition="'$(Configuration)' == 'Revit2025' Or '$(Configuration)' == 'Revit2026' Or '$(Configuration)' == 'Revit2027'">
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
 		<Optimize>false</Optimize>
@@ -25,10 +25,13 @@
 		<RevitYear>2025</RevitYear>
 		<DefineConstants>$(DefineConstants);REVIT2025</DefineConstants>
 	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)' == 'Revit2026'">
 		<RevitYear>2026</RevitYear>
 		<DefineConstants>$(DefineConstants);REVIT2026</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)' == 'Revit2027'">
+		<RevitYear>2027</RevitYear>
+		<DefineConstants>$(DefineConstants);REVIT2027</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(RevitYear)' == ''">
