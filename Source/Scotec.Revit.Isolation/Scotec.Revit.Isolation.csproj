@@ -1,11 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-
-	<PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
 		<TargetFramework>net8.0-windows</TargetFramework>
-		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2026'">
+		<TargetFramework>net8.0-windows</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2027'">
+		<TargetFramework>net10.0-windows</TargetFramework>
+	</PropertyGroup>
+
+	<!--<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+	</PropertyGroup>-->
 
 	<PropertyGroup>
 		<Description>Support for Revit add-in isolation.</Description>

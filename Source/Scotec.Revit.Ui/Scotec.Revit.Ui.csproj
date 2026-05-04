@@ -1,8 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
+		<TargetFramework>net8.0-windows</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2026'">
+		<TargetFramework>net8.0-windows</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2027'">
+		<TargetFramework>net10.0-windows</TargetFramework>
+	</PropertyGroup>
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWpf>True</UseWpf>
 	</PropertyGroup>
 
