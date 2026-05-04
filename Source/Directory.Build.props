@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Configurations>Release;Revit2025;Revit2026</Configurations>
+		<Configurations>Release;Revit2025;Revit2026;Revit2027</Configurations>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Revit2025' Or '$(Configuration)' == 'Revit2026' Or '$(Configuration)' == 'Revit2027'">
