@@ -34,7 +34,7 @@ jobs:
           }
 
           $packageIdLower = $packageId.ToLowerInvariant()
-          $registrationUrl = "https://api.nuget.org/v3/registration5-semver1/$packageIdLower/index.json"
+          $registrationUrl = "https://api.nuget.org/v3/registration5-gz-semver2/$packageIdLower/index.json"
 
           Write-Host "Reading registration metadata from $registrationUrl"
 
@@ -54,13 +54,24 @@ jobs:
 
           $listedPreReleaseVersions = $entries |
             Where-Object {
-              $_.catalogEntry.version -like "*-*" -and
-              (
-                -not $_.catalogEntry.PSObject.Properties.Name.Contains("listed") -or
-                $_.catalogEntry.listed -eq $true
-              )
+              $version = $_.catalogEntry.version
+              $listedProperty = $_.catalogEntry.PSObject.Properties["listed"]
+
+              $isPreRelease = $version -like "*-*"
+              $isListed = $null -eq $listedProperty -or $_.catalogEntry.listed -eq $true
+
+              $isPreRelease -and $isListed
             } |
-            ForEach-Object { $_.catalogEntry.version }
+            ForEach-Object { $_.catalogEntry.version } |
+            Sort-Object { [System.Management.Automation.SemanticVersion]$_ }
+
+          if (-not $listedPreReleaseVersions) {
+            Write-Host "No listed prerelease versions found."
+            exit 0
+          }
+
+          Write-Host "Listed prerelease versions found:"
+          $listedPreReleaseVersions | ForEach-Object { Write-Host " - $_" }
 
           if ($env:KEEP_LATEST -eq "true") {
             $versionsToUnlist = $listedPreReleaseVersions | Select-Object -SkipLast 1
@@ -70,7 +81,7 @@ jobs:
           }
 
           if (-not $versionsToUnlist) {
-            Write-Host "No listed prerelease versions to unlist."
+            Write-Host "No prerelease versions to unlist."
             exit 0
           }
 
