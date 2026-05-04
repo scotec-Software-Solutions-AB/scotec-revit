@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        revitYear: [2025, 2026]
+        revitYear: [2025, 2026, 2027]
 
     steps:
     - name: Checkout

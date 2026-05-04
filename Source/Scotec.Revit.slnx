@@ -3,6 +3,7 @@
     <BuildType Name="Release" />
     <BuildType Name="Revit2025" />
     <BuildType Name="Revit2026" />
+    <BuildType Name="Revit2027" />
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/SolutionItems/">
