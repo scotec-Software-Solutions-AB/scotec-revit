@@ -21,14 +21,23 @@
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.4.41" >
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.4.41" >
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
 	<ItemGroup Condition="'$(RevitYear)' == '2026'">
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2026.4.0" >
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2026.4.0" >
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
 	<ItemGroup Condition="'$(RevitYear)' == '2027'">
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2027.0.10" >
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2027.0.10" >
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>
