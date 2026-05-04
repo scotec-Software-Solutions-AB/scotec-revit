@@ -27,14 +27,29 @@ jobs:
           KEEP_LATEST: ${{ github.event.inputs.keep_latest }}
         run: |
           $source = "https://api.nuget.org/v3/index.json"
-          $packageId = $env:PACKAGE_ID
-          $packageIdLower = $packageId.ToLowerInvariant()
-          $versionsUrl = "https://api.nuget.org/v3-flatcontainer/$packageIdLower/index.json"
+          $packageId = $env:PACKAGE_ID.Trim()
 
-          $versions = (Invoke-RestMethod -Uri $versionsUrl).versions
+          if ([string]::IsNullOrWhiteSpace($packageId)) {
+            throw "Package ID is empty."
+          }
 
-          $preReleaseVersions = $versions |
-            Where-Object { $_ -like "*-*" }
+          $encodedPackageId = [System.Uri]::EscapeDataString($packageId)
+          $searchUrl = "https://azuresearch-usnc.nuget.org/query?q=packageid:$encodedPackageId&prerelease=true&take=1"
+
+          Write-Host "Reading listed versions from $searchUrl"
+
+          $result = Invoke-RestMethod -Uri $searchUrl -ErrorAction Stop
+
+          $package = $result.data | Where-Object { $_.id -eq $packageId } | Select-Object -First 1
+
+          if (-not $package) {
+            Write-Host "Package '$packageId' was not found as listed package on nuget.org."
+            exit 0
+          }
+
+          $preReleaseVersions = $package.versions |
+            Where-Object { $_.version -like "*-*" } |
+            ForEach-Object { $_.version }
 
           if ($env:KEEP_LATEST -eq "true") {
             $versionsToUnlist = $preReleaseVersions | Select-Object -SkipLast 1
@@ -44,7 +59,7 @@ jobs:
           }
 
           if (-not $versionsToUnlist) {
-            Write-Host "No prerelease versions to unlist."
+            Write-Host "No listed prerelease versions to unlist."
             exit 0
           }
 
