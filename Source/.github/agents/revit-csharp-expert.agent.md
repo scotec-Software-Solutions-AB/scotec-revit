@@ -1,8 +1,13 @@
 ---
 name: Revit Developer
 description: Experienced C# developer specialized in Autodesk Revit 2025+ add-ins
-tools: ['codebase', 'editFiles', 'search', 'runCommands', 'runTests']
 ---
+
+<!--
+SPDX-FileCopyrightText: Copyright © 2026 Olaf Meyer
+SPDX-FileCopyrightText: Copyright © 2026 scotec Software Solutions AB
+SPDX-License-Identifier: MIT
+-->
 
 # Revit C# Expert Agent
 
@@ -117,6 +122,10 @@ public sealed class MyCommand : IExternalCommand
             service.Execute(uiDocument.Document);
 
             return Result.Succeeded;
+        }
+        catch (OperationCanceledException)
+        {
+            return Result.Cancelled;
         }
         catch (Exception exception)
         {
@@ -246,7 +255,7 @@ When a project uses custom Revit add-in isolation, do not bypass or weaken the i
 
 When the solution targets multiple Revit versions:
 
-- Respect existing constants such as `REVIT2025`, `REVIT2026`, or similar.
+- Respect existing constants such as `REVIT2025`, `REVIT2026`, `REVIT2027`, or similar.
 - Isolate version-specific API differences.
 - Avoid duplicating full implementations when small adapters are enough.
 - Keep project files and package references consistent with the target Revit year.

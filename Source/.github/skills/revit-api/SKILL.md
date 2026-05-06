@@ -3,6 +3,12 @@ name: revit-api
 description: Practical guidance for implementing and reviewing Autodesk Revit 2025+ C# add-ins.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright © 2026 Olaf Meyer
+SPDX-FileCopyrightText: Copyright © 2026 scotec Software Solutions AB
+SPDX-License-Identifier: MIT
+-->
+
 # Revit 2025+ API Skill
 
 Use this skill when the task involves Autodesk Revit 2025 or newer API code, Revit add-in architecture, Revit commands, transactions, element filtering, WPF UI in Revit, add-in packaging, or Revit assembly loading.
@@ -271,7 +277,9 @@ When working on Revit add-ins:
 When the project supports several Revit versions:
 
 ```csharp
-#if REVIT2026
+#if REVIT2027
+// Revit 2027-specific code
+#elif REVIT2026
 // Revit 2026-specific code
 #else
 // Revit 2025-compatible code
@@ -298,7 +306,7 @@ When reviewing Revit code, check for:
 - Incorrect parameter access.
 - Obsolete Revit API usage.
 - Stale element references.
-- Incorrect persisted identity.
+- Incorrect use of `ElementId` for persistence (prefer `UniqueId`).
 - Missing active document checks.
 - Missing cleanup of events and subscriptions.
 - UI code tightly coupled to Revit API objects.

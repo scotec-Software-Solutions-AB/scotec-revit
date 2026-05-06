@@ -16,6 +16,8 @@
     <File Path="../Documentation/RevitCommand.md" />
     <File Path="../Documentation/RevitTask.md" />
   </Folder>
+  <Folder Name="/SolutionItems/Source/" />
+  <Folder Name="/SolutionItems/Source/.github/" />
   <Project Path="Scotec.Revit.Isolation.SourceGenerator/Scotec.Revit.Isolation.SourceGenerator.csproj">
     <Platform Project="x64" />
   </Project>

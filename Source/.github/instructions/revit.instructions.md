@@ -3,6 +3,12 @@ applyTo: "**/*.{cs,csproj,xaml,addin,props,targets}"
 description: Revit 2025+ C# add-in coding instructions
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright © 2026 Olaf Meyer
+SPDX-FileCopyrightText: Copyright © 2026 scotec Software Solutions AB
+SPDX-License-Identifier: MIT
+-->
+
 # Revit 2025+ Project Instructions
 
 Apply these instructions when working on Revit add-in code, project files, XAML UI, add-in manifests, build files, and packaging files.
@@ -51,6 +57,7 @@ Use modern Revit API patterns and avoid obsolete APIs.
 ## Build and Packaging
 
 - Do not change Revit version constants without an explicit request.
+- The supported build configurations are `Revit2025`, `Revit2026`, and `Revit2027` with corresponding symbols `REVIT2025`, `REVIT2026`, and `REVIT2027`.
 - Do not change package version ranges without an explicit request.
 - Keep `.addin` manifests consistent with assembly names and paths.
 - Respect existing build output and installer conventions.

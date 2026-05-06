@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright © 2026 Olaf Meyer
+SPDX-FileCopyrightText: Copyright © 2026 scotec Software Solutions AB
+SPDX-License-Identifier: MIT
+-->
+
 # GitHub Copilot – Common Repository Instructions
 
 These instructions define the common behavior for GitHub Copilot in this repository.
@@ -8,7 +14,8 @@ They apply to generated code, code changes, reviews, refactorings, tests, docume
 
 ## General Principles
 
-- Prioritize correctness, clarity, maintainability, and long-term readability.
+- Prioritize correctness first, then maintainability, then readability.
+- When constraints compete, favor the higher-priority item unless the task explicitly requires a different trade-off.
 - Prefer simple, explicit solutions over clever or overly abstract designs.
 - Follow the existing project structure, naming, formatting, and coding style.
 - Preserve existing behavior unless a change was explicitly requested.
@@ -63,7 +70,7 @@ Avoid:
 
 - Never swallow exceptions silently.
 - Catch exceptions only when adding value, recovering, rolling back, or translating the error.
-- Preserve stack traces when rethrowing.
+- Use `throw;` not `throw ex;` when rethrowing to preserve the original stack trace.
 - Prefer specific exception types.
 - Provide useful user-facing error messages.
 - Log technical details when logging infrastructure exists.
@@ -131,6 +138,7 @@ When generating or modifying logic:
 
 - Respect the repository’s configured target frameworks and language version.
 - Do not use APIs unavailable for the target runtime.
+- This project supports Revit 2025, 2026, and 2027 via named build configurations and conditional compilation symbols (`REVIT2025`, `REVIT2026`, `REVIT2027`).
 - When an API differs between supported versions, isolate the version-specific code.
 - Prefer conditional compilation only when necessary and already used by the project.
 
@@ -143,7 +151,7 @@ When generating or modifying logic:
 - Preserve public APIs unless a breaking change is explicitly required.
 - Do not reformat unrelated code.
 - Do not change behavior silently.
-- Explain important behavior changes.
+- Explain important behavior changes in inline comments, commit messages, or the pull request description.
 
 ---
 
@@ -151,6 +159,7 @@ When generating or modifying logic:
 
 - Generate complete and compilable code whenever possible.
 - Include required using statements.
+- Use `using` declarations or statements for `IDisposable` objects.
 - Prefer clear names and simple structure.
 - Mention assumptions if context is incomplete.
 - Highlight risks or edge cases when relevant.
