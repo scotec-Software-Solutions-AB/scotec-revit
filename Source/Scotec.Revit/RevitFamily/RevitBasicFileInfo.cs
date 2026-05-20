@@ -6,6 +6,15 @@ using System.Text;
 
 namespace Scotec.Revit.RevitFamily;
 
+/// <summary>
+///     Provides access to the metadata stored in the <c>BasicFileInfo</c> stream of a Revit file.
+///     This stream contains key/value pairs describing the model identity, worksharing state,
+///     authoring application, and format version, among other properties.
+/// </summary>
+/// <remarks>
+///     Use <see cref="Parse(Stream)" /> or <see cref="Parse(byte[])" /> to create an instance
+///     from a raw <c>BasicFileInfo</c> stream or byte array extracted from a Revit compound document.
+/// </remarks>
 public sealed class RevitBasicFileInfo
 {
     private static readonly Dictionary<string, string[]> PropertyKeys = new(StringComparer.Ordinal)
@@ -146,8 +155,11 @@ public sealed class RevitBasicFileInfo
     public bool IsWorkshared => GetBool(nameof(IsWorkshared));
 
     /// <summary>
-    ///     Parses a Revit BasicFileInfo stream.
+    ///     Parses a <c>BasicFileInfo</c> stream extracted from a Revit compound document.
     /// </summary>
+    /// <param name="stream">The raw <c>BasicFileInfo</c> stream. Must not be <see langword="null" />.</param>
+    /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the stream.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo Parse(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -159,8 +171,11 @@ public sealed class RevitBasicFileInfo
     }
 
     /// <summary>
-    ///     Parses raw BasicFileInfo bytes.
+    ///     Parses raw <c>BasicFileInfo</c> bytes extracted from a Revit compound document.
     /// </summary>
+    /// <param name="bytes">The raw byte array. Must not be <see langword="null" />.</param>
+    /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the data.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo Parse(byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(bytes);
@@ -173,24 +188,33 @@ public sealed class RevitBasicFileInfo
     }
 
     /// <summary>
-    ///     Creates a <see cref="RevitBasicFileInfo" /> instance from a BasicFileInfo stream.
+    ///     Creates a <see cref="RevitBasicFileInfo" /> instance from a <c>BasicFileInfo</c> stream.
     /// </summary>
+    /// <param name="stream">The raw <c>BasicFileInfo</c> stream. Must not be <see langword="null" />.</param>
+    /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the stream.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo FromStream(Stream stream)
     {
         return Parse(stream);
     }
 
     /// <summary>
-    ///     Creates a <see cref="RevitBasicFileInfo" /> instance from raw BasicFileInfo bytes.
+    ///     Creates a <see cref="RevitBasicFileInfo" /> instance from raw <c>BasicFileInfo</c> bytes.
     /// </summary>
+    /// <param name="bytes">The raw byte array. Must not be <see langword="null" />.</param>
+    /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the data.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo FromBytes(byte[] bytes)
     {
         return Parse(bytes);
     }
 
     /// <summary>
-    ///     Gets a raw value by key.
+    ///     Gets the raw value associated with the exact <paramref name="key" /> as it appears in the file.
     /// </summary>
+    /// <param name="key">The exact key to look up. Must not be <see langword="null" />.</param>
+    /// <returns>The raw string value, or <see langword="null" /> if the key is not present.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
     public string? GetValue(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -201,8 +225,15 @@ public sealed class RevitBasicFileInfo
     }
 
     /// <summary>
-    ///     Gets a value using the known aliases of a <see cref="Autodesk.Revit.DB.BasicFileInfo" /> property.
+    ///     Gets the raw string value for the specified property, trying all known key aliases
+    ///     for that property before falling back to a direct key lookup.
     /// </summary>
+    /// <param name="propertyName"
+    ///     >The name of the property as defined on <see cref="RevitBasicFileInfo" /> (e.g. <c>nameof(IsForeign)</c>),
+    ///     or any raw key present in the file. Must not be <see langword="null" />.
+    /// </param>
+    /// <returns>The raw string value, or <see langword="null" /> if no matching key is found.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="propertyName" /> is <see langword="null" />.</exception>
     public string? GetPropertyValue(string propertyName)
     {
         ArgumentNullException.ThrowIfNull(propertyName);
@@ -222,8 +253,10 @@ public sealed class RevitBasicFileInfo
     }
 
     /// <summary>
-    ///     Gets a GUID value by property name.
+    ///     Gets the value of the specified property parsed as a <see cref="Guid" />.
     /// </summary>
+    /// <param name="propertyName">The property name. See <see cref="GetPropertyValue" /> for resolution rules.</param>
+    /// <returns>The parsed <see cref="Guid" />, or <see langword="null" /> if the property is absent or cannot be parsed.</returns>
     public Guid? GetGuid(string propertyName)
     {
         var value = GetPropertyValue(propertyName);
@@ -234,8 +267,10 @@ public sealed class RevitBasicFileInfo
     }
 
     /// <summary>
-    ///     Gets an integer value by property name.
+    ///     Gets the value of the specified property parsed as a 32-bit integer.
     /// </summary>
+    /// <param name="propertyName">The property name. See <see cref="GetPropertyValue" /> for resolution rules.</param>
+    /// <returns>The parsed integer, or <see langword="null" /> if the property is absent or cannot be parsed.</returns>
     public int? GetInt(string propertyName)
     {
         var value = GetPropertyValue(propertyName);

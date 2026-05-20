@@ -56,4 +56,8 @@
 		</ProjectReference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="RevitFamily\RevitBasicFileInfo.md" />
+	</ItemGroup>
+
 </Project>
