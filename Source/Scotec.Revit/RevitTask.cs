@@ -222,14 +222,12 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </param>
     /// <returns>A <see cref="Task" /> representing the asynchronous operation.</returns>
     /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
-    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container, or if the delegate has a non-void return type.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container.</exception>
     public async Task Run(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        if (action.Method.ReturnType != typeof(void))
-            throw new InvalidOperationException(
-                $"Delegate '{action.Method.Name}' returns '{action.Method.ReturnType.Name}'. Use Run<TResult>(Delegate, ...) instead.");
+        // Return value is discarded; SCOTEC0002 warns at compile time when the caller passes a non-void delegate.
 
         _action = uiApplication =>
         {
