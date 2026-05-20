@@ -182,10 +182,14 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </param>
     /// <returns>A <see cref="Task{TResult}" /> containing the delegate's return value.</returns>
     /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
-    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container, or if the delegate returns void.</exception>
     public async Task<TResult> Run<TResult>(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(action);
+
+        if (action.Method.ReturnType == typeof(void))
+            throw new InvalidOperationException(
+                $"Delegate '{action.Method.Name}' returns void. Use Run(Delegate, ...) instead.");
 
         _action = uiApplication =>
         {
@@ -218,10 +222,14 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </param>
     /// <returns>A <see cref="Task" /> representing the asynchronous operation.</returns>
     /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
-    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container, or if the delegate has a non-void return type.</exception>
     public async Task Run(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(action);
+
+        if (action.Method.ReturnType != typeof(void))
+            throw new InvalidOperationException(
+                $"Delegate '{action.Method.Name}' returns '{action.Method.ReturnType.Name}'. Use Run<TResult>(Delegate, ...) instead.");
 
         _action = uiApplication =>
         {
