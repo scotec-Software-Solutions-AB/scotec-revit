@@ -159,7 +159,7 @@ public sealed class RevitBasicFileInfo
     /// </summary>
     /// <param name="stream">The raw <c>BasicFileInfo</c> stream. Must not be <see langword="null" />.</param>
     /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the stream.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo Parse(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -175,7 +175,7 @@ public sealed class RevitBasicFileInfo
     /// </summary>
     /// <param name="bytes">The raw byte array. Must not be <see langword="null" />.</param>
     /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the data.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo Parse(byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(bytes);
@@ -192,7 +192,7 @@ public sealed class RevitBasicFileInfo
     /// </summary>
     /// <param name="stream">The raw <c>BasicFileInfo</c> stream. Must not be <see langword="null" />.</param>
     /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the stream.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo FromStream(Stream stream)
     {
         return Parse(stream);
@@ -203,7 +203,7 @@ public sealed class RevitBasicFileInfo
     /// </summary>
     /// <param name="bytes">The raw byte array. Must not be <see langword="null" />.</param>
     /// <returns>A <see cref="RevitBasicFileInfo" /> populated with the key/value pairs found in the data.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="bytes" /> is <see langword="null" />.</exception>
     public static RevitBasicFileInfo FromBytes(byte[] bytes)
     {
         return Parse(bytes);
@@ -214,7 +214,7 @@ public sealed class RevitBasicFileInfo
     /// </summary>
     /// <param name="key">The exact key to look up. Must not be <see langword="null" />.</param>
     /// <returns>The raw string value, or <see langword="null" /> if the key is not present.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
     public string? GetValue(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -233,7 +233,7 @@ public sealed class RevitBasicFileInfo
     ///     or any raw key present in the file. Must not be <see langword="null" />.
     /// </param>
     /// <returns>The raw string value, or <see langword="null" /> if no matching key is found.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="propertyName" /> is <see langword="null" />.</exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="propertyName" /> is <see langword="null" />.</exception>
     public string? GetPropertyValue(string propertyName)
     {
         ArgumentNullException.ThrowIfNull(propertyName);

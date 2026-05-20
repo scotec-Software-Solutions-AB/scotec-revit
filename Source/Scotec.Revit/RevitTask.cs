@@ -26,6 +26,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     private readonly ManualResetEvent _resetEvent = new(false);
     private Func<UIApplication, object>? _action;
     private object? _result;
+    private Exception? _exception;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitTask" /> class.
@@ -76,6 +77,11 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
                 _result = _action(app);
             }
         }
+        catch (Exception ex)
+        {
+            // Log the exception or handle it as needed
+            _exception = ex;
+        }
         finally
         {
             _resetEvent.Set();
@@ -124,7 +130,9 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
         _action = uiApplication => action(uiApplication)!;
         var task = ExecuteInternalAsync<TResult>();
 
-        return await task;
+        var result = await task;
+
+        return result;
     }
 
     /// <summary>
@@ -253,6 +261,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     private static ILifetimeScope CreateLifetimeScope(UIApplication uiApplication, Action<IServiceCollection>? configureServices)
     {
         var uiDocument = uiApplication.ActiveUIDocument;
+        var application = uiApplication.Application;
         var document = uiDocument?.Document;
         var view = uiDocument?.ActiveView;
         return RevitAppBase.GetServiceProvider(uiApplication.Application.ActiveAddInId.GetGUID())
@@ -274,7 +283,12 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
                                    builder.RegisterInstance(view).ExternallyOwned();
                                }
 
-                               builder.RegisterInstance(uiApplication.Application).ExternallyOwned();
+                               if (application is not null)
+                               {
+                                   builder.RegisterInstance(application).ExternallyOwned();
+                               }
+
+                               builder.RegisterInstance(uiApplication).ExternallyOwned();
 
                                // Allow to add services
                                var services = new ServiceCollection();
@@ -305,6 +319,13 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
         {
             _externalEvent.Raise();
             _resetEvent.WaitOne();
+
+            if (_exception is not null)
+            {
+                var exception = _exception;
+                _exception = null; // Clear the exception to avoid rethrowing it in subsequent calls
+                throw new InvalidOperationException("An error occurred while executing the Revit task.", exception);
+            }
 
             return (TResult)_result!;
         });
