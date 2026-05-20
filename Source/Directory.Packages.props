@@ -1,0 +1,39 @@
+<Project>
+
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <!-- Nice3point Revit API packages – version depends on the target Revit year -->
+    <ItemGroup Condition="'$(RevitYear)' == '2025'">
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPI" Version="2025.4.41" />
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.4.41" />
+        <PackageVersion Include="Nice3point.Revit.Api.AdWindows" Version="2025.4.41" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RevitYear)' == '2026'">
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPI" Version="2026.4.0" />
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPIUI" Version="2026.4.0" />
+        <PackageVersion Include="Nice3point.Revit.Api.AdWindows" Version="2026.4.0" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RevitYear)' == '2027'">
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPI" Version="2027.0.10" />
+        <PackageVersion Include="Nice3point.Revit.Api.RevitAPIUI" Version="2027.0.10" />
+        <PackageVersion Include="Nice3point.Revit.Api.AdWindows" Version="2027.0.10" />
+    </ItemGroup>
+
+    <!-- Scotec packages -->
+    <ItemGroup>
+        <PackageVersion Include="Scotec.Extensions.Linq" Version="1.1.1" />
+        <PackageVersion Include="Scotec.Extensions.Utilities" Version="1.1.1" />
+        <PackageVersion Include="Scotec.Revit.Isolation" Version="2025.1.1-dev.3" />
+    </ItemGroup>
+
+    <!-- Other packages -->
+    <ItemGroup>
+        <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
+        <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+        <PackageVersion Include="OpenMcdf" Version="3.1.3" />
+    </ItemGroup>
+
+</Project>
