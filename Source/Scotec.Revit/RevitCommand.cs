@@ -216,102 +216,106 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </exception>
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
-        try
-        {
-            var uiApplication = commandData.Application;
-            var application = uiApplication.Application;
-            var uiDocument = uiApplication.ActiveUIDocument;
-            var document = uiDocument?.Document;
-            var view = uiDocument?.ActiveView;
+        var uiApplication = commandData.Application;
+        var application = uiApplication.Application;
+        var uiDocument = uiApplication.ActiveUIDocument;
+        var document = uiDocument?.Document;
+        var view = uiDocument?.ActiveView;
 
-            using var scope = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
-                                          .GetAutofacRoot()
-                                          .BeginLifetimeScope(builder =>
+        using var scope = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
+                                      .GetAutofacRoot()
+                                      .BeginLifetimeScope(builder =>
+                                      {
+                                          builder.RegisterInstance(uiApplication).ExternallyOwned();
+                                          builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
+
+                                          if (application is not null)
                                           {
-                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
-                                              builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
+                                              builder.RegisterInstance(application).ExternallyOwned();
+                                          }
 
-                                              if (application is not null)
-                                              {
-                                                  builder.RegisterInstance(application).ExternallyOwned();
-                                              }
+                                          if (uiDocument is not null)
+                                          {
+                                              builder.RegisterInstance(uiDocument).ExternallyOwned();
+                                          }
 
-                                              if (uiDocument is not null)
-                                              {
-                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
-                                              }
+                                          if (document is not null)
+                                          {
+                                              builder.RegisterInstance(document).ExternallyOwned();
+                                          }
 
-                                              if (document is not null)
-                                              {
-                                                  builder.RegisterInstance(document).ExternallyOwned();
-                                              }
+                                          if (view is not null)
+                                          {
+                                              builder.RegisterInstance(view).ExternallyOwned();
+                                          }
 
-                                              if (view is not null)
-                                              {
-                                                  builder.RegisterInstance(view).ExternallyOwned();
-                                              }
-
-                                              // Allow derived classes to add services
-                                              var services = new ServiceCollection();
-                                              ConfigureServices(services);
-                                              builder.Populate(services);
-                                          });
-                
-            var transactionMode = GetTransactionMode();
-            var serviceProvider = scope.Resolve<IServiceProvider>();
+                                          // Allow derived classes to add services
+                                          var services = new ServiceCollection();
+                                          ConfigureServices(services);
+                                          builder.Populate(services);
+                                      });
             
-            // Skip transaction management if no document is open or transaction is not required.
-            if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
-            {
-                return InvokeOnExecute(commandData, serviceProvider);
-            }
-
-            switch (transactionMode)
-            {
-                case RevitTransactionMode.Transaction:
-                case RevitTransactionMode.TransactionWithRollback:
-                {
-                    using var transaction = new Transaction(document);
-                    transaction.Start(CommandName);
-
-                    var failureHandlingOptions = transaction.GetFailureHandlingOptions();
-                    failureHandlingOptions.SetFailuresPreprocessor(this);
-                    transaction.SetFailureHandlingOptions(failureHandlingOptions);
-
-                    var result = InvokeOnExecute(commandData, serviceProvider);
-
-                    // Do not commit on error or in rollback mode.
-                    if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
-                    {
-                        transaction.Commit();
-                    }
-
-                    return result;
-                }
-                case RevitTransactionMode.TransactionGroup:
-                case RevitTransactionMode.TransactionGroupWithRollback:
-                {
-                    using var transactionGroup = new TransactionGroup(document);
-                    transactionGroup.Start(CommandName);
-
-                    var result = InvokeOnExecute(commandData, serviceProvider);
-
-                    // Do not commit on error or in rollback mode.
-                    if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
-                    {
-                        transactionGroup.Assimilate();
-                    }
-
-                    return result;
-                }
-            }
-
-            return Result.Failed;
-        }
-        catch (Exception)
+        var transactionMode = GetTransactionMode();
+        var serviceProvider = scope.Resolve<IServiceProvider>();
+        
+        // Skip transaction management if no document is open or transaction is not required.
+        if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
         {
-            return Result.Failed;
+            return InvokeOnExecute(commandData, serviceProvider);
         }
+
+        switch (transactionMode)
+        {
+            case RevitTransactionMode.Transaction:
+            case RevitTransactionMode.TransactionWithRollback:
+            {
+                return ExecuteTransaction(commandData, document, serviceProvider, transactionMode);
+            }
+            case RevitTransactionMode.TransactionGroup:
+            case RevitTransactionMode.TransactionGroupWithRollback:
+            {
+                return ExecuteTransactionGroup(commandData, document, serviceProvider, transactionMode);
+            }
+        }
+
+        return Result.Failed;
+    }
+
+    private Result ExecuteTransactionGroup(ExternalCommandData commandData, Document document, IServiceProvider serviceProvider,
+                                           RevitTransactionMode transactionMode)
+    {
+        using var transactionGroup = new TransactionGroup(document);
+        transactionGroup.Start(CommandName);
+
+        var result = InvokeOnExecute(commandData, serviceProvider);
+
+        // Do not commit on error or in rollback mode.
+        if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
+        {
+            transactionGroup.Assimilate();
+        }
+
+        return result;
+    }
+
+    private Result ExecuteTransaction(ExternalCommandData commandData, Document document, IServiceProvider serviceProvider, RevitTransactionMode transactionMode)
+    {
+        using var transaction = new Transaction(document);
+        transaction.Start(CommandName);
+
+        var failureHandlingOptions = transaction.GetFailureHandlingOptions();
+        failureHandlingOptions.SetFailuresPreprocessor(this);
+        transaction.SetFailureHandlingOptions(failureHandlingOptions);
+
+        var result = InvokeOnExecute(commandData, serviceProvider);
+
+        // Do not commit on error or in rollback mode.
+        if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
+        {
+            transaction.Commit();
+        }
+
+        return result;
     }
 
     /// <summary>
