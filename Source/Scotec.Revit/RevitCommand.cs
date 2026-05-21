@@ -3,6 +3,8 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Linq;
+using System.Reflection;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -152,6 +154,8 @@ public class RevitTransactionModeAttribute : Attribute
 [RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
+    private static readonly Type[] StandardOnExecuteSignature = [typeof(ExternalCommandData), typeof(IServiceProvider)];
+
     /// <summary>
     ///     Gets the name of the Revit command.
     /// </summary>
@@ -214,38 +218,52 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     {
         try
         {
-            var document = commandData.Application.ActiveUIDocument?.Document;
+            var uiApplication = commandData.Application;
+            var application = uiApplication.Application;
+            var uiDocument = uiApplication.ActiveUIDocument;
+            var document = uiDocument?.Document;
+            var view = uiDocument?.ActiveView;
 
             using var scope = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
                                           .GetAutofacRoot()
                                           .BeginLifetimeScope(builder =>
                                           {
-                                              if (document != null)
+                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
+                                              builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
+
+                                              if (application is not null)
+                                              {
+                                                  builder.RegisterInstance(application).ExternallyOwned();
+                                              }
+
+                                              if (uiDocument is not null)
+                                              {
+                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
+                                              }
+
+                                              if (document is not null)
                                               {
                                                   builder.RegisterInstance(document).ExternallyOwned();
                                               }
 
-                                              if (commandData.View != null)
+                                              if (view is not null)
                                               {
-                                                  builder.RegisterInstance(commandData.View).ExternallyOwned();
+                                                  builder.RegisterInstance(view).ExternallyOwned();
                                               }
-
-                                              builder.RegisterInstance(commandData.Application).ExternallyOwned();
-                                              builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
 
                                               // Allow derived classes to add services
                                               var services = new ServiceCollection();
                                               ConfigureServices(services);
                                               builder.Populate(services);
                                           });
-
+                
             var transactionMode = GetTransactionMode();
             var serviceProvider = scope.Resolve<IServiceProvider>();
             
             // Skip transaction management if no document is open or transaction is not required.
             if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
-                return OnExecute(commandData, serviceProvider);
+                return InvokeOnExecute(commandData, serviceProvider);
             }
 
             switch (transactionMode)
@@ -260,10 +278,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     failureHandlingOptions.SetFailuresPreprocessor(this);
                     transaction.SetFailureHandlingOptions(failureHandlingOptions);
 
-                    var result = OnExecute(commandData, serviceProvider);
-                    
+                    var result = InvokeOnExecute(commandData, serviceProvider);
+
                     // Do not commit on error or in rollback mode.
-                    if(result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
+                    if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
                     {
                         transaction.Commit();
                     }
@@ -276,7 +294,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                     using var transactionGroup = new TransactionGroup(document);
                     transactionGroup.Start(CommandName);
 
-                    var result = OnExecute(commandData, serviceProvider);
+                    var result = InvokeOnExecute(commandData, serviceProvider);
 
                     // Do not commit on error or in rollback mode.
                     if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
@@ -421,14 +439,19 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     A <see cref="Autodesk.Revit.UI.Result" /> value indicating the outcome of the command execution.
     /// </returns>
     /// <remarks>
-    ///     This method must be overridden in derived classes to implement the specific functionality of the command.
-    ///     It is invoked by the <see cref="IExternalCommand.Execute" /> method, which manages the transaction lifecycle
-    ///     and initializes the required services.
+    ///     Overriding this method is not recommended. Prefer declaring a custom <c>OnExecute</c> overload
+    ///     with DI-resolved parameters, which the framework will discover and invoke automatically.
+    ///     This method is retained for backward compatibility with legacy commands that already override it.
+    ///     It is invoked by the <see cref="IExternalCommand.Execute" /> method when no custom overload is found.
     /// </remarks>
     /// <exception cref="System.Exception">
     ///     Thrown if an unhandled exception occurs during the execution of the command logic.
     /// </exception>
-    protected abstract Result OnExecute(ExternalCommandData commandData, IServiceProvider services);
+    [Obsolete("Overriding this method is not recommended. Prefer declaring a custom OnExecute overload with DI-resolved parameters instead. See the RevitCommand documentation for details.")]
+    protected virtual Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
+    {
+        return Result.Succeeded;
+    }
 
     private RevitTransactionMode GetTransactionMode()
     {
@@ -450,5 +473,57 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
         // Return the default value.
         return RevitTransactionMode.Transaction;
+    }
+
+    /// <summary>
+    ///     Checks whether the derived class declares an <c>OnExecute</c> overload whose parameter types differ from
+    ///     the standard <c>(ExternalCommandData, IServiceProvider)</c> signature. If such an overload exists, all
+    ///     parameters are resolved from the <paramref name="serviceProvider" /> (with <see cref="ExternalCommandData" />
+    ///     being passed directly) and the overload is invoked via reflection. Otherwise the standard
+    ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)" /> is called.
+    /// </summary>
+    /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
+    /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
+    /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
+    private Result InvokeOnExecute(ExternalCommandData commandData, IServiceProvider serviceProvider)
+    {
+        // Walk the hierarchy from the concrete type up to (but not including) RevitCommand,
+        // looking for an OnExecute overload whose parameter list differs from the standard signature.
+        var type = GetType();
+        MethodInfo? customOnExecute = null;
+        while (type != null && type != typeof(RevitCommand))
+        {
+            customOnExecute = type
+                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .FirstOrDefault(m =>
+                    m.Name == nameof(OnExecute) &&
+                    m.ReturnType == typeof(Result) &&
+                    !m.GetParameters()
+                      .Select(p => p.ParameterType)
+                      .SequenceEqual(StandardOnExecuteSignature));
+
+            if (customOnExecute != null)
+            {
+                break;
+            }
+
+            type = type.BaseType;
+        }
+
+        if (customOnExecute != null)
+        {
+            // Resolve each parameter: pass ExternalCommandData directly, resolve everything else from DI.
+            var resolvedParameters = customOnExecute.GetParameters()
+                .Select(p => p.ParameterType == typeof(ExternalCommandData)
+                    ? commandData
+                    : serviceProvider.GetRequiredService(p.ParameterType))
+                .ToArray();
+
+            return (Result)customOnExecute.Invoke(this, resolvedParameters)!;
+        }
+
+#pragma warning disable CS0618
+        return OnExecute(commandData, serviceProvider);
+#pragma warning restore CS0618
     }
 }

@@ -35,7 +35,7 @@ public sealed class RevitTaskRunAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>Diagnostic raised when a void delegate is passed to <c>Run&lt;TResult&gt;</c>.</summary>
     public static readonly DiagnosticDescriptor VoidDelegateOnGenericRun = new(
-        id: "SCOTEC0001",
+        id: "SCOTEC001",
         title: "Void delegate passed to Run<TResult>",
         messageFormat: "Delegate '{0}' returns void. Use Run(Delegate, ...) instead.",
         category: "Usage",
@@ -45,7 +45,7 @@ public sealed class RevitTaskRunAnalyzer : DiagnosticAnalyzer
 
     /// <summary>Diagnostic raised when a non-void delegate is passed to the non-generic <c>Run</c>.</summary>
     public static readonly DiagnosticDescriptor NonVoidDelegateOnRun = new(
-        id: "SCOTEC0002",
+        id: "SCOTEC002",
         title: "Non-void delegate passed to Run",
         messageFormat: "Delegate '{0}' returns '{1}'. Use Run<TResult>(Delegate, ...) instead.",
         category: "Usage",
