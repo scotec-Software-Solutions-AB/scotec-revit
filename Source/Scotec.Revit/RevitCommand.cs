@@ -154,7 +154,8 @@ public class RevitTransactionModeAttribute : Attribute
 [RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
-    private static readonly Type[] StandardOnExecuteSignature = [typeof(ExternalCommandData), typeof(IServiceProvider)];
+    private static readonly Type[] StandardOnExecuteSignatureWithServiceProvider = [typeof(ExternalCommandData), typeof(IServiceProvider)];
+    private static readonly Type[] StandardOnExecuteWithElementSetSignature = [typeof(ExternalCommandData), typeof(ElementSet)];
 
     /// <summary>
     ///     Gets the name of the Revit command.
@@ -207,8 +208,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </returns>
     /// <remarks>
     ///     This method is the entry point for Revit external commands. It initializes the required services and manages
-    ///     the transaction lifecycle if a document is available. Override <see cref="OnExecute" /> to implement custom
-    ///     command logic.
+    ///     the transaction lifecycle if a document is available. 
     /// </remarks>
     /// <exception cref="System.Exception">
     ///     Thrown if an unhandled exception occurs during command execution, resulting in a
@@ -448,16 +448,35 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     A <see cref="Autodesk.Revit.UI.Result" /> value indicating the outcome of the command execution.
     /// </returns>
     /// <remarks>
+    ///     This method is obsolete. Override <see cref="OnExecute(ExternalCommandData, ElementSet)" /> instead,
+    ///     or declare a custom <c>OnExecute</c> overload with DI-resolved parameters, which the framework will
+    ///     discover and invoke automatically.
+    ///     This method will not be called if a custom <c>OnExecute</c> overload is provided in the derived class.
+    /// </remarks>
+    [Obsolete("This method is obsolete. Override OnExecute(ExternalCommandData, ElementSet) instead, or declare a custom OnExecute overload with DI-resolved parameters.")]
+    protected virtual Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
+    {
+        return Result.Succeeded;
+    }
+
+    /// <summary>
+    ///     Executes the core logic of the Revit external command.
+    /// </summary>
+    /// <param name="commandData">
+    ///     Provides access to the Revit application and its associated data.
+    /// </param>
+    /// <param name="elements">
+    ///     A set of elements that can be used to highlight or identify problematic elements in case of failure.
+    /// </param>
+    /// <returns>
+    ///     A <see cref="Autodesk.Revit.UI.Result" /> value indicating the outcome of the command execution.
+    /// </returns>
+    /// <remarks>
     ///     Overriding this method is not recommended. Prefer declaring a custom <c>OnExecute</c> overload
     ///     with DI-resolved parameters, which the framework will discover and invoke automatically.
-    ///     This method is retained for backward compatibility with legacy commands that already override it.
-    ///     It is invoked by the <see cref="IExternalCommand.Execute" /> method when no custom overload is found.
+    ///     This method will not be called if a custom <c>OnExecute</c> overload is provided in the derived class.
     /// </remarks>
-    /// <exception cref="System.Exception">
-    ///     Thrown if an unhandled exception occurs during the execution of the command logic.
-    /// </exception>
-    [Obsolete("Overriding this method is not recommended. Prefer declaring a custom OnExecute overload with DI-resolved parameters instead. See the RevitCommand documentation for details.")]
-    protected virtual Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
+    protected virtual Result OnExecute(ExternalCommandData commandData, ElementSet elements)
     {
         return Result.Succeeded;
     }
@@ -512,10 +531,11 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
     /// <summary>
     ///     Checks whether the derived class declares an <c>OnExecute</c> overload whose parameter types differ from
-    ///     the standard <c>(ExternalCommandData, IServiceProvider)</c> signature. If such an overload exists, all
-    ///     parameters are resolved from the <paramref name="serviceProvider" /> (with <see cref="ExternalCommandData" />
-    ///     being passed directly) and the overload is invoked via reflection. Otherwise the standard
-    ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)" /> is called.
+    ///     the two standard signatures. If such an overload exists, all parameters are resolved from the
+    ///     <paramref name="serviceProvider" /> (with <see cref="ExternalCommandData" /> being passed directly) and the
+    ///     overload is invoked via reflection. Otherwise <see cref="OnExecute(ExternalCommandData, ElementSet)" /> is
+    ///     called if it is overridden in the derived class; if not, the obsolete
+    ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)" /> is called for backward compatibility.
     /// </summary>
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
@@ -523,12 +543,15 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
     {
-        // Look for an OnExecute overload whose parameter list differs from the standard signature.
+        // Look for an OnExecute overload whose parameter list differs from both standard signatures.
         var customOnExecute = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitCommand), "OnExecute", typeof(Result),
             predicate: m => !m.GetParameters()
                               .Select(p => p.ParameterType)
-                              .SequenceEqual(StandardOnExecuteSignature));
+                              .SequenceEqual(StandardOnExecuteSignatureWithServiceProvider)
+                           && !m.GetParameters()
+                              .Select(p => p.ParameterType)
+                              .SequenceEqual(StandardOnExecuteWithElementSetSignature));
 
         if (customOnExecute is not null)
         {
@@ -541,6 +564,19 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                 })!;
         }
 
+        // Call OnExecute(ExternalCommandData, ElementSet) if the derived class overrides it.
+        var elementSetOverride = RevitReflectionHelper.FindMethod(
+            GetType(), typeof(RevitCommand), "OnExecute", typeof(Result),
+            predicate: m => m.GetParameters()
+                             .Select(p => p.ParameterType)
+                             .SequenceEqual(StandardOnExecuteWithElementSetSignature));
+
+        if (elementSetOverride is not null)
+        {
+            return OnExecute(commandData, elements);
+        }
+
+        // Fall back to the obsolete overload for backward compatibility.
 #pragma warning disable CS0618
         return OnExecute(commandData, serviceProvider);
 #pragma warning restore CS0618
