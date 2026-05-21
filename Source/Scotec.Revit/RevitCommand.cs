@@ -257,28 +257,33 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             
         var transactionMode = GetTransactionMode();
         var serviceProvider = scope.Resolve<IServiceProvider>();
-        
+
+        // Call BeforeExecute before any transaction is opened.
+        InvokeOptionalMethod("BeforeExecute", commandData, serviceProvider);
+
+        Result result;
+
         // Skip transaction management if no document is open or transaction is not required.
-        if (document == null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+        if (document is null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
         {
-            return InvokeOnExecute(commandData, serviceProvider);
+            result = InvokeOnExecute(commandData, serviceProvider);
+        }
+        else
+        {
+            result = transactionMode switch
+            {
+                RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
+                    => ExecuteTransaction(commandData, document, serviceProvider, transactionMode),
+                RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
+                    => ExecuteTransactionGroup(commandData, document, serviceProvider, transactionMode),
+                _ => Result.Failed
+            };
         }
 
-        switch (transactionMode)
-        {
-            case RevitTransactionMode.Transaction:
-            case RevitTransactionMode.TransactionWithRollback:
-            {
-                return ExecuteTransaction(commandData, document, serviceProvider, transactionMode);
-            }
-            case RevitTransactionMode.TransactionGroup:
-            case RevitTransactionMode.TransactionGroupWithRollback:
-            {
-                return ExecuteTransactionGroup(commandData, document, serviceProvider, transactionMode);
-            }
-        }
+        // Call AfterExecute after the transaction has been closed.
+        InvokeOptionalMethod("AfterExecute", commandData, serviceProvider);
 
-        return Result.Failed;
+        return result;
     }
 
     private Result ExecuteTransactionGroup(ExternalCommandData commandData, Document document, IServiceProvider serviceProvider,
@@ -470,13 +475,38 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         // Try to get the RevitTransactionModeAttribute
         var type = GetType();
         var attr = (RevitTransactionModeAttribute?)Attribute.GetCustomAttribute(type, typeof(RevitTransactionModeAttribute));
-        if (attr != null) // Since this attribute is assigned to the base class, it should always be present.
+        if (attr is not null) // Since this attribute is assigned to the base class, it should always be present.
         {
             return attr.Mode;
         }
 
         // Return the default value.
         return RevitTransactionMode.Transaction;
+    }
+
+    /// <summary>
+    ///     Looks for a <c>void</c>-returning method with the given <paramref name="methodName"/> on the derived class,
+    ///     resolves its parameters from the <paramref name="serviceProvider"/> (passing <see cref="ExternalCommandData"/>
+    ///     directly), and invokes it. Does nothing if no such method exists on the derived type.
+    /// </summary>
+    /// <param name="methodName">The name of the method to find and invoke (e.g. <c>BeforeExecute</c> or <c>AfterExecute</c>).</param>
+    /// <param name="commandData">The current <see cref="ExternalCommandData"/> instance.</param>
+    /// <param name="serviceProvider">The scoped <see cref="IServiceProvider"/> for the current command execution.</param>
+    private void InvokeOptionalMethod(string methodName, ExternalCommandData commandData, IServiceProvider serviceProvider)
+    {
+        var method = FindMethod(methodName, returnType: typeof(void));
+        if (method is null)
+        {
+            return;
+        }
+
+        var resolvedParameters = method.GetParameters()
+            .Select(p => p.ParameterType == typeof(ExternalCommandData)
+                ? commandData
+                : serviceProvider.GetRequiredService(p.ParameterType))
+            .ToArray();
+
+        method.Invoke(this, resolvedParameters);
     }
 
     /// <summary>
@@ -491,43 +521,71 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, IServiceProvider serviceProvider)
     {
-        // Walk the hierarchy from the concrete type up to (but not including) RevitCommand,
-        // looking for an OnExecute overload whose parameter list differs from the standard signature.
-        var type = GetType();
-        MethodInfo? customOnExecute = null;
-        while (type != null && type != typeof(RevitCommand))
+        // Look for an OnExecute overload whose parameter list differs from the standard signature.
+        var customOnExecute = FindMethod("OnExecute", predicate: m =>
+            !m.GetParameters()
+              .Select(p => p.ParameterType)
+              .SequenceEqual(StandardOnExecuteSignature));
+
+        if (customOnExecute is not null)
         {
-            customOnExecute = type
-                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                .FirstOrDefault(m =>
-                    m.Name == nameof(OnExecute) &&
-                    m.ReturnType == typeof(Result) &&
-                    !m.GetParameters()
-                      .Select(p => p.ParameterType)
-                      .SequenceEqual(StandardOnExecuteSignature));
-
-            if (customOnExecute != null)
-            {
-                break;
-            }
-
-            type = type.BaseType;
-        }
-
-        if (customOnExecute != null)
-        {
-            // Resolve each parameter: pass ExternalCommandData directly, resolve everything else from DI.
-            var resolvedParameters = customOnExecute.GetParameters()
-                .Select(p => p.ParameterType == typeof(ExternalCommandData)
-                    ? commandData
-                    : serviceProvider.GetRequiredService(p.ParameterType))
-                .ToArray();
-
-            return (Result)customOnExecute.Invoke(this, resolvedParameters)!;
+            return InvokeMethod(customOnExecute, commandData, serviceProvider);
         }
 
 #pragma warning disable CS0618
         return OnExecute(commandData, serviceProvider);
 #pragma warning restore CS0618
+    }
+
+    /// <summary>
+    ///     Walks the type hierarchy from the concrete type up to (but not including) <see cref="RevitCommand"/>,
+    ///     returning the first method named <paramref name="name"/> that has the expected <paramref name="returnType"/>
+    ///     and satisfies the optional <paramref name="predicate"/>.
+    /// </summary>
+    /// <param name="name">The method name to search for.</param>
+    /// <param name="returnType">The required return type of the method. Defaults to <see cref="Result"/>.</param>
+    /// <param name="predicate">An optional additional filter applied to each candidate method.</param>
+    /// <returns>The matching <see cref="MethodInfo"/>, or <c>null</c> if none is found.</returns>
+    private MethodInfo? FindMethod(string name, Type? returnType = null, Func<MethodInfo, bool>? predicate = null)
+    {
+        returnType ??= typeof(Result);
+        var type = GetType();
+        while (type != null && type != typeof(RevitCommand))
+        {
+            var method = type
+                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .FirstOrDefault(m =>
+                    m.Name == name &&
+                    m.ReturnType == returnType &&
+                    (predicate is null || predicate(m)));
+
+            if (method is not null)
+            {
+                return method;
+            }
+
+            type = type.BaseType;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Resolves the parameters of <paramref name="method"/> from <paramref name="serviceProvider"/>
+    ///     (passing <see cref="ExternalCommandData"/> directly) and invokes the method on this instance.
+    /// </summary>
+    /// <param name="method">The method to invoke.</param>
+    /// <param name="commandData">The current <see cref="ExternalCommandData"/> instance.</param>
+    /// <param name="serviceProvider">The scoped <see cref="IServiceProvider"/> for the current command execution.</param>
+    /// <returns>The <see cref="Result"/> returned by the method.</returns>
+    private Result InvokeMethod(MethodInfo method, ExternalCommandData commandData, IServiceProvider serviceProvider)
+    {
+        var resolvedParameters = method.GetParameters()
+            .Select(p => p.ParameterType == typeof(ExternalCommandData)
+                ? commandData
+                : serviceProvider.GetRequiredService(p.ParameterType))
+            .ToArray();
+
+        return (Result)method.Invoke(this, resolvedParameters)!;
     }
 }

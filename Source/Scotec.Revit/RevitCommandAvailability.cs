@@ -110,5 +110,9 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     command is available. It provides a mechanism to enable or disable commands based on the current Revit environment,
     ///     selected elements, and application state.
     /// </remarks>
-    protected abstract bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories, IServiceProvider services);
+    [Obsolete("Overriding this method is not recommended. Prefer declaring a custom IsCommandAvailable overload with DI-resolved parameters instead. See the RevitCommandAvailability documentation for details.")]
+    protected virtual bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories, IServiceProvider services)
+    {
+        return true;
+    }
 }
