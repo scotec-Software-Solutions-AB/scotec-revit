@@ -10,9 +10,14 @@ using Autodesk.Revit.UI;
 
 namespace Scotec.Revit.Test;
 
-[Isolation.RevitCommandAvailabilityIsolation]
+[Isolation.RevitCommandAvailabilityIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestCommandAvailability : RevitCommandAvailability
 {
+    protected bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    {
+        return true;
+    }
+
     protected override bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                                IServiceProvider services)
     {

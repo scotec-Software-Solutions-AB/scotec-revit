@@ -2,12 +2,14 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Scotec.Revit;
 
@@ -16,6 +18,9 @@ namespace Scotec.Revit;
 /// </summary>
 public abstract class RevitCommandAvailability : IExternalCommandAvailability
 {
+    private static readonly Type[] StandardIsCommandAvailableSignature =
+        [typeof(UIApplication), typeof(CategorySet), typeof(IServiceProvider)];
+
     /// <summary>
     ///     Determines whether an external command is available for execution in the current Revit context.
     /// </summary>
@@ -62,13 +67,10 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                               var services = new ServiceCollection();
                                               ConfigureServices(services);
                                               builder.Populate(services);
-                                              builder.Populate(services);
                                           });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
-            var result = IsCommandAvailable(applicationData, selectedCategories, serviceProvider);
-
-            return result;
+            return InvokeIsCommandAvailable(applicationData, selectedCategories, serviceProvider);
         }
         catch (Exception)
         {
@@ -89,7 +91,6 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
         // Derived classes can override to add services.
     }
 
-
     /// <summary>
     ///     Determines whether the external command is available for execution in the current Revit context.
     /// </summary>
@@ -106,13 +107,44 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     <c>true</c> if the command is available for execution; otherwise, <c>false</c>.
     /// </returns>
     /// <remarks>
-    ///     This method must be implemented in derived classes to define the specific conditions under which the external
-    ///     command is available. It provides a mechanism to enable or disable commands based on the current Revit environment,
-    ///     selected elements, and application state.
+    ///     Overriding this method is not recommended. Prefer declaring a custom <c>IsCommandAvailable</c> overload
+    ///     with DI-resolved parameters, which the framework will discover and invoke automatically.
+    ///     This method is retained for backward compatibility with legacy availability checks that already override it.
     /// </remarks>
     [Obsolete("Overriding this method is not recommended. Prefer declaring a custom IsCommandAvailable overload with DI-resolved parameters instead. See the RevitCommandAvailability documentation for details.")]
     protected virtual bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories, IServiceProvider services)
     {
         return true;
+    }
+
+    /// <summary>
+    ///     Checks whether the derived class declares an <c>IsCommandAvailable</c> overload whose parameter types differ
+    ///     from the standard <c>(UIApplication, CategorySet, IServiceProvider)</c> signature. If such an overload exists,
+    ///     all parameters are resolved from the <paramref name="serviceProvider"/> (with <see cref="UIApplication"/> and
+    ///     <see cref="CategorySet"/> passed directly) and the overload is invoked via reflection. Otherwise the standard
+    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)"/> is called.
+    /// </summary>
+    private bool InvokeIsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
+                                          IServiceProvider serviceProvider)
+    {
+        var customMethod = RevitReflectionHelper.FindMethod(
+            GetType(), typeof(RevitCommandAvailability), "IsCommandAvailable", typeof(bool),
+            predicate: m => !m.GetParameters()
+                              .Select(p => p.ParameterType)
+                              .SequenceEqual(StandardIsCommandAvailableSignature));
+
+        if (customMethod is not null)
+        {
+            return (bool)RevitReflectionHelper.Invoke(this, customMethod, serviceProvider,
+                new Dictionary<Type, object>
+                {
+                    [typeof(UIApplication)] = applicationData,
+                    [typeof(CategorySet)] = selectedCategories
+                })!;
+        }
+
+#pragma warning disable CS0618
+        return IsCommandAvailable(applicationData, selectedCategories, serviceProvider);
+#pragma warning restore CS0618
     }
 }

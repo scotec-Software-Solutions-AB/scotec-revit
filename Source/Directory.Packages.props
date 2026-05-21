@@ -22,7 +22,7 @@
   <ItemGroup>
     <PackageVersion Include="Scotec.Extensions.Linq" Version="1.1.1" />
     <PackageVersion Include="Scotec.Extensions.Utilities" Version="1.1.1" />
-    <PackageVersion Include="Scotec.Revit.Isolation" Version="2025.1.1-dev.3" />
+    <PackageVersion Include="Scotec.Revit.Isolation" Version="2025.3.3-dev.14" />
   </ItemGroup>
   <!-- Other packages -->
   <ItemGroup>
