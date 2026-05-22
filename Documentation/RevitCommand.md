@@ -50,13 +50,15 @@ Override the `TransactionMode` property in your command class. This is useful wh
 ```csharp
 public class MyCommand : RevitCommand
 {
-    protected override RevitTransactionMode TransactionMode => RevitTransactionMode.ReadOnly;
+    protected override RevitTransactionMode TransactionMode => RevitTransactionMode.Transaction;
 
     // ...
 }
 ```
 
 The `TransactionMode` property is used as the fallback when no `RevitTransactionModeAttribute` is applied to the class. Its default value is `RevitTransactionMode.Transaction`.
+
+> **Note:** `RevitTransactionMode.ReadOnly` is not supported by the `TransactionMode` property. Read-only mode can only be applied through the source generator. If `ReadOnly` is returned, the framework treats it as `RevitTransactionMode.None`.
 
 **Priority:** The `RevitTransactionModeAttribute` takes precedence over the `TransactionMode` property if both are present.
 

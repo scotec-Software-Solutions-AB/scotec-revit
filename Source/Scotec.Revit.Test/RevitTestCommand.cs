@@ -16,9 +16,10 @@ public class Test
 
 
 [RevitCommandIsolation(ContextName = "Scotec.Revit.Test")]
-[RevitTransactionMode(RevitTransactionMode.None)]
+//[RevitTransactionMode(RevitTransactionMode.None)]
 public class RevitTestCommand : RevitCommand
 {
+    protected override RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.TransactionGroup;
     protected override string CommandName => "TestCommand";
 
     protected virtual void BeforeExecute(ExternalCommandData commandData, Test? test, ElementSet elements)

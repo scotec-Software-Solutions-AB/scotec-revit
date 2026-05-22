@@ -151,7 +151,7 @@ public class RevitTransactionModeAttribute : Attribute
 ///     and the JournalData.
 ///     Override <see cref="ConfigureServices"/> to apply custom services to the current scope.
 /// </remarks>
-[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
+//[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
     private static readonly Type[] StandardOnExecuteSignatureWithServiceProvider = [typeof(ExternalCommandData), typeof(IServiceProvider)];
@@ -177,6 +177,11 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     This property is used as the fallback transaction mode when no <see cref="RevitTransactionModeAttribute" />
     ///     is applied to the command class. Override this property in derived classes to set a different default
     ///     without using the attribute.
+    ///     <para>
+    ///         <see cref="RevitTransactionMode.ReadOnly" /> is not supported by this property. Read-only mode can only
+    ///         be applied through the source generator at compile time. If <see cref="RevitTransactionMode.ReadOnly" />
+    ///         is returned, the framework treats it as <see cref="RevitTransactionMode.None" />.
+    ///     </para>
     /// </remarks>
     protected virtual RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.Transaction;
 
@@ -512,8 +517,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             return attr.Mode;
         }
 
-        // Return the default value.
-        return TransactionMode;
+        // Transaction mode RevitTransactionMode.ReadOnly is not supported here. The readonly mode can only be applied through the source generator.
+        // Thus we return the nerest possible mode which is RevitTransactionMode.None. This should not cause any issues, since the source generator
+        // will handle the readonly mode separately and will not rely on this method to determine the transaction mode.
+        return TransactionMode != RevitTransactionMode.ReadOnly ? TransactionMode : RevitTransactionMode.None;
     }
 
     /// <summary>
