@@ -198,7 +198,6 @@ public class RevitTransactionModeAttribute : Attribute
 //[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
 {
-    private static readonly Type[] StandardOnExecuteSignatureWithServiceProvider = [typeof(ExternalCommandData), typeof(IServiceProvider)];
     private static readonly Type[] StandardOnExecuteWithElementSetSignature = [typeof(ExternalCommandData), typeof(ElementSet)];
 
     /// <summary>
@@ -651,27 +650,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         if (attributedExecute is not null)
         {
             return (Result)RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
-                new Dictionary<Type, object>
-                {
-                    [typeof(ExternalCommandData)] = commandData,
-                    [typeof(IServiceProvider)] = serviceProvider,
-                    [typeof(ElementSet)] = elements
-                })!;
-        }
-
-        // Fall back: look for an OnExecute overload whose parameter list differs from both standard signatures.
-        var customOnExecute = RevitReflectionHelper.FindMethod(
-            GetType(), typeof(RevitCommand), "OnExecute", typeof(Result),
-            predicate: m => !m.GetParameters()
-                              .Select(p => p.ParameterType)
-                              .SequenceEqual(StandardOnExecuteSignatureWithServiceProvider)
-                           && !m.GetParameters()
-                              .Select(p => p.ParameterType)
-                              .SequenceEqual(StandardOnExecuteWithElementSetSignature));
-
-        if (customOnExecute is not null)
-        {
-            return (Result)RevitReflectionHelper.Invoke(this, customOnExecute, serviceProvider,
                 new Dictionary<Type, object>
                 {
                     [typeof(ExternalCommandData)] = commandData,

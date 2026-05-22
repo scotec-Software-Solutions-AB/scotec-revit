@@ -9,7 +9,7 @@ This document provides a detailed guide on how to use the `RevitCommandAvailabil
 - Dependency injection (DI) scope creation for each availability check
 - Extensibility for registering custom services
 - Explicit `[RevitCommandAvailabilityCheck]` attribute for free-named methods with automatic DI parameter resolution
-- Backward-compatible automatic parameter resolution for `IsCommandAvailable` methods (without attribute)
+- Backward-compatible virtual overrides (`IsCommandAvailable(UIApplication, CategorySet)` and the obsolete `IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)`)
 
 ## Implementing Availability Logic
 
@@ -64,25 +64,6 @@ private bool CheckAvailability(Document? document, IMyService? optionalService)
 }
 ```
 
-### Fallback: Custom `IsCommandAvailable` Overload (method name–based, no attribute)
-
-If no `[RevitCommandAvailabilityCheck]` method is found, the framework falls back to discovering a method named `IsCommandAvailable` whose parameter list differs from both standard signatures. This approach still works but is less explicit than using the attribute.
-
-```csharp
-public class MyCommandAvailability : RevitCommandAvailability
-{
-    protected override void ConfigureServices(IServiceCollection services)
-    {
-        services.AddTransient<IMyService, MyService>();
-    }
-
-    private bool IsCommandAvailable(Document document, CategorySet selectedCategories, IMyService myService)
-    {
-        return document is not null && myService.IsFeatureEnabled();
-    }
-}
-```
-
 ### Standard Override: `IsCommandAvailable(UIApplication, CategorySet)`
 
 If you do not need DI-resolved parameters, override the standard `IsCommandAvailable(UIApplication, CategorySet)` overload directly:
@@ -102,9 +83,8 @@ public class MyCommandAvailability : RevitCommandAvailability
 The framework selects the method to invoke using the following priority:
 
 1. **`[RevitCommandAvailabilityCheck]` attribute** — any `bool`-returning method marked with the attribute. All parameters are resolved from DI. Throws `InvalidOperationException` if more than one such method exists in the type hierarchy.
-2. **Custom `IsCommandAvailable` overload** — any `bool`-returning method named `IsCommandAvailable` whose parameters match neither standard signature. All parameters are resolved from DI.
-3. **`IsCommandAvailable(UIApplication, CategorySet)`** — called directly if overridden in the derived class.
-4. **`IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)`** *(obsolete)* — called for backward compatibility if none of the above is found.
+2. **`IsCommandAvailable(UIApplication, CategorySet)`** — called directly if overridden in the derived class.
+3. **`IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)`** *(obsolete)* — called for backward compatibility if none of the above is found.
 
 ### Obsolete Overload
 
@@ -161,7 +141,6 @@ public class MyCommandAvailability : RevitCommandAvailability
 | Feature                        | How to use                                                                                     |
 |-------------------------------|------------------------------------------------------------------------------------------------|
 | Custom availability logic      | Mark a `bool`-returning method with `[RevitCommandAvailabilityCheck]`                         |
-| Fallback availability logic    | Declare `IsCommandAvailable` with DI-resolvable parameters (name-based, no attribute)         |
 | Standard availability logic    | Override `IsCommandAvailable(UIApplication, CategorySet)`                                     |
 | Register additional services   | Override `ConfigureServices(IServiceCollection services)`                                     |
 | Connect to a command           | Set `AvailabilityClassName` on `PushButtonData` to the availability type name                 |

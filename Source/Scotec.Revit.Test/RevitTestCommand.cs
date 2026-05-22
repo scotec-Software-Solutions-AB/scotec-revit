@@ -22,15 +22,18 @@ public class RevitTestCommand : RevitCommand
     protected override RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.TransactionGroup;
     protected override string CommandName => "TestCommand";
 
-    protected virtual void BeforeExecute(ExternalCommandData commandData, Test? test, ElementSet elements)
+    [RevitCommandBeforeExecute]
+    protected virtual void Initialize(ExternalCommandData commandData, Test? test, ElementSet elements)
     {
     }
 
-    protected virtual void AfterExecute(ExternalCommandData commandData, ElementSet elements)
+    [RevitCommandAfterExecute]
+    protected virtual void Cleanup(ExternalCommandData commandData, ElementSet elements)
     {
     }
 
-    protected Result OnExecute(Document document)
+    [RevitCommandExecute]
+    protected Result Run(Document document)
     {
         return Result.Succeeded;
     }

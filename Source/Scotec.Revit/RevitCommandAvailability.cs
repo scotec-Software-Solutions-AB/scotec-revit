@@ -33,8 +33,6 @@ public sealed class RevitCommandAvailabilityCheckAttribute : Attribute
 /// </summary>
 public abstract class RevitCommandAvailability : IExternalCommandAvailability
 {
-    private static readonly Type[] StandardIsCommandAvailableSignature =
-        [typeof(UIApplication), typeof(CategorySet), typeof(IServiceProvider)];
     private static readonly Type[] StandardIsCommandAvailableWithoutServiceProviderSignature =
         [typeof(UIApplication), typeof(CategorySet)];
 
@@ -184,27 +182,6 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
         if (attributedCheck is not null)
         {
             return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
-                new Dictionary<Type, object>
-                {
-                    [typeof(UIApplication)] = applicationData,
-                    [typeof(CategorySet)] = selectedCategories,
-                    [typeof(IServiceProvider)] = serviceProvider
-                })!;
-        }
-
-        // Fall back: look for an IsCommandAvailable overload whose parameter list differs from both standard signatures.
-        var customMethod = RevitReflectionHelper.FindMethod(
-            GetType(), typeof(RevitCommandAvailability), "IsCommandAvailable", typeof(bool),
-            predicate: m => !m.GetParameters()
-                              .Select(p => p.ParameterType)
-                              .SequenceEqual(StandardIsCommandAvailableSignature)
-                           && !m.GetParameters()
-                              .Select(p => p.ParameterType)
-                              .SequenceEqual(StandardIsCommandAvailableWithoutServiceProviderSignature));
-
-        if (customMethod is not null)
-        {
-            return (bool)RevitReflectionHelper.Invoke(this, customMethod, serviceProvider,
                 new Dictionary<Type, object>
                 {
                     [typeof(UIApplication)] = applicationData,
