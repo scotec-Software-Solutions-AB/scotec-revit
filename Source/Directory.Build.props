@@ -13,6 +13,12 @@
 		<Configurations>Release;Revit2025;Revit2026;Revit2027</Configurations>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' 
+                      Or '$(TF_BUILD)' == 'true' 
+                      Or '$(CI)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' == 'Revit2025' Or '$(Configuration)' == 'Revit2026' Or '$(Configuration)' == 'Revit2027'">
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
