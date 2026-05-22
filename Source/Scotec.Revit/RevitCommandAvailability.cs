@@ -26,7 +26,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     /// <summary>
     ///     Determines whether an external command is available for execution in the current Revit context.
     /// </summary>
-    /// <param name="applicationData">
+    /// <param name="uiApplication">
     ///     The <see cref="Autodesk.Revit.UI.UIApplication" /> instance providing access to the current Revit application and its data.
     /// </param>
     /// <param name="selectedCategories">
@@ -40,30 +40,41 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     determine the availability of external commands based on the current Revit environment, selected elements,
     ///     and application state.
     /// </remarks>
-    bool IExternalCommandAvailability.IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
+    bool IExternalCommandAvailability.IsCommandAvailable(UIApplication uiApplication, CategorySet selectedCategories)
     {
         try
         {
-            var document = applicationData.ActiveUIDocument?.Document;
+            var application = uiApplication.Application;
+            var uiDocument = uiApplication.ActiveUIDocument;
+            var document = uiDocument?.Document;
+            var view = uiDocument?.ActiveView;
 
-            using var scope = RevitAppBase.GetServiceProvider(applicationData.ActiveAddInId.GetGUID())
+
+            using var scope = RevitAppBase.GetServiceProvider(uiApplication.ActiveAddInId.GetGUID())
                                           .GetAutofacRoot()
                                           .BeginLifetimeScope(builder =>
                                           {
-                                              if (document != null)
+                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
+
+                                              if (application is not null)
+                                              {
+                                                  builder.RegisterInstance(application).ExternallyOwned();
+                                              }
+
+                                              if (uiDocument is not null)
+                                              {
+                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
+                                              }
+
+                                              if (document is not null)
                                               {
                                                   builder.RegisterInstance(document).ExternallyOwned();
                                               }
 
-                                              var view = applicationData.ActiveUIDocument?.ActiveView;
-                                              if (view != null)
+                                              if (view is not null)
                                               {
                                                   builder.RegisterInstance(view).ExternallyOwned();
                                               }
-
-                                              builder.RegisterInstance(applicationData).ExternallyOwned();
-                                              builder.RegisterInstance(applicationData.Application).ExternallyOwned();
-                                              builder.RegisterInstance(selectedCategories).ExternallyOwned();
 
                                               // Allow derived classes to add services
                                               var services = new ServiceCollection();
@@ -72,7 +83,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                           });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
-            return InvokeIsCommandAvailable(applicationData, selectedCategories, serviceProvider);
+            return InvokeIsCommandAvailable(uiApplication, selectedCategories, serviceProvider);
         }
         catch (Exception)
         {

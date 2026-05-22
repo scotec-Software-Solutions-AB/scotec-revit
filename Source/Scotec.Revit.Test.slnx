@@ -6,6 +6,12 @@
     <BuildType Name="Revit2027" />
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/SolutionItems/" />
+  <Folder Name="/SolutionItems/Documentation/">
+    <File Path="../Documentation/RevitAddinIsolation.md" />
+    <File Path="../Documentation/RevitCommand.md" />
+    <File Path="../Documentation/RevitTask.md" />
+  </Folder>
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
     <Platform Project="x64" />
   </Project>

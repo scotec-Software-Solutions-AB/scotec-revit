@@ -55,6 +55,8 @@ internal static class RevitReflectionHelper
     ///     Resolves the parameters of <paramref name="method"/> from <paramref name="serviceProvider"/>,
     ///     substituting any type present in <paramref name="passthroughs"/> with its corresponding instance directly
     ///     instead of resolving it from the container.
+    ///     Parameters with nullable types are treated as optional: if the service is not registered, <c>null</c> is
+    ///     passed. Non-nullable parameters are required and will throw if not registered.
     ///     Invokes the method on <paramref name="instance"/> and returns the raw return value.
     /// </summary>
     /// <param name="instance">The object on which to invoke the method.</param>
@@ -68,9 +70,20 @@ internal static class RevitReflectionHelper
                                    IReadOnlyDictionary<Type, object>? passthroughs = null)
     {
         var resolvedParameters = method.GetParameters()
-            .Select(p => passthroughs != null && passthroughs.TryGetValue(p.ParameterType, out var passthrough)
-                ? passthrough
-                : serviceProvider.GetRequiredService(p.ParameterType))
+            .Select(p =>
+            {
+                if (passthroughs != null && passthroughs.TryGetValue(p.ParameterType, out var passthrough))
+                {
+                    return passthrough;
+                }
+
+                // Nullable parameters are optional: resolve from DI if available, otherwise pass null.
+                var isNullable = !p.ParameterType.IsValueType
+                                 || Nullable.GetUnderlyingType(p.ParameterType) != null;
+                return isNullable
+                    ? serviceProvider.GetService(p.ParameterType)
+                    : serviceProvider.GetRequiredService(p.ParameterType);
+            })
             .ToArray();
 
         return method.Invoke(instance, resolvedParameters);

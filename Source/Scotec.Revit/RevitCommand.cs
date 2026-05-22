@@ -227,7 +227,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                                       .BeginLifetimeScope(builder =>
                                       {
                                           builder.RegisterInstance(uiApplication).ExternallyOwned();
-                                          builder.RegisterInstance(commandData.JournalData).ExternallyOwned();
 
                                           if (application is not null)
                                           {
