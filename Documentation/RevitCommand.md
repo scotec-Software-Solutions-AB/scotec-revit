@@ -29,7 +29,11 @@ The `RevitCommand` class supports several transaction modes, controlled via the 
 
 ### How to Specify Transaction Mode
 
-Apply the `RevitTransactionModeAttribute` to your command class:
+There are two ways to configure the transaction mode for a command:
+
+#### Option 1: `RevitTransactionModeAttribute` (recommended)
+
+Apply the attribute to your command class:
 
 ```csharp
 [RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
@@ -39,7 +43,24 @@ public class MyCommand : RevitCommand
 }
 ```
 
-> **Note:** If `NoTransaction` is set to `true`, it overrides the attribute and disables transaction management. This property is deprecated — use the attribute instead.
+#### Option 2: Override the `TransactionMode` Property
+
+Override the `TransactionMode` property in your command class. This is useful when the mode needs to be determined at runtime or when you prefer a code-based approach over attributes:
+
+```csharp
+public class MyCommand : RevitCommand
+{
+    protected override RevitTransactionMode TransactionMode => RevitTransactionMode.ReadOnly;
+
+    // ...
+}
+```
+
+The `TransactionMode` property is used as the fallback when no `RevitTransactionModeAttribute` is applied to the class. Its default value is `RevitTransactionMode.Transaction`.
+
+**Priority:** The `RevitTransactionModeAttribute` takes precedence over the `TransactionMode` property if both are present.
+
+> **Note:** If `NoTransaction` is set to `true`, it overrides both the attribute and the property, and disables transaction management. This property is deprecated — use the attribute or `TransactionMode` instead.
 
 ## Implementing Command Logic
 
@@ -220,7 +241,8 @@ public class MyCommand : RevitCommand
 
 | Feature                        | How to use                                                                 |
 |-------------------------------|----------------------------------------------------------------------------|
-| Transaction mode               | Apply `[RevitTransactionMode(...)]` to your command class                 |
+| Transaction mode (attribute)   | Apply `[RevitTransactionMode(...)]` to your command class                 |
+| Transaction mode (property)    | Override `TransactionMode` in your command class                          |
 | Custom command logic           | Declare `OnExecute` with DI-resolvable parameters                         |
 | Standard command logic         | Override `OnExecute(ExternalCommandData, ElementSet)`                     |
 | Pre-transaction setup          | Declare `BeforeExecute` with DI-resolvable parameters                     |

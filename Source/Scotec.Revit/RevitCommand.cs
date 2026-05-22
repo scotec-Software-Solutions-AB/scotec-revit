@@ -167,6 +167,20 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     protected abstract string CommandName { get; }
 
     /// <summary>
+    ///     Gets or sets the default transaction mode for the command.
+    /// </summary>
+    /// <value>
+    ///     A <see cref="RevitTransactionMode" /> value specifying how transactions are handled during command execution.
+    ///     The default value is <see cref="RevitTransactionMode.Transaction" />.
+    /// </value>
+    /// <remarks>
+    ///     This property is used as the fallback transaction mode when no <see cref="RevitTransactionModeAttribute" />
+    ///     is applied to the command class. Override this property in derived classes to set a different default
+    ///     without using the attribute.
+    /// </remarks>
+    protected virtual RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.Transaction;
+
+    /// <summary>
     ///     Gets or sets a value indicating whether the command should execute without creating a transaction.
     /// </summary>
     /// <remarks>
@@ -499,7 +513,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         }
 
         // Return the default value.
-        return RevitTransactionMode.Transaction;
+        return TransactionMode;
     }
 
     /// <summary>

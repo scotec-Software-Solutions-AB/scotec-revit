@@ -9,13 +9,19 @@ using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.Test;
 
+public class Test
+{
+
+}
+
+
 [RevitCommandIsolation(ContextName = "Scotec.Revit.Test")]
 [RevitTransactionMode(RevitTransactionMode.None)]
 public class RevitTestCommand : RevitCommand
 {
     protected override string CommandName => "TestCommand";
 
-    protected virtual void BeforeExecute(ExternalCommandData commandData, ElementSet elements)
+    protected virtual void BeforeExecute(ExternalCommandData commandData, Test? test, ElementSet elements)
     {
     }
 
