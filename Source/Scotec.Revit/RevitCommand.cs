@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -86,6 +87,49 @@ public enum RevitTransactionMode
     ///     This is useful for commands that query or analyze the model without making changes.
     /// </remarks>
     ReadOnly
+}
+
+/// <summary>
+///     Marks a method as the pre-execution lifecycle entry point for a <see cref="RevitCommand"/>.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a method that should be called by the framework before the transaction is opened.
+///     The method must return <c>void</c>. Its parameters are resolved from the command's DI scope;
+///     <see cref="Autodesk.Revit.UI.ExternalCommandData"/> and <see cref="Autodesk.Revit.DB.ElementSet"/> are
+///     passed through directly. Only one method per type hierarchy may carry this attribute.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RevitCommandBeforeExecuteAttribute : Attribute
+{
+}
+
+/// <summary>
+///     Marks a method as the main execution entry point for a <see cref="RevitCommand"/>.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a method that should be called by the framework as the core command logic.
+///     The method must return <see cref="Autodesk.Revit.UI.Result"/>. Its parameters are resolved from the
+///     command's DI scope; <see cref="Autodesk.Revit.UI.ExternalCommandData"/> and
+///     <see cref="Autodesk.Revit.DB.ElementSet"/> are passed through directly.
+///     Only one method per type hierarchy may carry this attribute.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RevitCommandExecuteAttribute : Attribute
+{
+}
+
+/// <summary>
+///     Marks a method as the post-execution lifecycle entry point for a <see cref="RevitCommand"/>.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a method that should be called by the framework after the transaction is closed.
+///     The method must return <c>void</c>. Its parameters are resolved from the command's DI scope;
+///     <see cref="Autodesk.Revit.UI.ExternalCommandData"/> and <see cref="Autodesk.Revit.DB.ElementSet"/> are
+///     passed through directly. Only one method per type hierarchy may carry this attribute.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RevitCommandAfterExecuteAttribute : Attribute
+{
 }
 
 /// <summary>
@@ -287,7 +331,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         var serviceProvider = scope.Resolve<IServiceProvider>();
 
         // Call BeforeExecute before any transaction is opened.
-        InvokeOptionalMethod("BeforeExecute", commandData, elements, serviceProvider);
+        InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider);
 
         Result result;
 
@@ -309,7 +353,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         }
 
         // Call AfterExecute after the transaction has been closed.
-        InvokeOptionalMethod("AfterExecute", commandData, elements, serviceProvider);
+        InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider);
 
         return result;
     }
@@ -534,17 +578,19 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     /// <summary>
-    ///     Looks for a <c>void</c>-returning method with the given <paramref name="methodName"/> on the derived class,
-    ///     resolves its parameters from the <paramref name="serviceProvider"/> (passing <see cref="ExternalCommandData"/>
-    ///     directly), and invokes it. Does nothing if no such method exists on the derived type.
+    ///     Finds the unique method in the type hierarchy that is marked with <typeparamref name="TAttribute"/>,
+    ///     resolves its parameters from the <paramref name="serviceProvider"/>, and invokes it.
+    ///     Does nothing if no such method exists. Throws <see cref="InvalidOperationException"/> if more than one
+    ///     method in the hierarchy carries the attribute.
     /// </summary>
-    /// <param name="methodName">The name of the method to find and invoke (e.g. <c>BeforeExecute</c> or <c>AfterExecute</c>).</param>
+    /// <typeparam name="TAttribute">The lifecycle attribute type to search for.</typeparam>
     /// <param name="commandData">The current <see cref="ExternalCommandData"/> instance.</param>
     /// <param name="elements">The <see cref="ElementSet"/> for the current command execution.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider"/> for the current command execution.</param>
-    private void InvokeOptionalMethod(string methodName, ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
+    private void InvokeOptionalMethod<TAttribute>(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
+        where TAttribute : Attribute
     {
-        var method = RevitReflectionHelper.FindMethod(GetType(), typeof(RevitCommand), methodName, typeof(void));
+        var method = FindSingleAttributedMethod<TAttribute>(typeof(void));
         if (method is null)
         {
             return;
@@ -560,20 +606,60 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     /// <summary>
-    ///     Checks whether the derived class declares an <c>OnExecute</c> overload whose parameter types differ from
-    ///     the two standard signatures. If such an overload exists, all parameters are resolved from the
-    ///     <paramref name="serviceProvider" /> (with <see cref="ExternalCommandData" /> being passed directly) and the
-    ///     overload is invoked via reflection. Otherwise <see cref="OnExecute(ExternalCommandData, ElementSet)" /> is
-    ///     called if it is overridden in the derived class; if not, the obsolete
-    ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)" /> is called for backward compatibility.
+    ///     Walks the type hierarchy from the concrete type up to (but not including) <see cref="RevitCommand"/>
+    ///     and collects all methods that carry <typeparamref name="TAttribute"/> and match <paramref name="returnType"/>.
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException"/> if more
+    ///     than one is found.
+    /// </summary>
+    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
+    {
+        var matches = new List<MethodInfo>();
+        var type = GetType();
+        while (type != null && type != typeof(RevitCommand))
+        {
+            matches.AddRange(
+                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), inherit: false)));
+            type = type.BaseType;
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
+                $"Only one entry point per lifecycle slot is allowed.");
+        }
+
+        return matches.Count == 1 ? matches[0] : null;
+    }
+
+    /// <summary>
+    ///     Invokes the command's execute entry point. If a method marked with <see cref="RevitCommandExecuteAttribute"/>
+    ///     exists in the type hierarchy, it is invoked with DI-resolved parameters. Otherwise falls back to the
+    ///     standard <see cref="OnExecute(ExternalCommandData, ElementSet)"/> override, and finally to the obsolete
+    ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)"/> for backward compatibility.
+    ///     Throws <see cref="InvalidOperationException"/> if more than one method carries the attribute.
     /// </summary>
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
-    /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>
+    /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
     {
-        // Look for an OnExecute overload whose parameter list differs from both standard signatures.
+        // Prefer a method explicitly marked with [RevitCommandExecute].
+        var attributedExecute = FindSingleAttributedMethod<RevitCommandExecuteAttribute>(typeof(Result));
+        if (attributedExecute is not null)
+        {
+            return (Result)RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
+                new Dictionary<Type, object>
+                {
+                    [typeof(ExternalCommandData)] = commandData,
+                    [typeof(IServiceProvider)] = serviceProvider,
+                    [typeof(ElementSet)] = elements
+                })!;
+        }
+
+        // Fall back: look for an OnExecute overload whose parameter list differs from both standard signatures.
         var customOnExecute = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitCommand), "OnExecute", typeof(Result),
             predicate: m => !m.GetParameters()

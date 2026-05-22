@@ -10,7 +10,8 @@ This document provides a detailed guide on how to use the `RevitCommand` base cl
 - Failure handling hooks
 - Dependency injection (DI) scope creation for each command execution
 - Extensibility for registering custom services
-- Automatic parameter resolution for `OnExecute`, `BeforeExecute`, and `AfterExecute` methods
+- Explicit lifecycle attributes (`[RevitCommandBeforeExecute]`, `[RevitCommandExecute]`, `[RevitCommandAfterExecute]`) for free-named methods with automatic DI parameter resolution
+- Backward-compatible automatic parameter resolution for `OnExecute`, `BeforeExecute`, and `AfterExecute` methods (without attributes)
 
 ## Transaction Modes
 
@@ -66,9 +67,9 @@ The `TransactionMode` property is used as the fallback when no `RevitTransaction
 
 ## Implementing Command Logic
 
-### The Recommended Approach: Custom `OnExecute` Overload
+### The Recommended Approach: `[RevitCommandExecute]` Attribute
 
-The preferred way to implement a command is to declare an `OnExecute` method with whatever parameters your command needs. The framework discovers it automatically at runtime, resolves all parameters from the DI container, and invokes it. `ExternalCommandData` and `ElementSet` are passed through directly without going to DI.
+The preferred way to implement a command is to declare a method with the `[RevitCommandExecute]` attribute. The method can have any name and any combination of DI-resolvable parameters. The framework discovers it automatically at runtime, resolves all parameters from the DI container, and invokes it. `ExternalCommandData` and `ElementSet` are passed through directly without going to DI.
 
 **Example: injecting a document and a custom service**
 
@@ -83,7 +84,8 @@ public class MyCommand : RevitCommand
         services.AddTransient<IMyService, MyService>();
     }
 
-    private Result OnExecute(Document document, IMyService myService)
+    [RevitCommandExecute]
+    private Result Execute(Document document, IMyService myService)
     {
         // document and myService are resolved from the DI scope automatically.
         myService.DoWork(document);
@@ -100,14 +102,15 @@ Any combination of DI-registered types is valid as parameters, including:
 - `IServiceProvider` — registered by the framework
 - Any type registered via `ConfigureServices`
 
-The custom overload may be `private`, `protected`, or `public`. The framework uses reflection to discover it.
+The attributed method may be `private`, `protected`, or `public`. Only one method per type hierarchy may carry `[RevitCommandExecute]` — the framework throws `InvalidOperationException` at runtime if more than one is found.
 
 #### Optional (Nullable) Parameters
 
 Parameters with a nullable type are treated as optional. If the service is not registered in the DI scope, the framework passes `null` instead of throwing. Non-nullable parameters are required and will cause an exception if not registered.
 
 ```csharp
-private Result OnExecute(Document document, IMyService myService, IOptionalService? optionalService)
+[RevitCommandExecute]
+private Result Execute(Document document, IMyService myService, IOptionalService? optionalService)
 {
     // optionalService will be null if IOptionalService is not registered in the DI scope.
     optionalService?.Notify();
@@ -116,9 +119,30 @@ private Result OnExecute(Document document, IMyService myService, IOptionalServi
 }
 ```
 
-> **Note:** The same optional parameter rule applies to `BeforeExecute` and `AfterExecute`.
+> **Note:** The same optional parameter rule applies to `[RevitCommandBeforeExecute]` and `[RevitCommandAfterExecute]`.
 
-> **Important:** Only one custom `OnExecute` overload should be declared per class. If the class declares a method named `OnExecute` that returns `Result` and whose parameter list matches neither of the two standard signatures (see below), the framework treats it as the custom overload and invokes it.
+### Fallback: Custom `OnExecute` Overload (method name–based, no attribute)
+
+If no `[RevitCommandExecute]` method is found, the framework falls back to discovering a method named `OnExecute` whose parameter list differs from both standard signatures. This approach still works but is less explicit than using the attribute.
+
+```csharp
+[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
+public class MyCommand : RevitCommand
+{
+    protected override string CommandName => "My Command";
+
+    protected override void ConfigureServices(IServiceCollection services)
+    {
+        services.AddTransient<IMyService, MyService>();
+    }
+
+    private Result OnExecute(Document document, IMyService myService)
+    {
+        myService.DoWork(document);
+        return Result.Succeeded;
+    }
+}
+```
 
 ### Standard Override: `OnExecute(ExternalCommandData, ElementSet)`
 
@@ -143,24 +167,25 @@ public class MyCommand : RevitCommand
 
 The framework selects the method to invoke using the following priority:
 
-1. **Custom `OnExecute` overload** — any `Result`-returning method named `OnExecute` whose parameters match neither standard signature. All parameters are resolved from DI.
-2. **`OnExecute(ExternalCommandData, ElementSet)`** — called directly if overridden in the derived class.
-3. **`OnExecute(ExternalCommandData, IServiceProvider)`** *(obsolete)* — called for backward compatibility if neither of the above is found.
+1. **`[RevitCommandExecute]` attribute** — any `Result`-returning method marked with the attribute. All parameters are resolved from DI. Throws `InvalidOperationException` if more than one such method exists in the type hierarchy.
+2. **Custom `OnExecute` overload** — any `Result`-returning method named `OnExecute` whose parameters match neither standard signature. All parameters are resolved from DI.
+3. **`OnExecute(ExternalCommandData, ElementSet)`** — called directly if overridden in the derived class.
+4. **`OnExecute(ExternalCommandData, IServiceProvider)`** *(obsolete)* — called for backward compatibility if none of the above is found.
 
 ### Obsolete Overload
 
-`OnExecute(ExternalCommandData, IServiceProvider)` is obsolete and retained for backward compatibility only. It will not be called if either of the above overloads is present in the derived class. Migrate to the standard `OnExecute(ExternalCommandData, ElementSet)` or the custom overload pattern.
+`OnExecute(ExternalCommandData, IServiceProvider)` is obsolete and retained for backward compatibility only. It will not be called if any of the above overloads is present. Migrate to `[RevitCommandExecute]` or the standard `OnExecute(ExternalCommandData, ElementSet)` overload.
 
 ## Command Lifecycle Hooks
 
 Two optional lifecycle methods can be declared on a command class to run code outside the transaction boundary:
 
-| Method          | When it runs                                    | Return type |
-|-----------------|-------------------------------------------------|-------------|
-| `BeforeExecute` | Before the transaction or transaction group is opened | `void`      |
-| `AfterExecute`  | After the transaction or transaction group is closed  | `void`      |
+| Attribute                      | When it runs                                         | Return type |
+|--------------------------------|------------------------------------------------------|-------------|
+| `[RevitCommandBeforeExecute]`  | Before the transaction or transaction group is opened | `void`      |
+| `[RevitCommandAfterExecute]`   | After the transaction or transaction group is closed  | `void`      |
 
-Both methods follow the same discovery and parameter-resolution rules as custom `OnExecute` overloads: declare them with any DI-resolvable parameters and the framework will find and invoke them automatically. `ExternalCommandData` and `ElementSet` are passed through directly.
+Both methods follow the same discovery and parameter-resolution rules as `[RevitCommandExecute]`: apply the attribute to a method with any name and any DI-resolvable parameters. `ExternalCommandData` and `ElementSet` are passed through directly. Only one method per type hierarchy may carry each attribute — `InvalidOperationException` is thrown if more than one is found.
 
 ```csharp
 [RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
@@ -168,19 +193,22 @@ public class MyCommand : RevitCommand
 {
     protected override string CommandName => "My Command";
 
-    private void BeforeExecute(UIApplication uiApplication)
+    [RevitCommandBeforeExecute]
+    private void Setup(UIApplication uiApplication)
     {
         // Runs before the transaction is opened.
         // Suitable for read-only setup, pre-checks, or UI preparation.
     }
 
-    private Result OnExecute(Document document, IMyService myService)
+    [RevitCommandExecute]
+    private Result Execute(Document document, IMyService myService)
     {
         myService.DoWork(document);
         return Result.Succeeded;
     }
 
-    private void AfterExecute(UIApplication uiApplication)
+    [RevitCommandAfterExecute]
+    private void Cleanup(UIApplication uiApplication)
     {
         // Runs after the transaction has been committed or rolled back.
         // Suitable for post-processing, notifications, or cleanup.
@@ -188,7 +216,11 @@ public class MyCommand : RevitCommand
 }
 ```
 
-> **Note:** `BeforeExecute` and `AfterExecute` are optional. The command will execute normally if they are not declared.
+> **Note:** `[RevitCommandBeforeExecute]` and `[RevitCommandAfterExecute]` are optional. The command will execute normally if they are not declared.
+
+### Fallback: Name-Based Discovery (no attribute)
+
+If no attributed method is found, the framework falls back to looking for methods named `BeforeExecute` and `AfterExecute` by name. This fallback is retained for backward compatibility but using the explicit attributes is strongly preferred.
 
 ## Dependency Injection (DI) Scope
 
@@ -245,8 +277,9 @@ public class MyCommand : RevitCommand
 |-------------------------------|----------------------------------------------------------------------------|
 | Transaction mode (attribute)   | Apply `[RevitTransactionMode(...)]` to your command class                 |
 | Transaction mode (property)    | Override `TransactionMode` in your command class                          |
-| Custom command logic           | Declare `OnExecute` with DI-resolvable parameters                         |
+| Custom command logic           | Mark a `Result`-returning method with `[RevitCommandExecute]`             |
+| Fallback command logic         | Declare `OnExecute` with DI-resolvable parameters (name-based, no attr.)  |
 | Standard command logic         | Override `OnExecute(ExternalCommandData, ElementSet)`                     |
-| Pre-transaction setup          | Declare `BeforeExecute` with DI-resolvable parameters                     |
-| Post-transaction cleanup       | Declare `AfterExecute` with DI-resolvable parameters                      |
+| Pre-transaction setup          | Mark a `void` method with `[RevitCommandBeforeExecute]`                   |
+| Post-transaction cleanup       | Mark a `void` method with `[RevitCommandAfterExecute]`                    |
 | Register additional services   | Override `ConfigureServices(IServiceCollection services)`                 |

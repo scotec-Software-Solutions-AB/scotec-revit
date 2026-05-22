@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -12,6 +13,20 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
+
+/// <summary>
+///     Marks a method as the availability-check entry point for a <see cref="RevitCommandAvailability"/>.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a method that should be called by the framework to determine whether the associated
+///     ribbon button is enabled. The method must return <c>bool</c>. Its parameters are resolved from the
+///     availability check's DI scope; <see cref="UIApplication"/> and <see cref="CategorySet"/> are passed through
+///     directly. Only one method per type hierarchy may carry this attribute.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RevitCommandAvailabilityCheckAttribute : Attribute
+{
+}
 
 /// <summary>
 ///     Represents an abstract base class that determines the availability of external commands in Autodesk Revit.
@@ -154,18 +169,30 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     }
 
     /// <summary>
-    ///     Checks whether the derived class declares an <c>IsCommandAvailable</c> overload whose parameter types differ
-    ///     from the two standard signatures. If such an overload exists, all parameters are resolved from the
-    ///     <paramref name="serviceProvider"/> (with <see cref="UIApplication"/> and <see cref="CategorySet"/> passed
-    ///     directly) and the overload is invoked via reflection. Otherwise
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)"/> is called if it is overridden in the derived
-    ///     class; if not, the obsolete <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)"/>
-    ///     is called for backward compatibility.
+    ///     Invokes the availability-check entry point. If a method marked with
+    ///     <see cref="RevitCommandAvailabilityCheckAttribute"/> exists in the type hierarchy it is invoked with
+    ///     DI-resolved parameters. Otherwise falls back to the standard
+    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)"/> override, and finally to the obsolete
+    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)"/> for backward compatibility.
+    ///     Throws <see cref="InvalidOperationException"/> if more than one method carries the attribute.
     /// </summary>
     private bool InvokeIsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                           IServiceProvider serviceProvider)
     {
-        // Look for an IsCommandAvailable overload whose parameter list differs from both standard signatures.
+        // Prefer a method explicitly marked with [RevitCommandAvailabilityCheck].
+        var attributedCheck = FindSingleAttributedMethod<RevitCommandAvailabilityCheckAttribute>(typeof(bool));
+        if (attributedCheck is not null)
+        {
+            return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
+                new Dictionary<Type, object>
+                {
+                    [typeof(UIApplication)] = applicationData,
+                    [typeof(CategorySet)] = selectedCategories,
+                    [typeof(IServiceProvider)] = serviceProvider
+                })!;
+        }
+
+        // Fall back: look for an IsCommandAvailable overload whose parameter list differs from both standard signatures.
         var customMethod = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitCommandAvailability), "IsCommandAvailable", typeof(bool),
             predicate: m => !m.GetParameters()
@@ -202,5 +229,34 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
 #pragma warning disable CS0618
         return IsCommandAvailable(applicationData, selectedCategories, serviceProvider);
 #pragma warning restore CS0618
+    }
+
+    /// <summary>
+    ///     Walks the type hierarchy from the concrete type up to (but not including)
+    ///     <see cref="RevitCommandAvailability"/> and collects all methods that carry
+    ///     <typeparamref name="TAttribute"/> and match <paramref name="returnType"/>.
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException"/> if more
+    ///     than one is found.
+    /// </summary>
+    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
+    {
+        var matches = new List<MethodInfo>();
+        var type = GetType();
+        while (type != null && type != typeof(RevitCommandAvailability))
+        {
+            matches.AddRange(
+                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), inherit: false)));
+            type = type.BaseType;
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
+                $"Only one entry point per lifecycle slot is allowed.");
+        }
+
+        return matches.Count == 1 ? matches[0] : null;
     }
 }
