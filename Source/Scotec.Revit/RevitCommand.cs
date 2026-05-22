@@ -158,13 +158,23 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     private static readonly Type[] StandardOnExecuteWithElementSetSignature = [typeof(ExternalCommandData), typeof(ElementSet)];
 
     /// <summary>
+    ///     Gets the name used as the transaction or transaction group name during command execution.
+    /// </summary>
+    /// <remarks>
+    ///     Override this property in derived classes to provide a meaningful name for the transaction.
+    ///     If not overridden, the value of the obsolete <see cref="CommandName" /> property is used as a fallback.
+    /// </remarks>
+    // TODO: Make this method abstract when the CommandName property is removed in order to enforce providing a transaction name.
+    protected virtual string TransactionName => CommandName;
+
+    /// <summary>
     ///     Gets the name of the Revit command.
     /// </summary>
     /// <remarks>
-    ///     This property is used as the transaction name when executing the command within a transaction.
-    ///     It should be overridden in derived classes to provide a meaningful name for the command.
+    ///     This property is obsolete. Override <see cref="TransactionName" /> instead.
     /// </remarks>
-    protected abstract string CommandName { get; }
+    [Obsolete("CommandName is obsolete. Override TransactionName instead.")]
+    protected virtual string CommandName => string.Empty;
 
     /// <summary>
     ///     Gets or sets the default transaction mode for the command.
@@ -308,7 +318,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                                            RevitTransactionMode transactionMode)
     {
         using var transactionGroup = new TransactionGroup(document);
-        transactionGroup.Start(CommandName);
+        transactionGroup.Start(TransactionName);
 
         var result = InvokeOnExecute(commandData, elements, serviceProvider);
 
@@ -324,7 +334,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     private Result ExecuteTransaction(ExternalCommandData commandData, ElementSet elements, Document document, IServiceProvider serviceProvider, RevitTransactionMode transactionMode)
     {
         using var transaction = new Transaction(document);
-        transaction.Start(CommandName);
+        transaction.Start(TransactionName);
 
         var failureHandlingOptions = transaction.GetFailureHandlingOptions();
         failureHandlingOptions.SetFailuresPreprocessor(this);

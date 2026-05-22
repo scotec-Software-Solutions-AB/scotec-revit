@@ -16,7 +16,7 @@ public class Test
 
 
 [RevitCommandIsolation(ContextName = "Scotec.Revit.Test")]
-//[RevitTransactionMode(RevitTransactionMode.None)]
+[RevitTransactionMode(RevitTransactionMode.None)]
 public class RevitTestCommand : RevitCommand
 {
     protected override RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.TransactionGroup;
