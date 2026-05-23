@@ -69,6 +69,8 @@ internal static class RevitReflectionHelper
     internal static object? Invoke(object instance, MethodInfo method, IServiceProvider serviceProvider,
                                    IReadOnlyDictionary<Type, object>? passthroughs = null)
     {
+        var nullabilityContext = new NullabilityInfoContext();
+
         var resolvedParameters = method.GetParameters()
             .Select(p =>
             {
@@ -76,10 +78,11 @@ internal static class RevitReflectionHelper
                 {
                     return passthrough;
                 }
+                // A parameter is optional if it is declared as a nullable reference type (e.g. IMyService?)
+                // or if it has a default value of null or any other default value (e.g. IMyService service = null).
+                var isNullable = nullabilityContext.Create(p).WriteState == NullabilityState.Nullable
+                    || p.HasDefaultValue;
 
-                // Nullable parameters are optional: resolve from DI if available, otherwise pass null.
-                var isNullable = !p.ParameterType.IsValueType
-                                 || Nullable.GetUnderlyingType(p.ParameterType) != null;
                 return isNullable
                     ? serviceProvider.GetService(p.ParameterType)
                     : serviceProvider.GetRequiredService(p.ParameterType);
