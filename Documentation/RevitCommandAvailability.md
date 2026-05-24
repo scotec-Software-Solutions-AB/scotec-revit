@@ -46,20 +46,25 @@ Any combination of DI-registered types is valid as parameters, including:
 
 The attributed method may be `private`, `protected`, or `public`. Only one method per type hierarchy may carry `[RevitCommandAvailabilityCheck]` — the framework throws `InvalidOperationException` at runtime if more than one is found.
 
-#### Optional (Nullable) Parameters
+#### Optional Parameters
 
-Parameters with a nullable type are treated as optional. If the service is not registered in the DI scope, the framework passes `null` instead of throwing. Non-nullable parameters are required and will cause an exception if not registered.
+The framework distinguishes between required and optional parameters using two conventions — not on whether the type is inherently nullable. This applies to all types, including interfaces and classes, which are reference types and therefore always nullable at runtime.
+
+| Convention | Example | Behaviour |
+|---|---|---|
+| Nullable annotation | `IMyService? service` | Optional — receives `null` if not registered |
+| Default value of `null` | `IMyService service = null` | Optional — receives `null` if not registered |
+| No annotation, no default | `IMyService service` | Required — throws if not registered |
 
 ```csharp
 [RevitCommandAvailabilityCheck]
-private bool CheckAvailability(Document? document, IMyService? optionalService)
+private bool CheckAvailability(
+    Document document,              // required (T)      — throws if not registered
+    IMyService? optionalService,    // optional (T?)     — null if not registered
+    ILogging logging = null)        // optional (= null) — null if not registered
 {
-    // document and optionalService will be null if not registered or not available.
-    if (document is null)
-    {
-        return false;
-    }
 
+    logging?.Log("Checking availability");
     return optionalService?.IsFeatureEnabled() ?? true;
 }
 ```
