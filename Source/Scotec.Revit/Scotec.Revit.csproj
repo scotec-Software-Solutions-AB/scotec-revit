@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
@@ -53,6 +53,8 @@
 
 	<ItemGroup>
 		<None Include="RevitFamily\RevitBasicFileInfo.md" />
+
+
 	</ItemGroup>
 
 </Project>

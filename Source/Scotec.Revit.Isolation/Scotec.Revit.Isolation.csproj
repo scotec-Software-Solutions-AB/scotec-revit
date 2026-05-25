@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
 		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
@@ -68,5 +68,4 @@
 			      Visible="false" />
 		</ItemGroup>
 	</Target>-->
-
 </Project>
