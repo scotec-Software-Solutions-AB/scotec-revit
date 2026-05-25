@@ -21,6 +21,10 @@ namespace Scotec.Revit;
 /// </remarks>
 public abstract class RevitApp : RevitAppBase, IExternalApplication
 {
+    private static readonly Type[] UIControlledApplicationSignature = [typeof(UIControlledApplication)];
+
+    /// <inheritdoc />
+    protected override Type[]? StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
     /// <summary>
     ///     Gets the <see cref="UIControlledApplication" /> instance associated with the Revit application.
     /// </summary>
@@ -56,7 +60,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     {
         Application = application;
 
-        return OnStartup(application.ActiveAddInId)
+        return StartupCore(application.ActiveAddInId)
             ? Result.Succeeded
             : Result.Failed;
     }
@@ -82,7 +86,45 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// </exception>
     Result IExternalApplication.OnShutdown(UIControlledApplication application)
     {
-        return OnShutdown(application.ControlledApplication) ? Result.Succeeded : Result.Failed;
+        return ShutdownCore(application.ControlledApplication) ? Result.Succeeded : Result.Failed;
+    }
+
+    /// <summary>
+    ///     Executes tasks when Revit starts.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication"/> instance provided by Revit.
+    /// </param>
+    /// <returns>
+    ///     A boolean value indicating whether the startup process was successful.
+    /// </returns>
+    /// <remarks>
+    ///     Override this method in a derived class to implement custom startup logic with access to the
+    ///     Revit UI application, or declare a custom <c>OnStartup</c> method marked with
+    ///     <see cref="RevitStartupAttribute"/> with additional DI-resolved parameters.
+    /// </remarks>
+    protected virtual bool OnStartup(UIControlledApplication application)
+    {
+        return true;
+    }
+
+    /// <summary>
+    ///     Executes tasks during the shutdown process of the Revit application.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="UIControlledApplication"/> instance provided by Revit.
+    /// </param>
+    /// <returns>
+    ///     A boolean value indicating the success or failure of the shutdown process.
+    /// </returns>
+    /// <remarks>
+    ///     Override this method in a derived class to define custom shutdown behavior with access to the
+    ///     Revit UI application, or declare a custom <c>OnShutdown</c> method marked with
+    ///     <see cref="RevitShutdownAttribute"/> with additional DI-resolved parameters.
+    /// </remarks>
+    protected virtual bool OnShutdown(UIControlledApplication application)
+    {
+        return true;
     }
 
     /// <summary>

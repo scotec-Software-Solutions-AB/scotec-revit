@@ -49,7 +49,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     {
         Application = application;
 
-        return OnStartup(application.ActiveAddInId)
+        return StartupCore(application.ActiveAddInId)
             ? ExternalDBApplicationResult.Succeeded
             : ExternalDBApplicationResult.Failed;
     }
@@ -77,7 +77,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// </example>
     ExternalDBApplicationResult IExternalDBApplication.OnShutdown(ControlledApplication application)
     {
-        return OnShutdown(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
+        return ShutdownCore(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
     }
 
     /// <summary>
@@ -89,6 +89,8 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// <remarks>
     ///     This method extends the base configuration by registering the <see cref="Application" /> instance
     ///     and its associated <see cref="Autodesk.Revit.DB.AddInId" /> as singleton services.
+    ///     When overriding this method in a derived class, always call <c>base.OnConfigure(builder)</c> to ensure
+    ///     that the Revit-specific services are registered correctly.
     /// </remarks>
     /// <seealso cref="RevitAppBase.OnConfigure(IHostBuilder)" />
     protected override void OnConfigure(IHostBuilder builder)
