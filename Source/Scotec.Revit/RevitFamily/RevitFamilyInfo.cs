@@ -321,6 +321,7 @@ public class RevitFamilyInfo : IDisposable
             stream = null;
             return false;
         }
+
         using var root = RootStorage.Open(GetFamilyStream(), StorageModeFlags.LeaveOpen);
 
         return TryGetStream(root, path.Split('/'), out stream);

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -26,8 +25,8 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     private readonly string _name;
     private readonly ManualResetEvent _resetEvent = new(false);
     private Func<UIApplication, object>? _action;
-    private object? _result;
     private Exception? _exception;
+    private object? _result;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="RevitTask" /> class.
@@ -174,7 +173,8 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     A delegate with any number and types of parameters. All parameters are resolved from the
     ///     scoped service provider. The scope automatically registers the current
     ///     <see cref="Autodesk.Revit.UI.UIApplication" />, <see cref="Autodesk.Revit.ApplicationServices.Application" />,
-    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if available),
+    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if
+    ///     available),
     ///     and the active <see cref="Autodesk.Revit.DB.View" /> (if available).
     /// </param>
     /// <param name="configureServices">
@@ -183,14 +183,19 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </param>
     /// <returns>A <see cref="Task{TResult}" /> containing the delegate's return value.</returns>
     /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
-    /// <exception cref="System.InvalidOperationException">Thrown if a required service cannot be resolved from the container, or if the delegate returns void.</exception>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown if a required service cannot be resolved from the container,
+    ///     or if the delegate returns void.
+    /// </exception>
     public async Task<TResult> Run<TResult>(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(action);
 
         if (action.Method.ReturnType == typeof(void))
+        {
             throw new InvalidOperationException(
                 $"Delegate '{action.Method.Name}' returns void. Use Run(Delegate, ...) instead.");
+        }
 
         _action = uiApplication =>
         {
@@ -212,7 +217,8 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     A delegate with any number and types of parameters. All parameters are resolved from the
     ///     scoped service provider. The scope automatically registers the current
     ///     <see cref="Autodesk.Revit.UI.UIApplication" />, <see cref="Autodesk.Revit.ApplicationServices.Application" />,
-    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if available),
+    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if
+    ///     available),
     ///     and the active <see cref="Autodesk.Revit.DB.View" /> (if available).
     /// </param>
     /// <param name="configureServices">
@@ -255,12 +261,12 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
                      .Select(p =>
                      {
                          var isOptional = nullabilityContext.Create(p).WriteState == NullabilityState.Nullable
-                             || p.HasDefaultValue;
+                                          || p.HasDefaultValue;
                          return isOptional
                              ? serviceProvider.GetService(p.ParameterType)
                              : serviceProvider.GetRequiredService(p.ParameterType);
                      })
-                     .ToArray<object?>();
+                     .ToArray();
     }
 
     /// <summary>
@@ -356,4 +362,3 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
         return task;
     }
 }
-

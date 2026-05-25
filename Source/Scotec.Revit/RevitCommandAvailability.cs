@@ -15,12 +15,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Scotec.Revit;
 
 /// <summary>
-///     Marks a method as the availability-check entry point for a <see cref="RevitCommandAvailability"/>.
+///     Marks a method as the availability-check entry point for a <see cref="RevitCommandAvailability" />.
 /// </summary>
 /// <remarks>
 ///     Apply this attribute to a method that should be called by the framework to determine whether the associated
 ///     ribbon button is enabled. The method must return <c>bool</c>. Its parameters are resolved from the
-///     availability check's DI scope; <see cref="UIApplication"/> and <see cref="CategorySet"/> are passed through
+///     availability check's DI scope; <see cref="UIApplication" /> and <see cref="CategorySet" /> are passed through
 ///     directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
@@ -40,7 +40,8 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     Determines whether an external command is available for execution in the current Revit context.
     /// </summary>
     /// <param name="uiApplication">
-    ///     The <see cref="Autodesk.Revit.UI.UIApplication" /> instance providing access to the current Revit application and its data.
+    ///     The <see cref="Autodesk.Revit.UI.UIApplication" /> instance providing access to the current Revit application and
+    ///     its data.
     /// </param>
     /// <param name="selectedCategories">
     ///     A <see cref="CategorySet" /> containing the categories of the selected elements in the Revit document.
@@ -61,7 +62,6 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             var uiDocument = uiApplication.ActiveUIDocument;
             var document = uiDocument?.Document;
             var view = uiDocument?.ActiveView;
-
 
             using var scope = RevitAppBase.GetServiceProvider(uiApplication.ActiveAddInId.GetGUID())
                                           .GetAutofacRoot()
@@ -107,7 +107,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     /// <summary>
     ///     Allows derived classes to add services to the DI container for the command's lifetime scope.
     /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to which services can be added.</param>
+    /// <param name="services">The <see cref="IServiceCollection" /> to which services can be added.</param>
     /// <remarks>
     ///     Override this method in derived classes to register additional services required for the command.
     ///     The base implementation does not add any service to the DI container.
@@ -138,7 +138,8 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     discover and invoke automatically.
     ///     This method will not be called if a custom <c>IsCommandAvailable</c> overload is provided in the derived class.
     /// </remarks>
-    [Obsolete("This method is obsolete. Override IsCommandAvailable(UIApplication, CategorySet) instead, or declare a custom IsCommandAvailable overload with DI-resolved parameters.")]
+    [Obsolete(
+        "This method is obsolete. Override IsCommandAvailable(UIApplication, CategorySet) instead, or declare a custom IsCommandAvailable overload with DI-resolved parameters.")]
     protected virtual bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories, IServiceProvider services)
     {
         return true;
@@ -168,11 +169,11 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
 
     /// <summary>
     ///     Invokes the availability-check entry point. If a method marked with
-    ///     <see cref="RevitCommandAvailabilityCheckAttribute"/> exists in the type hierarchy it is invoked with
+    ///     <see cref="RevitCommandAvailabilityCheckAttribute" /> exists in the type hierarchy it is invoked with
     ///     DI-resolved parameters. Otherwise falls back to the standard
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)"/> override, and finally to the obsolete
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)"/> for backward compatibility.
-    ///     Throws <see cref="InvalidOperationException"/> if more than one method carries the attribute.
+    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)" /> override, and finally to the obsolete
+    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)" /> for backward compatibility.
+    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
     private bool InvokeIsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                           IServiceProvider serviceProvider)
@@ -193,9 +194,9 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
         // Call IsCommandAvailable(UIApplication, CategorySet) if the derived class overrides it.
         var standardOverride = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitCommandAvailability), "IsCommandAvailable", typeof(bool),
-            predicate: m => m.GetParameters()
-                             .Select(p => p.ParameterType)
-                             .SequenceEqual(StandardIsCommandAvailableWithoutServiceProviderSignature));
+            m => m.GetParameters()
+                  .Select(p => p.ParameterType)
+                  .SequenceEqual(StandardIsCommandAvailableWithoutServiceProviderSignature));
 
         if (standardOverride is not null)
         {
@@ -210,9 +211,9 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
 
     /// <summary>
     ///     Walks the type hierarchy from the concrete type up to (but not including)
-    ///     <see cref="RevitCommandAvailability"/> and collects all methods that carry
-    ///     <typeparamref name="TAttribute"/> and match <paramref name="returnType"/>.
-    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException"/> if more
+    ///     <see cref="RevitCommandAvailability" /> and collects all methods that carry
+    ///     <typeparamref name="TAttribute" /> and match <paramref name="returnType" />.
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" /> if more
     ///     than one is found.
     /// </summary>
     private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
@@ -223,7 +224,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
         {
             matches.AddRange(
                 type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), inherit: false)));
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
             type = type.BaseType;
         }
 

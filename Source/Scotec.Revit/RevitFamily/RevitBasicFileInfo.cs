@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -228,8 +232,8 @@ public sealed class RevitBasicFileInfo
     ///     Gets the raw string value for the specified property, trying all known key aliases
     ///     for that property before falling back to a direct key lookup.
     /// </summary>
-    /// <param name="propertyName"
-    ///     >The name of the property as defined on <see cref="RevitBasicFileInfo" /> (e.g. <c>nameof(IsForeign)</c>),
+    /// <param name="propertyName">
+    ///     The name of the property as defined on <see cref="RevitBasicFileInfo" /> (e.g. <c>nameof(IsForeign)</c>),
     ///     or any raw key present in the file. Must not be <see langword="null" />.
     /// </param>
     /// <returns>The raw string value, or <see langword="null" /> if no matching key is found.</returns>
@@ -502,7 +506,7 @@ public sealed class RevitBasicFileInfo
         }
 
         return sb.ToString()
-            .Trim()
-            .Replace(" :", ":", StringComparison.Ordinal);
+                 .Trim()
+                 .Replace(" :", ":", StringComparison.Ordinal);
     }
 }

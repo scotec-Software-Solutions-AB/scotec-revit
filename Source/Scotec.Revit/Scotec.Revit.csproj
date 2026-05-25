@@ -36,19 +36,23 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj">
-		  <TreatAsUsed>true</TreatAsUsed>
+			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
-		<ProjectReference Include="..\Scotec.Revit.Analyzers\Scotec.Revit.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All">
+		<ProjectReference Include="..\Scotec.Revit.Analyzers\Scotec.Revit.Analyzers.csproj" OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false" PrivateAssets="All">
 			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Remove="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" />
+		<None
+			Remove="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None
+			Include="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll"
+			Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -23,8 +23,6 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
 {
     private static readonly Type[] UIControlledApplicationSignature = [typeof(UIControlledApplication)];
 
-    /// <inheritdoc />
-    protected override Type[]? StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
     /// <summary>
     ///     Gets the <see cref="UIControlledApplication" /> instance associated with the Revit application.
     /// </summary>
@@ -37,6 +35,9 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Revit's API for managing add-ins, events, and other application-level functionalities.
     /// </remarks>
     public UIControlledApplication? Application { get; private set; }
+
+    /// <inheritdoc />
+    protected override Type[]? StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
 
     /// <summary>
     ///     Invoked by Revit during the startup of the external application.
@@ -93,7 +94,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Executes tasks when Revit starts.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication"/> instance provided by Revit.
+    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating whether the startup process was successful.
@@ -101,7 +102,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
     ///     Revit UI application, or declare a custom <c>OnStartup</c> method marked with
-    ///     <see cref="RevitStartupAttribute"/> with additional DI-resolved parameters.
+    ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnStartup(UIControlledApplication application)
     {
@@ -112,7 +113,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Executes tasks during the shutdown process of the Revit application.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication"/> instance provided by Revit.
+    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating the success or failure of the shutdown process.
@@ -120,7 +121,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
     ///     Revit UI application, or declare a custom <c>OnShutdown</c> method marked with
-    ///     <see cref="RevitShutdownAttribute"/> with additional DI-resolved parameters.
+    ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnShutdown(UIControlledApplication application)
     {

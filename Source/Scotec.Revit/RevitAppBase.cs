@@ -69,14 +69,6 @@ public abstract class RevitAppBase
     private static readonly Type[] StandardOnControlledApplicationSignature = [typeof(ControlledApplication)];
 
     /// <summary>
-    ///     Returns the standard single-parameter signature for <c>OnStartup</c> / <c>OnShutdown</c> overloads
-    ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> to provide
-    ///     <c>[typeof(UIControlledApplication)]</c>. <see cref="RevitDbApp" /> uses the base
-    ///     <see cref="StandardOnControlledApplicationSignature" /> directly.
-    /// </summary>
-    protected virtual Type[]? StandardLifecycleApplicationSignature => null;
-
-    /// <summary>
     ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once
     ///     shared across add-ins.
     ///     To ensure that each add-in uses its own instance of a service provider, service providers are stored in a
@@ -109,6 +101,14 @@ public abstract class RevitAppBase
     ///     that facilitates dependency injection, logging, and hosted services.
     /// </remarks>
     protected internal IHost? Host { get; internal set; }
+
+    /// <summary>
+    ///     Returns the standard single-parameter signature for <c>OnStartup</c> / <c>OnShutdown</c> overloads
+    ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> to provide
+    ///     <c>[typeof(UIControlledApplication)]</c>. <see cref="RevitDbApp" /> uses the base
+    ///     <see cref="StandardOnControlledApplicationSignature" /> directly.
+    /// </summary>
+    protected virtual Type[]? StandardLifecycleApplicationSignature => null;
 
     /// <summary>
     ///     Returns the ID of the add-in.
@@ -199,8 +199,8 @@ public abstract class RevitAppBase
     ///     A boolean value indicating the success or failure of the shutdown process.
     /// </returns>
     /// <remarks>
-    ///     This overload is obsolete. Override <see cref="OnShutdown(ControlledApplication)"/> instead,
-    ///     or declare a custom <c>OnShutdown</c> method marked with <see cref="RevitShutdownAttribute"/> with
+    ///     This overload is obsolete. Override <see cref="OnShutdown(ControlledApplication)" /> instead,
+    ///     or declare a custom <c>OnShutdown</c> method marked with <see cref="RevitShutdownAttribute" /> with
     ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
     [Obsolete("Override OnShutdown(ControlledApplication application) instead, or declare a method marked with [RevitShutdown] with DI-resolved parameters.")]
@@ -213,7 +213,7 @@ public abstract class RevitAppBase
     ///     Executes tasks during the shutdown process of the Revit application.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="ControlledApplication"/> instance provided by Revit.
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating the success or failure of the shutdown process.
@@ -221,7 +221,7 @@ public abstract class RevitAppBase
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
     ///     Revit application, or declare a custom <c>OnShutdown</c> method marked with
-    ///     <see cref="RevitShutdownAttribute"/> with additional DI-resolved parameters.
+    ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnShutdown(ControlledApplication application)
     {
@@ -235,8 +235,8 @@ public abstract class RevitAppBase
     ///     A boolean value indicating whether the startup process was successful.
     /// </returns>
     /// <remarks>
-    ///     This overload is obsolete. Override <see cref="OnStartup(ControlledApplication)"/> instead,
-    ///     or declare a custom <c>OnStartup</c> method marked with <see cref="RevitStartupAttribute"/> with
+    ///     This overload is obsolete. Override <see cref="OnStartup(ControlledApplication)" /> instead,
+    ///     or declare a custom <c>OnStartup</c> method marked with <see cref="RevitStartupAttribute" /> with
     ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
     [Obsolete("Override OnStartup(ControlledApplication application) instead, or declare a method marked with [RevitStartup] with DI-resolved parameters.")]
@@ -249,7 +249,7 @@ public abstract class RevitAppBase
     ///     Executes tasks when Revit starts.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="ControlledApplication"/> instance provided by Revit.
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating whether the startup process was successful.
@@ -257,7 +257,7 @@ public abstract class RevitAppBase
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
     ///     Revit application, or declare a custom <c>OnStartup</c> method marked with
-    ///     <see cref="RevitStartupAttribute"/> with additional DI-resolved parameters.
+    ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnStartup(ControlledApplication application)
     {
@@ -443,9 +443,9 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Dispatches the startup call. Resolution priority:
     ///     <list type="number">
-    ///         <item>A method marked with <see cref="RevitStartupAttribute"/> — all parameters resolved from DI.</item>
-    ///         <item><see cref="OnStartup(ControlledApplication)"/> — if overridden in the derived class.</item>
-    ///         <item><see cref="OnStartup()"/> — obsolete parameter-less fallback.</item>
+    ///         <item>A method marked with <see cref="RevitStartupAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item><see cref="OnStartup(ControlledApplication)" /> — if overridden in the derived class.</item>
+    ///         <item><see cref="OnStartup()" /> — obsolete parameter-less fallback.</item>
     ///     </list>
     /// </summary>
     private bool InvokeOnStartup(IServiceProvider services)
@@ -456,9 +456,9 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Dispatches the shutdown call. Resolution priority:
     ///     <list type="number">
-    ///         <item>A method marked with <see cref="RevitShutdownAttribute"/> — all parameters resolved from DI.</item>
-    ///         <item><see cref="OnShutdown(ControlledApplication)"/> — if overridden in the derived class.</item>
-    ///         <item><see cref="OnShutdown()"/> — obsolete parameter-less fallback.</item>
+    ///         <item>A method marked with <see cref="RevitShutdownAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item><see cref="OnShutdown(ControlledApplication)" /> — if overridden in the derived class.</item>
+    ///         <item><see cref="OnShutdown()" /> — obsolete parameter-less fallback.</item>
     ///     </list>
     /// </summary>
     private bool InvokeOnShutdown(IServiceProvider? services)
@@ -476,10 +476,14 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Dispatches a lifecycle call (startup or shutdown) using the following priority:
     ///     <list type="number">
-    ///         <item>A method decorated with <see cref="RevitStartupAttribute"/> or <see cref="RevitShutdownAttribute"/>.
-    ///             All parameters are resolved from <paramref name="services"/>.</item>
-    ///         <item><c>OnStartup(ControlledApplication)</c> or <c>OnShutdown(ControlledApplication)</c> —
-    ///             resolved from <paramref name="services"/> if overridden in the derived class.</item>
+    ///         <item>
+    ///             A method decorated with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
+    ///             All parameters are resolved from <paramref name="services" />.
+    ///         </item>
+    ///         <item>
+    ///             <c>OnStartup(ControlledApplication)</c> or <c>OnShutdown(ControlledApplication)</c> —
+    ///             resolved from <paramref name="services" /> if overridden in the derived class.
+    ///         </item>
     ///         <item>The obsolete parameter-less <c>OnStartup()</c> or <c>OnShutdown()</c> as a last resort.</item>
     ///     </list>
     /// </summary>
@@ -492,7 +496,7 @@ public abstract class RevitAppBase
         // Priority 1: method explicitly marked with [RevitStartup] / [RevitShutdown].
         var attributedMethod = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitAppBase), methodName, typeof(bool),
-            predicate: m => m.IsDefined(entryPointAttribute, inherit: false));
+            m => m.IsDefined(entryPointAttribute, false));
 
         if (attributedMethod is not null)
         {
@@ -504,9 +508,9 @@ public abstract class RevitAppBase
         {
             var appSpecificMethod = RevitReflectionHelper.FindMethod(
                 GetType(), typeof(RevitAppBase), methodName, typeof(bool),
-                predicate: m => m.GetParameters()
-                                 .Select(p => p.ParameterType)
-                                 .SequenceEqual(StandardLifecycleApplicationSignature));
+                m => m.GetParameters()
+                      .Select(p => p.ParameterType)
+                      .SequenceEqual(StandardLifecycleApplicationSignature));
 
             if (appSpecificMethod is not null)
             {
@@ -517,9 +521,9 @@ public abstract class RevitAppBase
         // Priority 2b: OnStartup(ControlledApplication) / OnShutdown(ControlledApplication) overridden in the derived class.
         var controlledAppMethod = RevitReflectionHelper.FindMethod(
             GetType(), typeof(RevitAppBase), methodName, typeof(bool),
-            predicate: m => m.GetParameters()
-                             .Select(p => p.ParameterType)
-                             .SequenceEqual(StandardOnControlledApplicationSignature));
+            m => m.GetParameters()
+                  .Select(p => p.ParameterType)
+                  .SequenceEqual(StandardOnControlledApplicationSignature));
 
         if (controlledAppMethod is not null)
         {
