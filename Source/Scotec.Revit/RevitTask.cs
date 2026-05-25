@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
@@ -195,9 +196,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
         {
             using var scope = CreateLifetimeScope(uiApplication, configureServices);
             var serviceProvider = scope.Resolve<IServiceProvider>();
-            var args = action.Method.GetParameters()
-                             .Select(p => serviceProvider.GetRequiredService(p.ParameterType))
-                             .ToArray();
+            var args = ResolveParameters(action.Method, serviceProvider);
 
             return action.DynamicInvoke(args)!;
         };
@@ -234,15 +233,34 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
             using var scope = CreateLifetimeScope(uiApplication, configureServices);
             var serviceProvider = scope.Resolve<IServiceProvider>();
 
-            var args = action.Method.GetParameters()
-                             .Select(p => serviceProvider.GetRequiredService(p.ParameterType))
-                             .ToArray();
+            var args = ResolveParameters(action.Method, serviceProvider);
 
             action.DynamicInvoke(args);
             return new object();
         };
 
         await ExecuteInternalAsync<object>();
+    }
+
+    /// <summary>
+    ///     Resolves the parameters of <paramref name="method" /> from <paramref name="serviceProvider" />.
+    ///     Parameters annotated as nullable (e.g. <c>IMyService?</c>) or with a default value of <c>null</c>
+    ///     are treated as optional and receive <c>null</c> when not registered.
+    ///     All other parameters are required and will throw if not registered.
+    /// </summary>
+    private static object?[] ResolveParameters(MethodInfo method, IServiceProvider serviceProvider)
+    {
+        var nullabilityContext = new NullabilityInfoContext();
+        return method.GetParameters()
+                     .Select(p =>
+                     {
+                         var isOptional = nullabilityContext.Create(p).WriteState == NullabilityState.Nullable
+                             || p.HasDefaultValue;
+                         return isOptional
+                             ? serviceProvider.GetService(p.ParameterType)
+                             : serviceProvider.GetRequiredService(p.ParameterType);
+                     })
+                     .ToArray<object?>();
     }
 
     /// <summary>
