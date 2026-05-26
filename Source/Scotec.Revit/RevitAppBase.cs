@@ -108,7 +108,15 @@ public abstract class RevitAppBase
     ///     <c>[typeof(UIControlledApplication)]</c>. <see cref="RevitDbApp" /> uses the base
     ///     <see cref="StandardOnControlledApplicationSignature" /> directly.
     /// </summary>
-    protected virtual Type[]? StandardLifecycleApplicationSignature => null;
+    protected abstract Type[] StandardLifecycleApplicationSignature { get; }
+
+    /// <summary>
+    ///     Returns the stop type used when searching for a standard lifecycle method override
+    ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> and
+    ///     <see cref="RevitDbApp" /> to return their own type, ensuring that only methods
+    ///     overridden in user-derived classes are discovered.
+    /// </summary>
+    protected abstract Type StandardLifecycleStopType { get; }
 
     /// <summary>
     ///     Returns the ID of the add-in.
@@ -129,9 +137,11 @@ public abstract class RevitAppBase
     ///     Provides access to the service provider associated with the current add-in.
     /// </summary>
     /// <remarks>
-    ///     This property retrieves an <see cref="IServiceProvider" /> instance that can be used to resolve
-    ///     dependencies and access services registered for the current add-in context.
+    ///     This property is deprecated and will be removed in a future version.
+    ///     Use constructor or method injection via the DI container instead, or resolve services through
+    ///     a method marked with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
     /// </remarks>
+    [Obsolete("This property is deprecated and will be removed in a future version. Use DI injection via [RevitStartup] / [RevitShutdown] methods instead.")]
     protected IServiceProvider Services => GetServiceProvider(AddInId);
 
     /// <summary>
@@ -504,10 +514,12 @@ public abstract class RevitAppBase
         }
 
         // Priority 2a: class-specific standard overload (e.g. OnStartup(UIControlledApplication) in RevitApp).
-        if (StandardLifecycleApplicationSignature is not null)
+        // Only invoked when the method is overridden below RevitApp / RevitDbApp, not when it is still
+        // the default implementation provided by those framework base classes.
+        if (StandardLifecycleApplicationSignature is not null && StandardLifecycleStopType is not null)
         {
             var appSpecificMethod = RevitReflectionHelper.FindMethod(
-                GetType(), typeof(RevitAppBase), methodName, typeof(bool),
+                GetType(), StandardLifecycleStopType, methodName, typeof(bool),
                 m => m.GetParameters()
                       .Select(p => p.ParameterType)
                       .SequenceEqual(StandardLifecycleApplicationSignature));

@@ -37,7 +37,10 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     public UIControlledApplication? Application { get; private set; }
 
     /// <inheritdoc />
-    protected override Type[]? StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
+    protected override Type[] StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
+
+    /// <inheritdoc />
+    protected override Type StandardLifecycleStopType => typeof(RevitApp);
 
     /// <summary>
     ///     Invoked by Revit during the startup of the external application.

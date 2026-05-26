@@ -39,6 +39,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="JetBrains.Annotations" />
 	  <PackageReference Include="Scotec.Revit.Isolation" />
 	</ItemGroup>
 

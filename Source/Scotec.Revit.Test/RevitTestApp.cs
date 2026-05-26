@@ -17,6 +17,7 @@ using System.Resources;
 using System.Runtime.Loader;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using JetBrains.Annotations;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
@@ -47,6 +48,31 @@ public class RevitTestApp : RevitApp
 
     protected override bool OnShutdown()
     {
+        return true;
+    }
+
+    protected override bool OnStartup(UIControlledApplication application)
+    {
+        return base.OnStartup(application);
+    }
+
+    [RevitStartup]
+    [UsedImplicitly]
+    private bool OnStartup(IConfiguration configuration)
+    {
+        try
+        {
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            Debugger.Launch();
+            return false;
+        }
+
         return true;
     }
 
