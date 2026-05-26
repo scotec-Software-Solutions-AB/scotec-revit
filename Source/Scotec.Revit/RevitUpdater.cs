@@ -1,11 +1,29 @@
-﻿// Copyright © 2023 - 2026 Olaf Meyer
-// Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+﻿// Copyright (c) 2023 - 2026 Olaf Meyer
+// Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Autodesk.Revit.DB;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
+
+/// <summary>
+///     Marks a method as the execute entry point for a <see cref="RevitUpdater" />.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a method that should be called by the framework when the updater is triggered.
+///     The method must return <c>void</c>. Its parameters are resolved from the updater's DI scope;
+///     <see cref="UpdaterData" /> and <see cref="Document" /> are passed through directly.
+///     Only one method per type hierarchy may carry this attribute.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RevitUpdaterExecuteAttribute : Attribute;
 
 /// <summary>
 ///     Represents an abstract base class for implementing Revit updaters.
@@ -14,6 +32,16 @@ namespace Scotec.Revit;
 ///     This class provides the foundational functionality for creating custom Revit updaters,
 ///     including registration, execution, and disposal mechanisms. Derived classes must implement
 ///     abstract members to define specific updater behavior and priorities.
+///     <para>
+///         During execution, a new DI lifetime scope is created for each invocation. The scope
+///         automatically registers the current <see cref="UpdaterData" /> and <see cref="Document" />.
+///         Override <see cref="ConfigureServices" /> to register additional services into the scope.
+///     </para>
+///     <para>
+///         Preferred: declare a method marked with <see cref="RevitUpdaterExecuteAttribute" /> whose
+///         parameters are resolved from the DI scope. If no such method is found, the framework falls
+///         back to <see cref="OnExecute(UpdaterData)" />.
+///     </para>
 /// </remarks>
 /// <example>
 ///     To create a custom updater, inherit from <c>RevitUpdater</c>, override the required members,
@@ -32,23 +60,9 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     ///     the base functionality of the <see cref="RevitUpdater" /> class. It also automatically registers
     ///     the updater instance in the Revit updater registry.
     /// </remarks>
-    /// <example>
-    ///     To use this constructor, create a class that inherits from <see cref="RevitUpdater" /> and pass
-    ///     the appropriate <see cref="AddInId" /> when calling the base constructor:
-    ///     <code>
-    /// public class CustomUpdater : RevitUpdater
-    /// {
-    ///     public CustomUpdater(AddInId addInId) : base(addInId)
-    ///     {
-    ///         // Custom initialization logic
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
     protected RevitUpdater(AddInId addInId)
     {
         AddInId = addInId;
-
         RegisterUpdater();
     }
 
@@ -60,29 +74,11 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     ///     <see cref="Autodesk.Revit.DB.AddInId" /> instance that uniquely identifies the Revit add-in.
     ///     It is used internally to register and manage the updater within the Revit environment.
     /// </remarks>
-    /// <example>
-    ///     The <see cref="AddInId" /> property can be accessed in derived classes to retrieve the
-    ///     associated add-in identifier:
-    ///     <code>
-    /// public class CustomUpdater : RevitUpdater
-    /// {
-    ///     public CustomUpdater(AddInId addInId) : base(addInId)
-    ///     {
-    ///         var id = AddInId; // Access the AddInId property
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
     protected AddInId AddInId { get; }
 
     /// <summary>
     ///     Releases all resources used by the current instance of the <see cref="RevitUpdater" /> class.
     /// </summary>
-    /// <remarks>
-    ///     This method is used to perform cleanup operations, such as unregistering the updater
-    ///     from the Revit updater registry and releasing any managed or unmanaged resources.
-    ///     It ensures that the updater is properly disposed to avoid resource leaks.
-    /// </remarks>
     public void Dispose()
     {
         if (_disposed)
@@ -91,15 +87,32 @@ public abstract class RevitUpdater : IUpdater, IDisposable
         }
 
         _disposed = true;
-
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     /// <inheritdoc />
-    public void Execute(UpdaterData data)
+    void IUpdater.Execute(UpdaterData data)
     {
-        OnExecute(data);
+        var document = data.GetDocument();
+        using var scope = RevitAppBase.GetServiceProvider(AddInId.GetGUID())
+                                      .GetAutofacRoot()
+                                      .BeginLifetimeScope(builder =>
+                                      {
+                                          builder.RegisterInstance(data).ExternallyOwned();
+
+                                          if (document is not null)
+                                          {
+                                              builder.RegisterInstance(document).ExternallyOwned();
+                                          }
+
+                                          var services = new ServiceCollection();
+                                          ConfigureServices(services);
+                                          builder.Populate(services);
+                                      });
+
+        var serviceProvider = scope.Resolve<IServiceProvider>();
+        InvokeOnExecute(data, serviceProvider);
     }
 
     /// <inheritdoc />
@@ -114,9 +127,32 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     public abstract string GetAdditionalInformation();
 
-    /// <summary>The method that will be invoked to perform an update.</summary>
-    /// <see cref="Execute" />
-    protected abstract void OnExecute(UpdaterData data);
+    /// <summary>
+    ///     Allows derived classes to add services to the DI container for the updater's lifetime scope.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection" /> to which services can be added.</param>
+    /// <remarks>
+    ///     Override this method in derived classes to register additional services required for the updater.
+    ///     The base implementation does not add any services to the DI container.
+    /// </remarks>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+        // Derived classes can override to add services.
+    }
+
+    /// <summary>
+    ///     The method that will be invoked to perform an update.
+    /// </summary>
+    /// <param name="data">The <see cref="UpdaterData" /> describing the current change.</param>
+    /// <remarks>
+    ///     This method is called when no method marked with <see cref="RevitUpdaterExecuteAttribute" />
+    ///     is found in the type hierarchy. Override it to implement the updater logic without DI parameter
+    ///     injection. Prefer declaring a method marked with <see cref="RevitUpdaterExecuteAttribute" />
+    ///     with DI-resolved parameters, which the framework will discover and invoke automatically.
+    /// </remarks>
+    protected virtual void OnExecute(UpdaterData data)
+    {
+    }
 
     /// <summary>
     ///     Registers an updater instance to the updater registry.
@@ -136,15 +172,62 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <summary>
     ///     Releases the resources used by the <see cref="RevitUpdater" /> instance.
     /// </summary>
-    /// <remarks>
-    ///     This method is called to clean up resources and unregister the updater from the Revit updater registry.
-    ///     It ensures that the updater is properly disposed of and prevents memory leaks.
-    /// </remarks>
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
             UpdaterRegistry.UnregisterUpdater(GetUpdaterId());
         }
+    }
+
+    /// <summary>
+    ///     Invokes the execute entry point. If a method marked with <see cref="RevitUpdaterExecuteAttribute" />
+    ///     exists in the type hierarchy it is invoked with DI-resolved parameters. Otherwise falls back to
+    ///     <see cref="OnExecute(UpdaterData)" />.
+    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
+    /// </summary>
+    private void InvokeOnExecute(UpdaterData data, IServiceProvider serviceProvider)
+    {
+        var attributedExecute = FindSingleAttributedMethod<RevitUpdaterExecuteAttribute>(typeof(void));
+        if (attributedExecute is not null)
+        {
+            RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
+                new Dictionary<Type, object>
+                {
+                    [typeof(UpdaterData)] = data,
+                    [typeof(IServiceProvider)] = serviceProvider
+                });
+            return;
+        }
+
+        OnExecute(data);
+    }
+
+    /// <summary>
+    ///     Walks the type hierarchy from the concrete type up to (but not including) <see cref="RevitUpdater" />
+    ///     and collects all methods that carry <typeparamref name="TAttribute" /> and match
+    ///     <paramref name="returnType" />. Returns the single match, <c>null</c> if none, or throws
+    ///     <see cref="InvalidOperationException" /> if more than one is found.
+    /// </summary>
+    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
+    {
+        var matches = new List<MethodInfo>();
+        var type = GetType();
+        while (type != null && type != typeof(RevitUpdater))
+        {
+            matches.AddRange(
+                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
+            type = type.BaseType;
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
+                $"Only one entry point per lifecycle slot is allowed.");
+        }
+
+        return matches.Count == 1 ? matches[0] : null;
     }
 }
