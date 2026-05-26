@@ -112,12 +112,14 @@ public sealed class RevitCommandFactoryGenerator : RevitFactoryGeneratorBase
             return revitTransactionMode!;
         }
 
-        // The command may not be derived from Scotec.Revit.RevitCommand. Try to get the Autodesk.Revit.Attributes.TransactionMode.
+        // The command may not be derived from Scotec.Revit.RevitCommand or the RevitTransactionMode attribute has not been applied to the RevitCommand.
+        // Try to get the Autodesk.Revit.Attributes.TransactionMode.
         if (TryGetTransactionMode(syntaxContext, compilation, out var transactionMode))
         {
             return transactionMode!;
         }
-        
+
+        // No attribute found at all, return the default transaction mode.
         return TransactionModeManual;
     }
 

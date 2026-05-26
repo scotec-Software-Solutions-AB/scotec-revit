@@ -1,14 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(RevitYear)' == '2026'">
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(RevitYear)' == '2027'">
-		<TargetFramework>net10.0-windows</TargetFramework>
+		<TargetFrameworks>net10.0-windows</TargetFrameworks>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -17,43 +17,48 @@
 		<Title>Scotec.Revit</Title>
 	</PropertyGroup>
 
-	<ItemGroup Condition="'$(RevitYear)' == '2025'">
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.4.41" >
+	<ItemGroup>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPI">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.4.41" >
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-	</ItemGroup>
-	<ItemGroup Condition="'$(RevitYear)' == '2026'">
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2026.4.0" >
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2026.4.0" >
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-	</ItemGroup>
-	<ItemGroup Condition="'$(RevitYear)' == '2027'">
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2027.0.10" >
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2027.0.10" >
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
-		<PackageReference Include="OpenMcdf" Version="3.1.3" />
-		<PackageReference Include="Scotec.Extensions.Utilities" Version="1.1.1" />
-		<PackageReference Include="Scotec.Extensions.Linq" Version="1.1.1" />
+		<PackageReference Include="Autofac.Extensions.DependencyInjection" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" />
+		<PackageReference Include="OpenMcdf" />
+		<PackageReference Include="Scotec.Extensions.Utilities" />
+		<PackageReference Include="Scotec.Extensions.Linq" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj">
-		  <TreatAsUsed>true</TreatAsUsed>
+			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
+		<ProjectReference Include="..\Scotec.Revit.Analyzers\Scotec.Revit.Analyzers.csproj" OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false" PrivateAssets="All">
+			<TreatAsUsed>true</TreatAsUsed>
+		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None
+			Remove="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None
+			Include="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll"
+			Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="RevitFamily\RevitBasicFileInfo.md" />
+
+
 	</ItemGroup>
 
 </Project>

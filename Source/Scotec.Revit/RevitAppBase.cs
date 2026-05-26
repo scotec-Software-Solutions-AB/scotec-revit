@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.ApplicationServices;
@@ -14,13 +15,59 @@ using Microsoft.Extensions.Hosting;
 namespace Scotec.Revit;
 
 /// <summary>
+///     Marks a method as the startup entry point for a Revit add-in.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a <c>bool</c>-returning method named <c>OnStartup</c> in a class that derives from
+///     <see cref="RevitApp" /> or <see cref="RevitDbApp" /> to indicate that the framework should invoke it during
+///     add-in startup. The method's parameters are resolved from the DI container, allowing services registered in
+///     <see cref="RevitAppBase.OnConfigure" /> to be injected directly.
+/// </remarks>
+/// <example>
+///     <code>
+/// [RevitStartup]
+/// protected bool OnStartup(IMyService myService, ILogger&lt;MyApp&gt; logger)
+/// {
+///     logger.LogInformation("Starting add-in.");
+///     myService.Initialize();
+///     return true;
+/// }
+/// </code>
+/// </example>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public sealed class RevitStartupAttribute : Attribute;
+
+/// <summary>
+///     Marks a method as the shutdown entry point for a Revit add-in.
+/// </summary>
+/// <remarks>
+///     Apply this attribute to a <c>bool</c>-returning method named <c>OnShutdown</c> in a class that derives from
+///     <see cref="RevitApp" /> or <see cref="RevitDbApp" /> to indicate that the framework should invoke it during
+///     add-in shutdown. The method's parameters are resolved from the DI container, allowing services registered in
+///     <see cref="RevitAppBase.OnConfigure" /> to be injected directly.
+/// </remarks>
+/// <example>
+///     <code>
+/// [RevitShutdown]
+/// protected bool OnShutdown(IMyService myService, ILogger&lt;MyApp&gt; logger)
+/// {
+///     logger.LogInformation("Shutting down add-in.");
+///     myService.Cleanup();
+///     return true;
+/// }
+/// </code>
+/// </example>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public sealed class RevitShutdownAttribute : Attribute;
+
+/// <summary>
 ///     Basic implementation for a Revit app. Derive from this class to use services like logging, dependency injection, or
 ///     hosted services.
 /// </summary>
 public abstract class RevitAppBase
 {
     /// <summary>
-    ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once, which causes static members to be
+    ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once
     ///     shared across add-ins.
     ///     To ensure that each add-in uses its own instance of a service provider, service providers are stored in a
     ///     static dictionary, keyed by the add-in ID.
@@ -54,6 +101,22 @@ public abstract class RevitAppBase
     protected internal IHost? Host { get; internal set; }
 
     /// <summary>
+    ///     Returns the standard single-parameter signature for <c>OnStartup</c> / <c>OnShutdown</c> overloads
+    ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> to provide
+    ///     <c>[typeof(UIControlledApplication)]</c>. <see cref="RevitDbApp" /> uses the base
+    ///     <see cref="StandardLifecycleApplicationSignature" /> directly.
+    /// </summary>
+    protected abstract Type[] StandardLifecycleApplicationSignature { get; }
+
+    /// <summary>
+    ///     Returns the stop type used when searching for a standard lifecycle method override
+    ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> and
+    ///     <see cref="RevitDbApp" /> to return their own type, ensuring that only methods
+    ///     overridden in user-derived classes are discovered.
+    /// </summary>
+    protected abstract Type LifecycleStopType { get; }
+
+    /// <summary>
     ///     Returns the ID of the add-in.
     /// </summary>
     [Obsolete("This property is deprecated and will be removed in a future version. Please use the 'AddInId' property instead.")]
@@ -72,9 +135,11 @@ public abstract class RevitAppBase
     ///     Provides access to the service provider associated with the current add-in.
     /// </summary>
     /// <remarks>
-    ///     This property retrieves an <see cref="IServiceProvider" /> instance that can be used to resolve
-    ///     dependencies and access services registered for the current add-in context.
+    ///     This property is deprecated and will be removed in a future version.
+    ///     Use constructor or method injection via the DI container instead, or resolve services through
+    ///     a method marked with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
     /// </remarks>
+    [Obsolete("This property is deprecated and will be removed in a future version. Use DI injection via [RevitStartup] / [RevitShutdown] methods instead.")]
     protected IServiceProvider Services => GetServiceProvider(AddInId);
 
     /// <summary>
@@ -142,9 +207,15 @@ public abstract class RevitAppBase
     ///     A boolean value indicating the success or failure of the shutdown process.
     /// </returns>
     /// <remarks>
-    ///     Derived classes must implement this method to define custom shutdown behavior.
+    ///     This overload is obsolete. Override <see cref="OnShutdown(ControlledApplication)" /> instead,
+    ///     or declare a custom <c>OnShutdown</c> method marked with <see cref="RevitShutdownAttribute" /> with
+    ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
-    protected abstract bool OnShutdown();
+    [Obsolete("Override OnShutdown(ControlledApplication application) instead, or declare a method marked with [RevitShutdown] with DI-resolved parameters.")]
+    protected virtual bool OnShutdown()
+    {
+        return true;
+    }
 
     /// <summary>
     ///     Executes tasks when Revit starts.
@@ -153,9 +224,15 @@ public abstract class RevitAppBase
     ///     A boolean value indicating whether the startup process was successful.
     /// </returns>
     /// <remarks>
-    ///     Override this method in a derived class to implement custom startup logic for the Revit application.
+    ///     This overload is obsolete. Override <see cref="OnStartup(ControlledApplication)" /> instead,
+    ///     or declare a custom <c>OnStartup</c> method marked with <see cref="RevitStartupAttribute" /> with
+    ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
-    protected abstract bool OnStartup();
+    [Obsolete("Override OnStartup(ControlledApplication application) instead, or declare a method marked with [RevitStartup] with DI-resolved parameters.")]
+    protected virtual bool OnStartup()
+    {
+        return true;
+    }
 
     /// <summary>
     ///     Resolves an assembly when the runtime fails to locate it.
@@ -170,7 +247,18 @@ public abstract class RevitAppBase
     /// <remarks>
     ///     This method can be overridden in derived classes to implement a custom assembly resolution strategy.
     ///     By default, it attempts to locate the assembly in the same directory as the current add-in.
+    ///     This method should never be invoked if the add-in runs in its own assembly load context,
+    ///     as the assembly will be loaded into that context separately for each add-in.
+    ///     However, it may still be a valid use case (but not recommended at all) to run a set of add-ins within the
+    ///     same context, which is well supported by this library. In such cases, this method will be invoked if the
+    ///     runtime fails to locate an assembly used by the add-in, and it will attempt to resolve it from the add-in's
+    ///     directory.
+    ///     <br/><br/>
+    ///     This method is marked as obsolete and will be removed in a future version, as it is not needed when
+    ///     running each plugin in its own isolation context, and relying on it encourages bad practices of sharing
+    ///     assemblies across add-ins and running multiple add-ins within the same context.
     /// </remarks>
+    [Obsolete("This method is not needed when running each plugin in its own isolation context, and relying on it encourages bad practices of sharing assemblies across add-ins and running multiple add-ins within the same context. Consider using a custom AssemblyLoadContext for better isolation and assembly resolution.")]
     protected virtual Assembly? OnAssemblyResolve(ResolveEventArgs args)
     {
         var currentPath = GetAddInPath();
@@ -226,7 +314,7 @@ public abstract class RevitAppBase
     /// <exception cref="Exception">
     ///     Thrown if an error occurs during the startup process.
     /// </exception>
-    protected bool OnStartup(AddInId addInId)
+    internal bool StartupCore(AddInId addInId)
     {
         var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
         if (loadContext != null)
@@ -247,7 +335,7 @@ public abstract class RevitAppBase
             Host.Start();
 
             AddServiceProvider(Host.Services);
-            return OnStartup();
+            return InvokeOnStartup(Host.Services);
         }
         catch (Exception)
         {
@@ -272,11 +360,11 @@ public abstract class RevitAppBase
     /// <exception cref="System.Exception">
     ///     An exception may be thrown if an error occurs during the shutdown process.
     /// </exception>
-    protected bool OnShutdown(ControlledApplication application)
+    internal bool ShutdownCore(ControlledApplication application)
     {
         try
         {
-            var result = OnShutdown();
+            var result = InvokeOnShutdown(Host?.Services);
 
             ServiceProviders.Remove(application.ActiveAddInId.GetGUID());
             Host?.StopAsync().GetAwaiter().GetResult();
@@ -331,6 +419,90 @@ public abstract class RevitAppBase
     private Assembly? LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         return OnAssemblyResolve(context, assemblyName);
+    }
+
+    /// <summary>
+    ///     Dispatches the startup call. Resolution priority:
+    ///     <list type="number">
+    ///         <item>A method marked with <see cref="RevitStartupAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item><see cref="OnStartup(ControlledApplication)" /> — if overridden in the derived class.</item>
+    ///         <item><see cref="OnStartup()" /> — obsolete parameter-less fallback.</item>
+    ///     </list>
+    /// </summary>
+    private bool InvokeOnStartup(IServiceProvider services)
+    {
+        return InvokeLifecycleMethod("OnStartup", services);
+    }
+
+    /// <summary>
+    ///     Dispatches the shutdown call. Resolution priority:
+    ///     <list type="number">
+    ///         <item>A method marked with <see cref="RevitShutdownAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item><see cref="OnShutdown(ControlledApplication)" /> — if overridden in the derived class.</item>
+    ///         <item><see cref="OnShutdown()" /> — obsolete parameter-less fallback.</item>
+    ///     </list>
+    /// </summary>
+    private bool InvokeOnShutdown(IServiceProvider? services)
+    {
+#pragma warning disable CS0618
+        if (services is null)
+        {
+            return OnShutdown();
+        }
+#pragma warning restore CS0618
+
+        return InvokeLifecycleMethod("OnShutdown", services);
+    }
+
+    /// <summary>
+    ///     Dispatches a lifecycle call (startup or shutdown) using the following priority:
+    ///     <list type="number">
+    ///         <item>
+    ///             A method decorated with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
+    ///             All parameters are resolved from <paramref name="services" />.
+    ///         </item>
+    ///         <item>
+    ///             <c>OnStartup(ControlledApplication)</c> or <c>OnShutdown(ControlledApplication)</c> —
+    ///             resolved from <paramref name="services" /> if overridden in the derived class.
+    ///         </item>
+    ///         <item>The obsolete parameter-less <c>OnStartup()</c> or <c>OnShutdown()</c> as a last resort.</item>
+    ///     </list>
+    /// </summary>
+    private bool InvokeLifecycleMethod(string methodName, IServiceProvider services)
+    {
+        var entryPointAttribute = methodName == "OnStartup"
+            ? typeof(RevitStartupAttribute)
+            : typeof(RevitShutdownAttribute);
+
+        // Priority 1: method explicitly marked with [RevitStartup] / [RevitShutdown].
+        var attributedMethod = RevitReflectionHelper.FindMethod(
+            GetType(), typeof(RevitAppBase), methodName, typeof(bool),
+            m => m.IsDefined(entryPointAttribute, false));
+
+        if (attributedMethod is not null)
+        {
+            return (bool)RevitReflectionHelper.Invoke(this, attributedMethod, services)!;
+        }
+
+        // Priority 2a: class-specific standard overload (e.g. OnStartup(UIControlledApplication in RevitApp or
+        // OnStartup(ControlledApplication) in RevitDbApp).
+        // Only invoked when the method is overridden below RevitApp / RevitDbApp, not when it is still
+        // the default implementation provided by those framework base classes.
+        var appSpecificMethod = RevitReflectionHelper.FindMethod(
+            GetType(), LifecycleStopType, methodName, typeof(bool),
+            m => m.GetParameters()
+                  .Select(p => p.ParameterType)
+                  .SequenceEqual(StandardLifecycleApplicationSignature));
+
+        if (appSpecificMethod is not null)
+        {
+            return (bool)RevitReflectionHelper.Invoke(this, appSpecificMethod, services)!;
+        }
+
+        // Priority 3: obsolete parameter-less fallback.
+#pragma warning disable CS0618
+        return methodName == "OnStartup" ? OnStartup() : OnShutdown();
+#pragma warning restore CS0618
     }
 
     /// <summary>

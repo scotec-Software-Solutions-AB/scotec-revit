@@ -10,12 +10,21 @@
     <File Path="../CODE_OF_CONDUCT.md" />
     <File Path="../CONTRIBUTING.md" />
     <File Path="../README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Folder Name="/SolutionItems/Documentation/">
     <File Path="../Documentation/RevitAddinIsolation.md" />
+    <File Path="../Documentation/RevitApp.md" />
     <File Path="../Documentation/RevitCommand.md" />
+    <File Path="../Documentation/RevitCommandAvailability.md" />
     <File Path="../Documentation/RevitTask.md" />
   </Folder>
+  <Folder Name="/SolutionItems/Source/" />
+  <Folder Name="/SolutionItems/Source/.github/" />
+  <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="Scotec.Revit.Isolation.SourceGenerator/Scotec.Revit.Isolation.SourceGenerator.csproj">
     <Platform Project="x64" />
   </Project>

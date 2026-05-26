@@ -2,22 +2,29 @@
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
-using System;
-using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Scotec.Revit.Isolation;
+using Scotec.Revit.Ui;
 using Scotec.Revit.Ui.DynamicCommands;
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.Loader;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using JetBrains.Annotations;
+
+[assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
+
 
 namespace Scotec.Revit.Test;
 
-[Isolation.RevitDbApplicationIsolation]
+[RevitDbApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class DbApp : IExternalDBApplication
 {
     public ExternalDBApplicationResult OnStartup(ControlledApplication application)
@@ -31,70 +38,73 @@ public class DbApp : IExternalDBApplication
     }
 }
 
-[Isolation.RevitApplicationIsolation]
+[RevitApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestApp : RevitApp
 {
-    public RevitTestApp()
-    {
-        var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-    }
-
-    protected override bool OnShutdown()
-    {
-        return true;
-    }
-
     protected override bool OnStartup()
     {
+        //Assembly assembly = null;
+        //try
+        //{
+        //    var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+        //    var generator = new RevitDynamicActionCommandGenerator("TestCommands", loadContext);
+        //    generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
+        //    {
+        //        Debugger.Launch();
+        //    });
+        //    assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
+        //}
+        //catch (Exception e)
+        //{
+        //    Debugger.Launch();
+        //    throw;
+        //}
 
-        Assembly assembly = null;
-        try
-        {
-            var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-            var generator = new RevitDynamicActionCommandGenerator("TestCommands", loadContext);
-            generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
-            {
-                Debugger.Launch();
-            });
-            assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
-        }
-        catch (Exception e)
-        {
-            Debugger.Launch();
-            throw;
-        }
-
-        try
-        {
-           //var types = assembly.GetTypes();
-        }
-        catch (Exception e)
-        {
-            Debugger.Launch();
-            throw;
-        }
         try
         {
             var config = Services.GetService<IConfiguration>();
-            TabManager.CreateTab(Application, "scotec");
-            var panel = TabManager.GetPanel(Application, "Test", "scotec");
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
-            //var button = (PushButton)panel.AddItem(CreateButtonData("Revit.Test",
-            //    "Test", "Test",
-            //    typeof(RevitTestCommandFactory)));
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            return false;
+        }
 
-            //button.Enabled = true;
-            var pushButtonData = new PushButtonData("Test", "Test",
-                @"C:\Temp\TestCommands.dll",
-                "TestCommands.TestCommand1")
-            {
-                Image = CreateImageSource("Information_16.png"),
-                LargeImage = CreateImageSource("Information_32.png"),
-                ToolTip = "Tooltip"
-                //, AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
-            };
+        return true;
+    }
 
-            panel.AddItem(pushButtonData);
+    protected override bool OnStartup(UIControlledApplication application)
+    {
+        try
+        {
+            var config = Services.GetService<IConfiguration>();
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            Debugger.Launch();
+            return false;
+        }
+
+        return base.OnStartup(application);
+    }
+
+    [RevitStartup]
+    [UsedImplicitly]
+    private bool OnStartup(IConfiguration configuration)
+    {
+        try
+        {
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
         }
         catch (Exception)
         {
@@ -105,6 +115,29 @@ public class RevitTestApp : RevitApp
         return true;
     }
 
+    private static PushButtonData CreateTestButtonData()
+    {
+        var smallImageSource = BuildImageResourcePath("Information_16.png");
+        var largeImageSource = BuildImageResourcePath("Information_32.png");
+
+        var pushButtonData = RevitControlFactory.CreateButtonData("Test"
+            , "Test"
+            , "Test"
+            , smallImageSource
+            , largeImageSource
+            , typeof(RevitTestCommandFactory)
+            , typeof(RevitTestCommandAvailabilityFactory));
+
+        return pushButtonData;
+    }
+
+    private static Uri BuildImageResourcePath(string imageFileName)
+    {
+        return new Uri($"pack://application:,,,/Scotec.Revit.Test;component/Resources/Images/{imageFileName}");
+    }
+
+
+
     //private static PushButtonData CreateButtonData(string name, string text, string description, Type commandType)
     //{
     //    return new PushButtonData(name, text,
@@ -113,6 +146,7 @@ public class RevitTestApp : RevitApp
     //        Image = CreateImageSource("Information_16.png"),
     //        LargeImage = CreateImageSource("Information_32.png"),
     //        ToolTip = description,
+    //        ClassName = typeof(RevitTestCommandFactory).FullName,
     //        AvailabilityClassName = typeof(RevitTestCommandAvailabilityFactory).FullName
     //    };
     //}

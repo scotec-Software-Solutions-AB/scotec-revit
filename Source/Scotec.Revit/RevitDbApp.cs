@@ -2,11 +2,11 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace Scotec.Revit;
 
@@ -23,6 +23,8 @@ namespace Scotec.Revit;
 /// </example>
 public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
 {
+    private static readonly Type[] ControlledApplicationSignature = [typeof(ControlledApplication)];
+
     /// <summary>
     ///     Gets the <see cref="ControlledApplication" /> instance associated with the Revit application.
     /// </summary>
@@ -45,14 +47,87 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     public ControlledApplication? Application { get; private set; }
 
     /// <inheritdoc />
+    protected override Type[] StandardLifecycleApplicationSignature => ControlledApplicationSignature;
+
+    /// <inheritdoc />
+    protected override Type LifecycleStopType => typeof(RevitDbApp);
+
+    /// <inheritdoc />
     ExternalDBApplicationResult IExternalDBApplication.OnStartup(ControlledApplication application)
     {
         Application = application;
 
-        return OnStartup(application.ActiveAddInId)
+        return StartupCore(application.ActiveAddInId)
             ? ExternalDBApplicationResult.Succeeded
             : ExternalDBApplicationResult.Failed;
     }
+
+    /// <summary>
+    ///     Executes tasks when Revit starts.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
+    /// </param>
+    /// <returns>
+    ///     A boolean value indicating whether the startup process was successful.
+    /// </returns>
+    /// <remarks>
+    ///     Override this method in a derived class to implement custom startup logic with access to the
+    ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
+    ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
+    /// </remarks>
+    protected virtual bool OnStartup(ControlledApplication application)
+    {
+        return true;
+    }
+
+    /// <summary>
+    ///     Executes tasks during the shutdown process of the Revit application.
+    /// </summary>
+    /// <param name="application">
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
+    /// </param>
+    /// <returns>
+    ///     A boolean value indicating the success or failure of the shutdown process.
+    /// </returns>
+    /// <remarks>
+    ///     Override this method in a derived class to define custom shutdown behavior with access to the
+    ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
+    ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
+    /// </remarks>
+    protected virtual bool OnShutdown(ControlledApplication application)
+    {
+        return true;
+    }
+
+    /// <summary>
+    ///     Configures the host builder for the Revit application.
+    /// </summary>
+    /// <param name="builder">
+    ///     The <see cref="IHostBuilder" /> instance used to configure services and application settings.
+    /// </param>
+    /// <remarks>
+    ///     This method is invoked during the initialization of the Revit application to configure
+    ///     dependency injection and service registration. It adds essential Revit-specific services,
+    ///     such as the <see cref="ControlledApplication" />, the active add-in ID, and the controlled application,
+    ///     to the service collection.
+    /// </remarks>
+    /// <example>
+    ///     Example usage:
+    ///     <code>
+    /// protected override void OnConfigure(IHostBuilder builder)
+    /// {
+    ///     base.OnConfigure(builder);
+    ///     builder.ConfigureServices(services =>
+    ///     {
+    ///         services.AddSingleton(Application);
+    ///         services.AddSingleton(Application.ActiveAddInId);
+    ///         services.AddSingleton(Application.ControlledApplication);
+    ///     });
+    /// }
+    /// </code>
+    /// </example>
+
 
     /// <summary>
     ///     Handles the shutdown process for the Revit Database Application.
@@ -77,7 +152,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// </example>
     ExternalDBApplicationResult IExternalDBApplication.OnShutdown(ControlledApplication application)
     {
-        return OnShutdown(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
+        return ShutdownCore(application) ? ExternalDBApplicationResult.Succeeded : ExternalDBApplicationResult.Failed;
     }
 
     /// <summary>
@@ -89,6 +164,8 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// <remarks>
     ///     This method extends the base configuration by registering the <see cref="Application" /> instance
     ///     and its associated <see cref="Autodesk.Revit.DB.AddInId" /> as singleton services.
+    ///     When overriding this method in a derived class, always call <c>base.OnConfigure(builder)</c> to ensure
+    ///     that the Revit-specific services are registered correctly.
     /// </remarks>
     /// <seealso cref="RevitAppBase.OnConfigure(IHostBuilder)" />
     protected override void OnConfigure(IHostBuilder builder)
