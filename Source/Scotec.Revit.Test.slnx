@@ -9,7 +9,9 @@
   <Folder Name="/SolutionItems/" />
   <Folder Name="/SolutionItems/Documentation/">
     <File Path="../Documentation/RevitAddinIsolation.md" />
+    <File Path="../Documentation/RevitApp.md" />
     <File Path="../Documentation/RevitCommand.md" />
+    <File Path="../Documentation/RevitCommandAvailability.md" />
     <File Path="../Documentation/RevitTask.md" />
   </Folder>
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
