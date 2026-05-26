@@ -7,10 +7,11 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.Test;
 
-[Isolation.RevitCommandAvailabilityIsolation(ContextName = "Scotec.Revit.Test")]
+[RevitCommandAvailabilityIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestCommandAvailability : RevitCommandAvailability
 {
     protected bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories)
@@ -21,8 +22,6 @@ public class RevitTestCommandAvailability : RevitCommandAvailability
     protected override bool IsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                                IServiceProvider services)
     {
-        var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-
         return true;
     }
 }
