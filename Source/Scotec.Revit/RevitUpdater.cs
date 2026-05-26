@@ -19,7 +19,7 @@ namespace Scotec.Revit;
 /// <remarks>
 ///     Apply this attribute to a method that should be called by the framework when the updater is triggered.
 ///     The method must return <c>void</c>. Its parameters are resolved from the updater's DI scope;
-///     <see cref="UpdaterData" /> and <see cref="Document" /> are passed through directly.
+///     <see cref="Autodesk.Revit.DB.UpdaterData" /> and <see cref="Document" /> are passed through directly.
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
@@ -34,13 +34,13 @@ public sealed class RevitUpdaterExecuteAttribute : Attribute;
 ///     abstract members to define specific updater behavior and priorities.
 ///     <para>
 ///         During execution, a new DI lifetime scope is created for each invocation. The scope
-///         automatically registers the current <see cref="UpdaterData" /> and <see cref="Document" />.
+///         automatically registers the current <see cref="Autodesk.Revit.DB.UpdaterData" /> and <see cref="Document" />.
 ///         Override <see cref="ConfigureServices" /> to register additional services into the scope.
 ///     </para>
 ///     <para>
 ///         Preferred: declare a method marked with <see cref="RevitUpdaterExecuteAttribute" /> whose
 ///         parameters are resolved from the DI scope. If no such method is found, the framework falls
-///         back to <see cref="OnExecute(UpdaterData)" />.
+///         back to <see cref="OnExecute(Autodesk.Revit.DB.UpdaterData)" />.
 ///     </para>
 /// </remarks>
 /// <example>
@@ -183,12 +183,12 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <summary>
     ///     Invokes the execute entry point. If a method marked with <see cref="RevitUpdaterExecuteAttribute" />
     ///     exists in the type hierarchy it is invoked with DI-resolved parameters. Otherwise falls back to
-    ///     <see cref="OnExecute(UpdaterData)" />.
-    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
+    ///     <see cref="OnExecute(Autodesk.Revit.DB.UpdaterData)" />.
+    ///     Throws <see cref="System.InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
     private void InvokeOnExecute(UpdaterData data, IServiceProvider serviceProvider)
     {
-        var attributedExecute = FindSingleAttributedMethod<RevitUpdaterExecuteAttribute>(typeof(void));
+        var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitUpdaterExecuteAttribute>(GetType(), typeof(RevitUpdater), typeof(void));
         if (attributedExecute is not null)
         {
             RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
@@ -203,31 +203,4 @@ public abstract class RevitUpdater : IUpdater, IDisposable
         OnExecute(data);
     }
 
-    /// <summary>
-    ///     Walks the type hierarchy from the concrete type up to (but not including) <see cref="RevitUpdater" />
-    ///     and collects all methods that carry <typeparamref name="TAttribute" /> and match
-    ///     <paramref name="returnType" />. Returns the single match, <c>null</c> if none, or throws
-    ///     <see cref="InvalidOperationException" /> if more than one is found.
-    /// </summary>
-    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
-    {
-        var matches = new List<MethodInfo>();
-        var type = GetType();
-        while (type != null && type != typeof(RevitUpdater))
-        {
-            matches.AddRange(
-                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
-            type = type.BaseType;
-        }
-
-        if (matches.Count > 1)
-        {
-            throw new InvalidOperationException(
-                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
-                $"Only one entry point per lifecycle slot is allowed.");
-        }
-
-        return matches.Count == 1 ? matches[0] : null;
-    }
 }

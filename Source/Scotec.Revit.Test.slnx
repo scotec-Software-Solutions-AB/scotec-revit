@@ -13,6 +13,7 @@
     <File Path="../Documentation/RevitCommand.md" />
     <File Path="../Documentation/RevitCommandAvailability.md" />
     <File Path="../Documentation/RevitTask.md" />
+    <File Path="../Documentation/RevitUpdater.md" />
   </Folder>
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
     <Platform Project="x64" />

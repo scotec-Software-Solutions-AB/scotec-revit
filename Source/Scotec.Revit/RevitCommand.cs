@@ -594,7 +594,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     private void InvokeOptionalMethod<TAttribute>(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
         where TAttribute : Attribute
     {
-        var method = FindSingleAttributedMethod<TAttribute>(typeof(void));
+        var method = RevitReflectionHelper.FindSingleAttributedMethod<TAttribute>(GetType(), typeof(RevitCommand), typeof(void));
         if (method is null)
         {
             return;
@@ -609,33 +609,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             });
     }
 
-    /// <summary>
-    ///     Walks the type hierarchy from the concrete type up to (but not including) <see cref="RevitCommand" />
-    ///     and collects all methods that carry <typeparamref name="TAttribute" /> and match <paramref name="returnType" />.
-    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" /> if more
-    ///     than one is found.
-    /// </summary>
-    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
-    {
-        var matches = new List<MethodInfo>();
-        var type = GetType();
-        while (type != null && type != typeof(RevitCommand))
-        {
-            matches.AddRange(
-                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
-            type = type.BaseType;
-        }
-
-        if (matches.Count > 1)
-        {
-            throw new InvalidOperationException(
-                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
-                $"Only one entry point per lifecycle slot is allowed.");
-        }
-
-        return matches.Count == 1 ? matches[0] : null;
-    }
 
     /// <summary>
     ///     Invokes the command's execute entry point. If a method marked with <see cref="RevitCommandExecuteAttribute" />
@@ -651,7 +624,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
     {
         // Prefer a method explicitly marked with [RevitCommandExecute].
-        var attributedExecute = FindSingleAttributedMethod<RevitCommandExecuteAttribute>(typeof(Result));
+        var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandExecuteAttribute>(GetType(), typeof(RevitCommand), typeof(Result));
         if (attributedExecute is not null)
         {
             return (Result)RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
