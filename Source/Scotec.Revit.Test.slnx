@@ -22,7 +22,6 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="Scotec.Revit.Test/Scotec.Revit.Test.csproj">
-    <BuildType Solution="Release|*" Project="Debug" />
     <Platform Project="x64" />
   </Project>
   <Project Path="Scotec.Revit.Ui/Scotec.Revit.Ui.csproj">
