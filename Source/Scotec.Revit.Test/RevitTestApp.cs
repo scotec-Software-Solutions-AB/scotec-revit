@@ -41,44 +41,8 @@ public class DbApp : IExternalDBApplication
 [RevitApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestApp : RevitApp
 {
-    public RevitTestApp()
-    {
-        var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-    }
-
-    protected override bool OnShutdown()
-    {
-        return true;
-    }
-
-    protected override bool OnStartup(UIControlledApplication application)
-    {
-        return base.OnStartup(application);
-    }
-
-    [RevitStartup]
-    [UsedImplicitly]
-    private bool OnStartup(IConfiguration configuration)
-    {
-        try
-        {
-            RevitTabManager.CreateTab(Application, "scotec");
-            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
-
-            panel.AddItem(CreateTestButtonData());
-        }
-        catch (Exception)
-        {
-            Debugger.Launch();
-            return false;
-        }
-
-        return true;
-    }
-
     protected override bool OnStartup()
     {
-
         //Assembly assembly = null;
         //try
         //{
@@ -106,13 +70,50 @@ public class RevitTestApp : RevitApp
         }
         catch (Exception)
         {
-            Debugger.Launch();
             return false;
         }
 
         return true;
     }
 
+    protected override bool OnStartup(UIControlledApplication application)
+    {
+        try
+        {
+            var config = Services.GetService<IConfiguration>();
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            Debugger.Launch();
+            return false;
+        }
+
+        return base.OnStartup(application);
+    }
+
+    [RevitStartup]
+    [UsedImplicitly]
+    private bool OnStartup(IConfiguration configuration)
+    {
+        try
+        {
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            Debugger.Launch();
+            return false;
+        }
+
+        return true;
+    }
 
     private static PushButtonData CreateTestButtonData()
     {

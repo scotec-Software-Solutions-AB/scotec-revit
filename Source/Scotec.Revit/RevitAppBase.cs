@@ -66,8 +66,6 @@ public sealed class RevitShutdownAttribute : Attribute;
 /// </summary>
 public abstract class RevitAppBase
 {
-    private static readonly Type[] StandardOnControlledApplicationSignature = [typeof(ControlledApplication)];
-
     /// <summary>
     ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once
     ///     shared across add-ins.
@@ -106,7 +104,7 @@ public abstract class RevitAppBase
     ///     Returns the standard single-parameter signature for <c>OnStartup</c> / <c>OnShutdown</c> overloads
     ///     specific to the concrete app class. Overridden by <see cref="RevitApp" /> to provide
     ///     <c>[typeof(UIControlledApplication)]</c>. <see cref="RevitDbApp" /> uses the base
-    ///     <see cref="StandardOnControlledApplicationSignature" /> directly.
+    ///     <see cref="StandardLifecycleApplicationSignature" /> directly.
     /// </summary>
     protected abstract Type[] StandardLifecycleApplicationSignature { get; }
 
@@ -116,7 +114,7 @@ public abstract class RevitAppBase
     ///     <see cref="RevitDbApp" /> to return their own type, ensuring that only methods
     ///     overridden in user-derived classes are discovered.
     /// </summary>
-    protected abstract Type StandardLifecycleStopType { get; }
+    protected abstract Type LifecycleStopType { get; }
 
     /// <summary>
     ///     Returns the ID of the add-in.
@@ -220,25 +218,6 @@ public abstract class RevitAppBase
     }
 
     /// <summary>
-    ///     Executes tasks during the shutdown process of the Revit application.
-    /// </summary>
-    /// <param name="application">
-    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
-    /// </param>
-    /// <returns>
-    ///     A boolean value indicating the success or failure of the shutdown process.
-    /// </returns>
-    /// <remarks>
-    ///     Override this method in a derived class to define custom shutdown behavior with access to the
-    ///     Revit application, or declare a custom <c>OnShutdown</c> method marked with
-    ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
-    /// </remarks>
-    protected virtual bool OnShutdown(ControlledApplication application)
-    {
-        return true;
-    }
-
-    /// <summary>
     ///     Executes tasks when Revit starts.
     /// </summary>
     /// <returns>
@@ -256,25 +235,6 @@ public abstract class RevitAppBase
     }
 
     /// <summary>
-    ///     Executes tasks when Revit starts.
-    /// </summary>
-    /// <param name="application">
-    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
-    /// </param>
-    /// <returns>
-    ///     A boolean value indicating whether the startup process was successful.
-    /// </returns>
-    /// <remarks>
-    ///     Override this method in a derived class to implement custom startup logic with access to the
-    ///     Revit application, or declare a custom <c>OnStartup</c> method marked with
-    ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
-    /// </remarks>
-    protected virtual bool OnStartup(ControlledApplication application)
-    {
-        return true;
-    }
-
-    /// <summary>
     ///     Resolves an assembly when the runtime fails to locate it.
     /// </summary>
     /// <param name="args">
@@ -287,7 +247,18 @@ public abstract class RevitAppBase
     /// <remarks>
     ///     This method can be overridden in derived classes to implement a custom assembly resolution strategy.
     ///     By default, it attempts to locate the assembly in the same directory as the current add-in.
+    ///     This method should never be invoked if the add-in runs in its own assembly load context,
+    ///     as the assembly will be loaded into that context separately for each add-in.
+    ///     However, it may still be a valid use case (but not recommended at all) to run a set of add-ins within the
+    ///     same context, which is well supported by this library. In such cases, this method will be invoked if the
+    ///     runtime fails to locate an assembly used by the add-in, and it will attempt to resolve it from the add-in's
+    ///     directory.
+    ///     <br/><br/>
+    ///     This method is marked as obsolete and will be removed in a future version, as it is not needed when
+    ///     running each plugin in its own isolation context, and relying on it encourages bad practices of sharing
+    ///     assemblies across add-ins and running multiple add-ins within the same context.
     /// </remarks>
+    [Obsolete("This method is not needed when running each plugin in its own isolation context, and relying on it encourages bad practices of sharing assemblies across add-ins and running multiple add-ins within the same context. Consider using a custom AssemblyLoadContext for better isolation and assembly resolution.")]
     protected virtual Assembly? OnAssemblyResolve(ResolveEventArgs args)
     {
         var currentPath = GetAddInPath();
@@ -513,33 +484,19 @@ public abstract class RevitAppBase
             return (bool)RevitReflectionHelper.Invoke(this, attributedMethod, services)!;
         }
 
-        // Priority 2a: class-specific standard overload (e.g. OnStartup(UIControlledApplication) in RevitApp).
+        // Priority 2a: class-specific standard overload (e.g. OnStartup(UIControlledApplication in RevitApp or
+        // OnStartup(ControlledApplication) in RevitDbApp).
         // Only invoked when the method is overridden below RevitApp / RevitDbApp, not when it is still
         // the default implementation provided by those framework base classes.
-        if (StandardLifecycleApplicationSignature is not null && StandardLifecycleStopType is not null)
-        {
-            var appSpecificMethod = RevitReflectionHelper.FindMethod(
-                GetType(), StandardLifecycleStopType, methodName, typeof(bool),
-                m => m.GetParameters()
-                      .Select(p => p.ParameterType)
-                      .SequenceEqual(StandardLifecycleApplicationSignature));
-
-            if (appSpecificMethod is not null)
-            {
-                return (bool)RevitReflectionHelper.Invoke(this, appSpecificMethod, services)!;
-            }
-        }
-
-        // Priority 2b: OnStartup(ControlledApplication) / OnShutdown(ControlledApplication) overridden in the derived class.
-        var controlledAppMethod = RevitReflectionHelper.FindMethod(
-            GetType(), typeof(RevitAppBase), methodName, typeof(bool),
+        var appSpecificMethod = RevitReflectionHelper.FindMethod(
+            GetType(), LifecycleStopType, methodName, typeof(bool),
             m => m.GetParameters()
                   .Select(p => p.ParameterType)
-                  .SequenceEqual(StandardOnControlledApplicationSignature));
+                  .SequenceEqual(StandardLifecycleApplicationSignature));
 
-        if (controlledAppMethod is not null)
+        if (appSpecificMethod is not null)
         {
-            return (bool)RevitReflectionHelper.Invoke(this, controlledAppMethod, services)!;
+            return (bool)RevitReflectionHelper.Invoke(this, appSpecificMethod, services)!;
         }
 
         // Priority 3: obsolete parameter-less fallback.

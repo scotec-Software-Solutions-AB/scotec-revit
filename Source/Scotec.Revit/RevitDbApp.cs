@@ -4,7 +4,6 @@
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -51,7 +50,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     protected override Type[] StandardLifecycleApplicationSignature => ControlledApplicationSignature;
 
     /// <inheritdoc />
-    protected override Type StandardLifecycleStopType => typeof(RevitDbApp);
+    protected override Type LifecycleStopType => typeof(RevitDbApp);
 
     /// <inheritdoc />
     ExternalDBApplicationResult IExternalDBApplication.OnStartup(ControlledApplication application)
@@ -67,17 +66,17 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     ///     Executes tasks when Revit starts.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating whether the startup process was successful.
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
-    ///     Revit UI application, or declare a custom <c>OnStartup</c> method marked with
+    ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
     ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
-    protected virtual bool OnStartup(UIControlledApplication application)
+    protected virtual bool OnStartup(ControlledApplication application)
     {
         return true;
     }
@@ -86,17 +85,17 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     ///     Executes tasks during the shutdown process of the Revit application.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
+    ///     The <see cref="ControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating the success or failure of the shutdown process.
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
-    ///     Revit UI application, or declare a custom <c>OnShutdown</c> method marked with
+    ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
     ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
-    protected virtual bool OnShutdown(UIControlledApplication application)
+    protected virtual bool OnShutdown(ControlledApplication application)
     {
         return true;
     }
@@ -110,7 +109,7 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// <remarks>
     ///     This method is invoked during the initialization of the Revit application to configure
     ///     dependency injection and service registration. It adds essential Revit-specific services,
-    ///     such as the <see cref="UIControlledApplication" />, the active add-in ID, and the controlled application,
+    ///     such as the <see cref="ControlledApplication" />, the active add-in ID, and the controlled application,
     ///     to the service collection.
     /// </remarks>
     /// <example>

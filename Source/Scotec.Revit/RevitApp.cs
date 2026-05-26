@@ -40,7 +40,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     protected override Type[] StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
 
     /// <inheritdoc />
-    protected override Type StandardLifecycleStopType => typeof(RevitApp);
+    protected override Type LifecycleStopType => typeof(RevitApp);
 
     /// <summary>
     ///     Invoked by Revit during the startup of the external application.
@@ -104,7 +104,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
-    ///     Revit UI application, or declare a custom <c>OnStartup</c> method marked with
+    ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
     ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnStartup(UIControlledApplication application)
@@ -123,7 +123,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
-    ///     Revit UI application, or declare a custom <c>OnShutdown</c> method marked with
+    ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
     ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
     protected virtual bool OnShutdown(UIControlledApplication application)
@@ -143,21 +143,6 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     such as the <see cref="UIControlledApplication" />, the active add-in ID, and the controlled application,
     ///     to the service collection.
     /// </remarks>
-    /// <example>
-    ///     Example usage:
-    ///     <code>
-    /// protected override void OnConfigure(IHostBuilder builder)
-    /// {
-    ///     base.OnConfigure(builder);
-    ///     builder.ConfigureServices(services =>
-    ///     {
-    ///         services.AddSingleton(Application);
-    ///         services.AddSingleton(Application.ActiveAddInId);
-    ///         services.AddSingleton(Application.ControlledApplication);
-    ///     });
-    /// }
-    /// </code>
-    /// </example>
     protected override void OnConfigure(IHostBuilder builder)
     {
         base.OnConfigure(builder);
