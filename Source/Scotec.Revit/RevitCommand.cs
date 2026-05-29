@@ -254,6 +254,20 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     protected bool NoTransaction { get; set; }
 
     /// <summary>
+    ///     Gets a value indicating whether the command should use a new DI lifetime scope during execution.
+    /// </summary>
+    /// <value>
+    ///     <c>true</c> to create a new child lifetime scope for each command execution (default);
+    ///     <c>false</c> to resolve services directly from the root container without creating a scope.
+    ///     When set to <c>false</c>, no additional objects are registered in the DI container for the execution.
+    /// </value>
+    /// <remarks>
+    ///     Override this property in derived classes and return <c>false</c> when scope creation is not desired,
+    ///     for example to avoid registering short-lived instances that conflict with singleton registrations.
+    /// </remarks>
+    protected virtual bool UseNewScope { get; } = true;
+
+    /// <summary>
     ///     Executes the external command within the Revit environment.
     /// </summary>
     /// <param name="commandData">
@@ -284,67 +298,56 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         var document = uiDocument?.Document;
         var view = uiDocument?.ActiveView;
 
-        using var scope = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID())
-                                      .GetAutofacRoot()
-                                      .BeginLifetimeScope(builder =>
-                                      {
-                                          builder.RegisterInstance(uiApplication).ExternallyOwned();
+        var autofacRoot = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID()).GetAutofacRoot();
 
-                                          if (application is not null)
-                                          {
-                                              builder.RegisterInstance(application).ExternallyOwned();
-                                          }
+        ILifetimeScope? scope = null;
+        IServiceProvider serviceProvider;
 
-                                          if (uiDocument is not null)
-                                          {
-                                              builder.RegisterInstance(uiDocument).ExternallyOwned();
-                                          }
-
-                                          if (document is not null)
-                                          {
-                                              builder.RegisterInstance(document).ExternallyOwned();
-                                          }
-
-                                          if (view is not null)
-                                          {
-                                              builder.RegisterInstance(view).ExternallyOwned();
-                                          }
-
-                                          // Allow derived classes to add services
-                                          var services = new ServiceCollection();
-                                          ConfigureServices(services);
-                                          builder.Populate(services);
-                                      });
-
-        var transactionMode = GetTransactionMode();
-        var serviceProvider = scope.Resolve<IServiceProvider>();
-
-        // Call BeforeExecute before any transaction is opened.
-        InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider);
-
-        Result result;
-
-        // Skip transaction management if no document is open or transaction is not required.
-        if (document is null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+        if (UseNewScope)
         {
-            result = InvokeOnExecute(commandData, elements, serviceProvider);
+            scope = CreateLifetimeScope(autofacRoot, uiApplication, application, uiDocument, document, view);
+            serviceProvider = scope.Resolve<IServiceProvider>();
         }
         else
         {
-            result = transactionMode switch
-            {
-                RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
-                    => ExecuteTransaction(commandData, elements, document, serviceProvider, transactionMode),
-                RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
-                    => ExecuteTransactionGroup(commandData, elements, document, serviceProvider, transactionMode),
-                _ => Result.Failed
-            };
+            serviceProvider = autofacRoot.Resolve<IServiceProvider>();
         }
 
-        // Call AfterExecute after the transaction has been closed.
-        InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider);
+        try
+        {
+            var transactionMode = GetTransactionMode();
 
-        return result;
+            // Call BeforeExecute before any transaction is opened.
+            InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider);
+
+            Result result;
+
+            // Skip transaction management if no document is open or transaction is not required.
+            if (document is null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+            {
+                result = InvokeOnExecute(commandData, elements, serviceProvider);
+            }
+            else
+            {
+                result = transactionMode switch
+                {
+                    RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
+                        => ExecuteTransaction(commandData, elements, document, serviceProvider, transactionMode),
+                    RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
+                        => ExecuteTransactionGroup(commandData, elements, document, serviceProvider, transactionMode),
+                    _ => Result.Failed
+                };
+            }
+
+            // Call AfterExecute after the transaction has been closed.
+            InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider);
+
+            return result;
+        }
+        finally
+        {
+            scope?.Dispose();
+        }
     }
 
     /// <summary>
@@ -517,6 +520,45 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     protected virtual Result OnExecute(ExternalCommandData commandData, ElementSet elements)
     {
         return Result.Succeeded;
+    }
+
+    private ILifetimeScope CreateLifetimeScope(
+        ILifetimeScope autofacRoot,
+        UIApplication uiApplication,
+        Autodesk.Revit.ApplicationServices.Application? application,
+        UIDocument? uiDocument,
+        Document? document,
+        View? view)
+    {
+        return autofacRoot.BeginLifetimeScope(builder =>
+        {
+            builder.RegisterInstance(uiApplication).ExternallyOwned();
+
+            if (application is not null)
+            {
+                builder.RegisterInstance(application).ExternallyOwned();
+            }
+
+            if (uiDocument is not null)
+            {
+                builder.RegisterInstance(uiDocument).ExternallyOwned();
+            }
+
+            if (document is not null)
+            {
+                builder.RegisterInstance(document).ExternallyOwned();
+            }
+
+            if (view is not null)
+            {
+                builder.RegisterInstance(view).ExternallyOwned();
+            }
+
+            // Allow derived classes to add services
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            builder.Populate(services);
+        });
     }
 
     private Result ExecuteTransactionGroup(ExternalCommandData commandData, ElementSet elements, Document document, IServiceProvider serviceProvider,
