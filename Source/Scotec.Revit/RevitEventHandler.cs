@@ -93,13 +93,28 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     protected abstract void Unsubscribe();
 
     /// <summary>
-    ///     Allows derived classes to register additional services into the per-invocation DI scope.
+    ///     Allows derived classes to add additional services into the per-invocation DI scope.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
     protected virtual void ConfigureServices(IServiceCollection services)
     {
         // Derived classes can override to add services.
     }
+
+    /// <summary>
+    ///     Gets a value indicating whether a new DI lifetime scope should be created for each event invocation.
+    /// </summary>
+    /// <value>
+    ///     <c>true</c> to create a new child lifetime scope for each invocation (default);
+    ///     <c>false</c> to resolve services directly from the root container without creating a scope.
+    ///     When set to <c>false</c>, no additional objects are registered in the DI container for the invocation.
+    /// </value>
+    /// <remarks>
+    ///     Override this property in derived classes and return <c>false</c> when scope creation is not desired,
+    ///     for example to avoid registering short-lived instances that conflict with singleton registrations.
+    ///     The property is virtual so the override may contain arbitrary logic.
+    /// </remarks>
+    protected virtual bool UseNewScope { get; } = true;
 
     /// <summary>
     ///     Called when the event fires and no method marked with <see cref="RevitEventHandlerExecuteAttribute" /> is
@@ -123,27 +138,45 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     }
 
     /// <summary>
-    ///     The Revit event callback. Opens a DI lifetime scope, registers context, and dispatches
-    ///     to the execute entry point. Wire this method to the Revit event in <see cref="Subscribe" />.
+    ///     The Revit event callback. Opens a DI lifetime scope (unless <see cref="UseNewScope" /> is <c>false</c>),
+    ///     registers context, and dispatches to the execute entry point.
+    ///     Wire this method to the Revit event in <see cref="Subscribe" />.
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="args">The event args.</param>
     protected void HandleEvent(object sender, TEventArgs args)
     {
-        using var scope = RevitAppBase.GetServiceProvider(AddInId)
-                                      .GetAutofacRoot()
-                                      .BeginLifetimeScope(builder =>
-                                      {
-                                          builder.RegisterInstance(args).ExternallyOwned();
-                                          RegisterEventContext(builder, sender, args);
+        ILifetimeScope? scope = null;
+        IServiceProvider serviceProvider;
 
-                                          var services = new ServiceCollection();
-                                          ConfigureServices(services);
-                                          builder.Populate(services);
-                                      });
+        var autofacRoot = RevitAppBase.GetServiceProvider(AddInId).GetAutofacRoot();
 
-        var serviceProvider = scope.Resolve<IServiceProvider>();
-        InvokeOnExecute(args, serviceProvider);
+        if (UseNewScope)
+        {
+            scope = autofacRoot.BeginLifetimeScope(builder =>
+            {
+                builder.RegisterInstance(args).ExternallyOwned();
+                RegisterEventContext(builder, sender, args);
+
+                var services = new ServiceCollection();
+                ConfigureServices(services);
+                builder.Populate(services);
+            });
+            serviceProvider = scope.Resolve<IServiceProvider>();
+        }
+        else
+        {
+            serviceProvider = autofacRoot.Resolve<IServiceProvider>();
+        }
+
+        try
+        {
+            InvokeOnExecute(args, serviceProvider);
+        }
+        finally
+        {
+            scope?.Dispose();
+        }
     }
 
     /// <summary>

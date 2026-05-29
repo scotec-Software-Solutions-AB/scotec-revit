@@ -2,7 +2,7 @@
 
 `RevitEventHandler<TEventArgs>` is the generic base class for handling Revit application events with automatic dependency injection (DI) scope per invocation. Each concrete handler wraps one specific Revit event, self-subscribes in the constructor, and self-unsubscribes on disposal.
 
-Each time the subscribed event fires, a new DI scope is created. Revit context objects available from the event -- such as `Document`, `View`, `UIApplication`, and `UIDocument` -- are registered automatically. Services from the application's DI container are resolved and injected into the handler method.
+Each time the subscribed event fires, a new DI scope is created by default. Revit context objects available from the event -- such as `Document`, `View`, `UIApplication`, and `UIDocument` -- are registered automatically. Services from the application's DI container are resolved and injected into the handler method. Scope creation can be disabled per handler via `UseNewScope`.
 
 ## Overview
 
@@ -309,7 +309,42 @@ public sealed class MyPanel : IDisposable
 
 ## Dependency Injection (DI) Scope
 
-Each event invocation creates a new DI scope using Autofac and `Microsoft.Extensions.DependencyInjection`.
+By default, each event invocation creates a new child DI lifetime scope using Autofac and `Microsoft.Extensions.DependencyInjection`. The scope is disposed automatically after the handler method returns.
+
+### Controlling Scope Creation: `UseNewScope`
+
+The `UseNewScope` property controls whether a new child scope is created for each invocation:
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` *(default)* | A new child lifetime scope is created. Event args, context objects, and any services registered via `ConfigureServices` are available for injection. |
+| `false` | No scope is created. Services are resolved directly from the root container. `ConfigureServices` and `RegisterEventContext` are not called, and no event context objects are registered. |
+
+Override this property when scope creation is not desired — for example, when the handler resolves only long-lived singleton services already registered in the root container:
+
+```csharp
+public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
+{
+    public MyDocumentOpenedHandler(ControlledApplication application)
+        : base(application) { }
+
+    protected override bool UseNewScope => false;
+
+    [RevitEventHandlerExecute]
+    private void OnDocumentOpened(IMyRootService service)
+    {
+        service.Notify();
+    }
+}
+```
+
+The property is `virtual`, so the override may contain arbitrary logic:
+
+```csharp
+protected override bool UseNewScope => _settings.UseScopedHandlers;
+```
+
+> **Note:** When `UseNewScope` is `false`, event args, `Document`, `View`, and other context objects listed in _What Is Registered by Default_ are **not** available for injection.
 
 ### What Is Registered by Default
 
@@ -352,13 +387,13 @@ public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
 ### DI Scope Creation Flow
 
 1. The event fires and Revit calls the handler's internal callback.
-2. A new Autofac lifetime scope is opened.
+2. If `UseNewScope` is `true`, a new Autofac lifetime scope is opened; otherwise the root container is used directly and steps 3–5 are skipped.
 3. The event-args instance is registered in the scope.
-4. `RegisterEventContext` is called -- the concrete handler registers known Revit context objects.
+4. `RegisterEventContext` is called — the concrete handler registers known Revit context objects.
 5. `ConfigureServices` is called to register additional user-provided services.
-6. The method marked with `[RevitEventHandlerExecute]` is discovered and invoked with parameters resolved from the scope.
+6. The method marked with `[RevitEventHandlerExecute]` is discovered and invoked with parameters resolved from the scope or root container.
 7. If no attributed method exists, `OnExecute(TEventArgs)` is called instead.
-8. The scope is disposed.
+8. If a scope was created, it is disposed.
 
 ## Performance Considerations
 
@@ -428,6 +463,7 @@ protected override bool OnShutdown(UIControlledApplication application)
 | Custom handler logic (DI) | Mark a `void` method with `[RevitEventHandlerExecute]` |
 | Standard handler logic | Override `OnExecute(TEventArgs args)` |
 | Register additional services | Override `ConfigureServices(IServiceCollection services)` |
+| Disable per-invocation scope | Override `UseNewScope` and return `false` |
 | Document events (`RevitApp` and `RevitDbApp`) | Derive from a `Revit*Handler` class that takes `ControlledApplication` |
 | UI events (`RevitApp` only) | Derive from a `Revit*Handler` class that takes `UIControlledApplication` |
 | Custom event not in the pre-built set | Derive directly from `RevitEventHandler<TEventArgs>` |
