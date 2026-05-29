@@ -3,10 +3,10 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autofac;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -48,13 +48,13 @@ public abstract class RevitDocumentOpenedHandler : RevitEventHandler<DocumentOpe
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentOpenedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentOpenedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -135,13 +135,13 @@ public abstract class RevitDocumentClosingHandler : RevitEventHandler<DocumentCl
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentClosingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentClosingEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -222,13 +222,13 @@ public abstract class RevitDocumentCreatedHandler : RevitEventHandler<DocumentCr
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentCreatedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentCreatedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -308,13 +308,13 @@ public abstract class RevitDocumentSavingHandler : RevitEventHandler<DocumentSav
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSavingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSavingEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -357,13 +357,13 @@ public abstract class RevitDocumentSavedHandler : RevitEventHandler<DocumentSave
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSavedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSavedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -406,13 +406,13 @@ public abstract class RevitDocumentSavingAsHandler : RevitEventHandler<DocumentS
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSavingAsEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSavingAsEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -455,13 +455,13 @@ public abstract class RevitDocumentSavedAsHandler : RevitEventHandler<DocumentSa
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSavedAsEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSavedAsEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -508,13 +508,13 @@ public abstract class RevitDocumentChangedHandler : RevitEventHandler<DocumentCh
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentChangedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentChangedEventArgs args)
     {
         var document = args.GetDocument();
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -557,13 +557,13 @@ public abstract class RevitDocumentPrintingHandler : RevitEventHandler<DocumentP
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentPrintingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentPrintingEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -606,13 +606,13 @@ public abstract class RevitDocumentPrintedHandler : RevitEventHandler<DocumentPr
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentPrintedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentPrintedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -656,13 +656,13 @@ public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitEventH
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSynchronizingWithCentralEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSynchronizingWithCentralEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -706,13 +706,13 @@ public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitEventHa
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentSynchronizedWithCentralEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSynchronizedWithCentralEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }

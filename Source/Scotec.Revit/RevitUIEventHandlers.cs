@@ -3,10 +3,10 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autofac;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -48,23 +48,23 @@ public abstract class RevitViewActivatedHandler : RevitEventHandler<ViewActivate
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, ViewActivatedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, ViewActivatedEventArgs args)
     {
         if (sender is UIApplication uiApplication)
         {
-            builder.RegisterInstance(uiApplication).ExternallyOwned();
+            services.AddSingleton(uiApplication);
 
             var uiDocument = uiApplication.ActiveUIDocument;
 
             if (uiDocument is not null)
             {
-                builder.RegisterInstance(uiDocument).ExternallyOwned();
+                services.AddSingleton(uiDocument);
 
                 var document = uiDocument.Document;
 
                 if (document is not null)
                 {
-                    builder.RegisterInstance(document).ExternallyOwned();
+                    services.AddSingleton(document);
                 }
             }
         }
@@ -73,7 +73,7 @@ public abstract class RevitViewActivatedHandler : RevitEventHandler<ViewActivate
 
         if (view is not null)
         {
-            builder.RegisterInstance(view).ExternallyOwned();
+            services.AddSingleton(view);
         }
     }
 }
@@ -120,11 +120,11 @@ public abstract class RevitIdlingHandler : RevitEventHandler<IdlingEventArgs>
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, IdlingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, IdlingEventArgs args)
     {
         if (sender is UIApplication uiApplication)
         {
-            builder.RegisterInstance(uiApplication).ExternallyOwned();
+            services.AddSingleton(uiApplication);
         }
     }
 }

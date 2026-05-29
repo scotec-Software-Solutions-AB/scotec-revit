@@ -389,7 +389,7 @@ public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
 1. The event fires and Revit calls the handler's internal callback.
 2. If `UseNewScope` is `true`, a new Autofac lifetime scope is opened; otherwise the root container is used directly and steps 3–5 are skipped.
 3. The event-args instance is registered in the scope.
-4. `RegisterEventContext` is called — the concrete handler registers known Revit context objects.
+4. `RegisterEventContext` is called — the concrete handler registers known Revit context objects via `IServiceCollection`.
 5. `ConfigureServices` is called to register additional user-provided services.
 6. The method marked with `[RevitEventHandlerExecute]` is discovered and invoked with parameters resolved from the scope or root container.
 7. If no attributed method exists, `OnExecute(TEventArgs)` is called instead.
@@ -432,11 +432,11 @@ public abstract class MyCustomEventHandler : RevitEventHandler<DocumentClosingEv
         _application.DocumentClosing -= HandleEvent;
     }
 
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, DocumentClosingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentClosingEventArgs args)
     {
         if (args.Document is not null)
         {
-            builder.RegisterInstance(args.Document).ExternallyOwned();
+            services.AddSingleton(args.Document);
         }
     }
 }
@@ -462,6 +462,7 @@ protected override bool OnShutdown(UIControlledApplication application)
 |---|---|
 | Custom handler logic (DI) | Mark a `void` method with `[RevitEventHandlerExecute]` |
 | Standard handler logic | Override `OnExecute(TEventArgs args)` |
+| Register Revit context objects | Override `RegisterEventContext(IServiceCollection services, ...)` |
 | Register additional services | Override `ConfigureServices(IServiceCollection services)` |
 | Disable per-invocation scope | Override `UseNewScope` and return `false` |
 | Document events (`RevitApp` and `RevitDbApp`) | Derive from a `Revit*Handler` class that takes `ControlledApplication` |

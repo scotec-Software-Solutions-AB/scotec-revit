@@ -130,10 +130,10 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     ///     into the per-invocation scope. Override in concrete handlers to expose the types that are available
     ///     from the specific event args or sender.
     /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder" /> for the current scope.</param>
+    /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
     /// <param name="sender">The event sender object.</param>
     /// <param name="args">The event args instance.</param>
-    protected virtual void RegisterEventContext(ContainerBuilder builder, object sender, TEventArgs args)
+    protected virtual void RegisterEventContext(IServiceCollection services, object sender, TEventArgs args)
     {
     }
 
@@ -155,10 +155,9 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
         {
             scope = autofacRoot.BeginLifetimeScope(builder =>
             {
-                builder.RegisterInstance(args).ExternallyOwned();
-                RegisterEventContext(builder, sender, args);
-
                 var services = new ServiceCollection();
+                services.AddSingleton(typeof(TEventArgs), args);
+                RegisterEventContext(services, sender, args);
                 ConfigureServices(services);
                 builder.Populate(services);
             });

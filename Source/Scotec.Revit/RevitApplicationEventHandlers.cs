@@ -3,10 +3,10 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autofac;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -86,13 +86,13 @@ public abstract class RevitFileExportedHandler : RevitEventHandler<FileExportedE
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, FileExportedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, FileExportedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -135,13 +135,13 @@ public abstract class RevitFileExportingHandler : RevitEventHandler<FileExportin
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, FileExportingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, FileExportingEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -184,13 +184,13 @@ public abstract class RevitFileImportedHandler : RevitEventHandler<FileImportedE
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, FileImportedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, FileImportedEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
@@ -233,13 +233,13 @@ public abstract class RevitFileImportingHandler : RevitEventHandler<FileImportin
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(ContainerBuilder builder, object sender, FileImportingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, object sender, FileImportingEventArgs args)
     {
         var document = args.Document;
 
         if (document is not null)
         {
-            builder.RegisterInstance(document).ExternallyOwned();
+            services.AddSingleton(document);
         }
     }
 }
