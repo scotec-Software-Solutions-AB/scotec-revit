@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -565,38 +564,59 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                                            RevitTransactionMode transactionMode)
     {
         using var transactionGroup = new TransactionGroup(document);
-        transactionGroup.Start(TransactionName);
 
-        var result = InvokeOnExecute(commandData, elements, serviceProvider);
-
-        // Do not commit on error or in rollback mode.
-        if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
+        try
         {
-            transactionGroup.Assimilate();
-        }
+            transactionGroup.Start(TransactionName);
+            var result = InvokeOnExecute(commandData, elements, serviceProvider);
 
-        return result;
+            // Do not commit on error or in rollback mode.
+            if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
+            {
+                transactionGroup.Assimilate();
+            }
+
+            return result;
+        }
+        finally
+        {
+            if(transactionGroup.HasStarted())
+            {
+                transactionGroup.RollBack();
+            }   
+        }
     }
 
     private Result ExecuteTransaction(ExternalCommandData commandData, ElementSet elements, Document document, IServiceProvider serviceProvider,
                                       RevitTransactionMode transactionMode)
     {
         using var transaction = new Transaction(document);
-        transaction.Start(TransactionName);
-
-        var failureHandlingOptions = transaction.GetFailureHandlingOptions();
-        failureHandlingOptions.SetFailuresPreprocessor(this);
-        transaction.SetFailureHandlingOptions(failureHandlingOptions);
-
-        var result = InvokeOnExecute(commandData, elements, serviceProvider);
-
-        // Do not commit on error or in rollback mode.
-        if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
+        try
         {
-            transaction.Commit();
-        }
+            transaction.Start(TransactionName);
 
-        return result;
+            var failureHandlingOptions = transaction.GetFailureHandlingOptions();
+            failureHandlingOptions.SetFailuresPreprocessor(this);
+            transaction.SetFailureHandlingOptions(failureHandlingOptions);
+
+            var result = InvokeOnExecute(commandData, elements, serviceProvider);
+
+            // Do not commit on error or in rollback mode.
+            if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
+            {
+                transaction.Commit();
+            }
+
+            return result;
+        }
+        finally
+        {
+            if (transaction.HasStarted())
+            {
+                transaction.RollBack();
+            }
+
+        }
     }
 
     private RevitTransactionMode GetTransactionMode()
