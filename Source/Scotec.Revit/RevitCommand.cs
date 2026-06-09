@@ -98,9 +98,8 @@ public enum RevitTransactionMode
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class RevitCommandBeforeExecuteAttribute : Attribute
-{
-}
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 
 /// <summary>
 ///     Marks a method as the main execution entry point for a <see cref="RevitCommand" />.
@@ -113,9 +112,8 @@ public sealed class RevitCommandBeforeExecuteAttribute : Attribute
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class RevitCommandExecuteAttribute : Attribute
-{
-}
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitCommandExecuteAttribute : Attribute;
 
 /// <summary>
 ///     Marks a method as the post-execution lifecycle entry point for a <see cref="RevitCommand" />.
@@ -127,9 +125,8 @@ public sealed class RevitCommandExecuteAttribute : Attribute
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class RevitCommandAfterExecuteAttribute : Attribute
-{
-}
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 
 /// <summary>
 ///     An attribute used to specify the transaction mode for a Revit command.

@@ -24,9 +24,8 @@ namespace Scotec.Revit;
 ///     directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class RevitCommandAvailabilityCheckAttribute : Attribute
-{
-}
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitCommandAvailabilityCheckAttribute : Attribute;
 
 /// <summary>
 ///     Represents an abstract base class that determines the availability of external commands in Autodesk Revit.

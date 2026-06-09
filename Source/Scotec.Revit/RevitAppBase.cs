@@ -35,7 +35,8 @@ namespace Scotec.Revit;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-public sealed class RevitStartupAttribute : Attribute;
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitApplicationStartupAttribute : Attribute;
 
 /// <summary>
 ///     Marks a method as the shutdown entry point for a Revit add-in.
@@ -58,7 +59,8 @@ public sealed class RevitStartupAttribute : Attribute;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-public sealed class RevitShutdownAttribute : Attribute;
+[JetBrains.Annotations.MeansImplicitUse]
+public sealed class RevitApplicationShutdownAttribute : Attribute;
 
 /// <summary>
 ///     Basic implementation for a Revit app. Derive from this class to use services like logging, dependency injection, or
@@ -137,7 +139,7 @@ public abstract class RevitAppBase
     /// <remarks>
     ///     This property is deprecated and will be removed in a future version.
     ///     Use constructor or method injection via the DI container instead, or resolve services through
-    ///     a method marked with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
+    ///     a method marked with <see cref="RevitApplicationStartupAttribute" /> or <see cref="RevitApplicationShutdownAttribute" />.
     /// </remarks>
     [Obsolete("This property is deprecated and will be removed in a future version. Use DI injection via [RevitStartup] / [RevitShutdown] methods instead.")]
     protected IServiceProvider Services => GetServiceProvider(AddInId);
@@ -208,7 +210,7 @@ public abstract class RevitAppBase
     /// </returns>
     /// <remarks>
     ///     This overload is obsolete. Override <see cref="OnShutdown(ControlledApplication)" /> instead,
-    ///     or declare a custom <c>OnShutdown</c> method marked with <see cref="RevitShutdownAttribute" /> with
+    ///     or declare a custom <c>OnShutdown</c> method marked with <see cref="RevitApplicationShutdownAttribute" /> with
     ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
     [Obsolete("Override OnShutdown(ControlledApplication application) instead, or declare a method marked with [RevitShutdown] with DI-resolved parameters.")]
@@ -225,7 +227,7 @@ public abstract class RevitAppBase
     /// </returns>
     /// <remarks>
     ///     This overload is obsolete. Override <see cref="OnStartup(ControlledApplication)" /> instead,
-    ///     or declare a custom <c>OnStartup</c> method marked with <see cref="RevitStartupAttribute" /> with
+    ///     or declare a custom <c>OnStartup</c> method marked with <see cref="RevitApplicationStartupAttribute" /> with
     ///     DI-resolved parameters, which the framework will discover and invoke automatically.
     /// </remarks>
     [Obsolete("Override OnStartup(ControlledApplication application) instead, or declare a method marked with [RevitStartup] with DI-resolved parameters.")]
@@ -424,7 +426,7 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Dispatches the startup call. Resolution priority:
     ///     <list type="number">
-    ///         <item>A method marked with <see cref="RevitStartupAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item>A method marked with <see cref="RevitApplicationStartupAttribute" /> — all parameters resolved from DI.</item>
     ///         <item><see cref="OnStartup(ControlledApplication)" /> — if overridden in the derived class.</item>
     ///         <item><see cref="OnStartup()" /> — obsolete parameter-less fallback.</item>
     ///     </list>
@@ -437,7 +439,7 @@ public abstract class RevitAppBase
     /// <summary>
     ///     Dispatches the shutdown call. Resolution priority:
     ///     <list type="number">
-    ///         <item>A method marked with <see cref="RevitShutdownAttribute" /> — all parameters resolved from DI.</item>
+    ///         <item>A method marked with <see cref="RevitApplicationShutdownAttribute" /> — all parameters resolved from DI.</item>
     ///         <item><see cref="OnShutdown(ControlledApplication)" /> — if overridden in the derived class.</item>
     ///         <item><see cref="OnShutdown()" /> — obsolete parameter-less fallback.</item>
     ///     </list>
@@ -458,7 +460,7 @@ public abstract class RevitAppBase
     ///     Dispatches a lifecycle call (startup or shutdown) using the following priority:
     ///     <list type="number">
     ///         <item>
-    ///             A method decorated with <see cref="RevitStartupAttribute" /> or <see cref="RevitShutdownAttribute" />.
+    ///             A method decorated with <see cref="RevitApplicationStartupAttribute" /> or <see cref="RevitApplicationShutdownAttribute" />.
     ///             All parameters are resolved from <paramref name="services" />.
     ///         </item>
     ///         <item>
@@ -471,8 +473,8 @@ public abstract class RevitAppBase
     private bool InvokeLifecycleMethod(string methodName, IServiceProvider services)
     {
         var entryPointAttribute = methodName == "OnStartup"
-            ? typeof(RevitStartupAttribute)
-            : typeof(RevitShutdownAttribute);
+            ? typeof(RevitApplicationStartupAttribute)
+            : typeof(RevitApplicationShutdownAttribute);
 
         // Priority 1: method explicitly marked with [RevitStartup] / [RevitShutdown].
         var attributedMethod = RevitReflectionHelper.FindMethod(
