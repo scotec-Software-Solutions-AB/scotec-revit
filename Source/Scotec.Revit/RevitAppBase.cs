@@ -35,6 +35,7 @@ namespace Scotec.Revit;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+[JetBrains.Annotations.MeansImplicitUse]
 public sealed class RevitApplicationStartupAttribute : Attribute;
 
 /// <summary>
@@ -58,6 +59,7 @@ public sealed class RevitApplicationStartupAttribute : Attribute;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+[JetBrains.Annotations.MeansImplicitUse]
 public sealed class RevitApplicationShutdownAttribute : Attribute;
 
 /// <summary>
