@@ -55,7 +55,11 @@ public sealed class RevitTaskRunAnalyzer : DiagnosticAnalyzer
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+<<<<<<< HEAD
         [VoidDelegateOnGenericRun, NonVoidDelegateOnRun];
+=======
+        ImmutableArray.Create(VoidDelegateOnGenericRun, NonVoidDelegateOnRun);
+>>>>>>> origin/main
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)

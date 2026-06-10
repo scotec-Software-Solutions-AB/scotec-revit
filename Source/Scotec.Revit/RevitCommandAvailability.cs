@@ -5,6 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+<<<<<<< HEAD
+=======
+using System.Reflection;
+>>>>>>> origin/main
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -23,8 +27,14 @@ namespace Scotec.Revit;
 ///     directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
+<<<<<<< HEAD
 [JetBrains.Annotations.MeansImplicitUse]
 public sealed class RevitCommandAvailabilityCheckAttribute : Attribute;
+=======
+public sealed class RevitCommandAvailabilityCheckAttribute : Attribute
+{
+}
+>>>>>>> origin/main
 
 /// <summary>
 ///     Represents an abstract base class that determines the availability of external commands in Autodesk Revit.
@@ -177,7 +187,11 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                           IServiceProvider serviceProvider)
     {
         // Prefer a method explicitly marked with [RevitCommandAvailabilityCheck].
+<<<<<<< HEAD
         var attributedCheck = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandAvailabilityCheckAttribute>(GetType(), typeof(RevitCommandAvailability), typeof(bool));
+=======
+        var attributedCheck = FindSingleAttributedMethod<RevitCommandAvailabilityCheckAttribute>(typeof(bool));
+>>>>>>> origin/main
         if (attributedCheck is not null)
         {
             return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
@@ -207,4 +221,35 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
 #pragma warning restore CS0618
     }
 
+<<<<<<< HEAD
+=======
+    /// <summary>
+    ///     Walks the type hierarchy from the concrete type up to (but not including)
+    ///     <see cref="RevitCommandAvailability" /> and collects all methods that carry
+    ///     <typeparamref name="TAttribute" /> and match <paramref name="returnType" />.
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" /> if more
+    ///     than one is found.
+    /// </summary>
+    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
+    {
+        var matches = new List<MethodInfo>();
+        var type = GetType();
+        while (type != null && type != typeof(RevitCommandAvailability))
+        {
+            matches.AddRange(
+                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
+            type = type.BaseType;
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
+                $"Only one entry point per lifecycle slot is allowed.");
+        }
+
+        return matches.Count == 1 ? matches[0] : null;
+    }
+>>>>>>> origin/main
 }

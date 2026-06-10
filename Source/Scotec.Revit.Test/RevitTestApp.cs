@@ -18,7 +18,10 @@ using System.Runtime.Loader;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using JetBrains.Annotations;
+<<<<<<< HEAD
 using Microsoft.Extensions.Hosting;
+=======
+>>>>>>> origin/main
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
@@ -76,6 +79,7 @@ public class RevitTestApp : RevitApp
 
         return true;
     }
+<<<<<<< HEAD
 
     protected override bool OnStartup(UIControlledApplication application)
     {
@@ -108,6 +112,38 @@ public class RevitTestApp : RevitApp
             panel.AddItem(CreateTestButtonData());
             panel.AddItem(CreateShowDialogButtonData());
 
+=======
+
+    protected override bool OnStartup(UIControlledApplication application)
+    {
+        try
+        {
+            var config = Services.GetService<IConfiguration>();
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+        }
+        catch (Exception)
+        {
+            Debugger.Launch();
+            return false;
+        }
+
+        return base.OnStartup(application);
+    }
+
+    [RevitStartup]
+    [UsedImplicitly]
+    private bool OnStartup(IConfiguration configuration)
+    {
+        try
+        {
+            RevitTabManager.CreateTab(Application, "scotec");
+            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+
+            panel.AddItem(CreateTestButtonData());
+>>>>>>> origin/main
         }
         catch (Exception)
         {
@@ -118,6 +154,7 @@ public class RevitTestApp : RevitApp
         return true;
     }
 
+<<<<<<< HEAD
     protected override void OnConfigure(IHostBuilder builder)
     {
         base.OnConfigure(builder);
@@ -129,6 +166,8 @@ public class RevitTestApp : RevitApp
         });
     }
 
+=======
+>>>>>>> origin/main
     private static PushButtonData CreateTestButtonData()
     {
         var smallImageSource = BuildImageResourcePath("Information_16.png");
@@ -145,6 +184,7 @@ public class RevitTestApp : RevitApp
         return pushButtonData;
     }
 
+<<<<<<< HEAD
     private static PushButtonData CreateShowDialogButtonData()
     {
         var smallImageSource = BuildImageResourcePath("Information_16.png");
@@ -159,6 +199,8 @@ public class RevitTestApp : RevitApp
             typeof(ShowTestDialogCommandAvailabilityFactory));
     }
 
+=======
+>>>>>>> origin/main
     private static Uri BuildImageResourcePath(string imageFileName)
     {
         return new Uri($"pack://application:,,,/Scotec.Revit.Test;component/Resources/Images/{imageFileName}");

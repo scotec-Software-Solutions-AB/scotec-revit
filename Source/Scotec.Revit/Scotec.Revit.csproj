@@ -28,7 +28,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Autofac.Extensions.DependencyInjection" />
+<<<<<<< HEAD
 		<PackageReference Include="JetBrains.Annotations" PrivateAssets="All" />
+=======
+>>>>>>> origin/main
 		<PackageReference Include="Microsoft.Extensions.Hosting" />
 		<PackageReference Include="OpenMcdf" />
 		<PackageReference Include="Scotec.Extensions.Utilities" />

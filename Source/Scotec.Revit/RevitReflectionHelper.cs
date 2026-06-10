@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿// Copyright © 2023 - 2026 Olaf Meyer
+=======
+// Copyright © 2023 - 2026 Olaf Meyer
+>>>>>>> origin/main
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
@@ -92,6 +96,7 @@ internal static class RevitReflectionHelper
 
         return method.Invoke(instance, resolvedParameters);
     }
+<<<<<<< HEAD
 
     /// <summary>
     ///     Walks the type hierarchy from <paramref name="concreteType" /> up to (but not including)
@@ -130,4 +135,6 @@ internal static class RevitReflectionHelper
 
         return matches.Count == 1 ? matches[0] : null;
     }
+=======
+>>>>>>> origin/main
 }
