@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+﻿// Copyright © 2023 - 2026 Olaf Meyer
+=======
 // Copyright © 2023 - 2026 Olaf Meyer
+>>>>>>> origin/main
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
@@ -92,4 +96,45 @@ internal static class RevitReflectionHelper
 
         return method.Invoke(instance, resolvedParameters);
     }
+<<<<<<< HEAD
+
+    /// <summary>
+    ///     Walks the type hierarchy from <paramref name="concreteType" /> up to (but not including)
+    ///     <paramref name="stopType" /> and collects all methods that carry <typeparamref name="TAttribute" />
+    ///     and match <paramref name="returnType" />.
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" />
+    ///     if more than one is found.
+    /// </summary>
+    /// <typeparam name="TAttribute">The attribute type to search for.</typeparam>
+    /// <param name="concreteType">The concrete type to start the search from.</param>
+    /// <param name="stopType">The base type at which to stop (exclusive).</param>
+    /// <param name="returnType">The required return type of the candidate methods.</param>
+    /// <returns>The single matching <see cref="MethodInfo" />, or <c>null</c> if no match is found.</returns>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown when more than one method in the hierarchy carries <typeparamref name="TAttribute" />.
+    /// </exception>
+    internal static MethodInfo? FindSingleAttributedMethod<TAttribute>(Type concreteType, Type stopType, Type returnType)
+        where TAttribute : Attribute
+    {
+        var matches = new List<MethodInfo>();
+        var type = concreteType;
+        while (type != null && type != stopType)
+        {
+            matches.AddRange(
+                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
+            type = type.BaseType;
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{concreteType.Name}'. " +
+                $"Only one entry point per lifecycle slot is allowed.");
+        }
+
+        return matches.Count == 1 ? matches[0] : null;
+    }
+=======
+>>>>>>> origin/main
 }

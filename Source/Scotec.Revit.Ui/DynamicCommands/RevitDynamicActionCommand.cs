@@ -73,7 +73,11 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     ///     This property overrides the <see cref="Scotec.Revit.RevitCommand.CommandName" /> property to provide a specific
     ///     name for the dynamic action command. The name is primarily used for logging and debugging purposes.
     /// </remarks>
+    [Obsolete("CommandName is obsolete. Override TransactionName instead.")]
     protected override string CommandName => "Action command";
+    
+    /// <inheritdoc/>
+    protected override string TransactionName => "Action command";
 
     /// <summary>
     ///     Registers a dynamic action with a unique identifier for execution within the Revit environment.
@@ -134,6 +138,7 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
     ///     <see cref="Id" /> and invokes it. If the action is not found or an exception occurs, the method handles the error
     ///     and logs it appropriately.
     /// </remarks>
+    [Obsolete("This method is obsolete. Override OnExecute(ExternalCommandData, ElementSet) instead, or declare a custom OnExecute overload with DI-resolved parameters.")]
     protected override Result OnExecute(ExternalCommandData commandData, IServiceProvider services)
     {
         if (Actions.TryGetValue(Id, out var action))
@@ -144,7 +149,7 @@ public sealed class RevitDynamicActionCommand : RevitDynamicCommand
             }
             catch (Exception e)
             {
-                _logger?.LogError(e, $"Execution of command '{CommandName}' failed.");
+                _logger?.LogError(e, $"Execution of command '{TransactionName}' failed.");
                 return Result.Failed;
             }
         }

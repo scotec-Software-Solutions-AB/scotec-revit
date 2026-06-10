@@ -74,7 +74,11 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
     ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
+<<<<<<< HEAD
+    ///     <see cref="RevitApplicationStartupAttribute" /> with additional DI-resolved parameters.
+=======
     ///     <see cref="RevitStartupAttribute" /> with additional DI-resolved parameters.
+>>>>>>> origin/main
     /// </remarks>
     protected virtual bool OnStartup(ControlledApplication application)
     {
@@ -93,7 +97,11 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
     ///     Revit <see cref="ControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
+<<<<<<< HEAD
+    ///     <see cref="RevitApplicationShutdownAttribute" /> with additional DI-resolved parameters.
+=======
     ///     <see cref="RevitShutdownAttribute" /> with additional DI-resolved parameters.
+>>>>>>> origin/main
     /// </remarks>
     protected virtual bool OnShutdown(ControlledApplication application)
     {

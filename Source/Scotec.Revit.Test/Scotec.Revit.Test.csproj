@@ -36,6 +36,7 @@
 
 	<ItemGroup>
 	  <None Include="TabManager.cs" />
+<<<<<<< HEAD
 	</ItemGroup>
 
 	<ItemGroup>
@@ -44,6 +45,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Scotec.Revit.Wpf\Scotec.Revit.Wpf.csproj" />
+=======
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="JetBrains.Annotations" />
+	  <PackageReference Include="Scotec.Revit.Isolation" />
+	</ItemGroup>
+
+	<ItemGroup>
+>>>>>>> origin/main
 	  <ProjectReference Include="..\Scotec.Revit\Scotec.Revit.csproj" />
 	  <!--<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />-->
 	  <ProjectReference Include="..\Scotec.Revit.Ui\Scotec.Revit.Ui.csproj" />

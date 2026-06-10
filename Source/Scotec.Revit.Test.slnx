@@ -9,8 +9,17 @@
   <Folder Name="/SolutionItems/" />
   <Folder Name="/SolutionItems/Documentation/">
     <File Path="../Documentation/RevitAddinIsolation.md" />
+<<<<<<< HEAD
+    <File Path="../Documentation/RevitApp.md" />
+    <File Path="../Documentation/RevitCommand.md" />
+    <File Path="../Documentation/RevitCommandAvailability.md" />
+    <File Path="../Documentation/RevitEventHandler.md" />
+    <File Path="../Documentation/RevitTask.md" />
+    <File Path="../Documentation/RevitUpdater.md" />
+=======
     <File Path="../Documentation/RevitCommand.md" />
     <File Path="../Documentation/RevitTask.md" />
+>>>>>>> origin/main
   </Folder>
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
     <Platform Project="x64" />
@@ -22,6 +31,10 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="Scotec.Revit.Test/Scotec.Revit.Test.csproj">
+<<<<<<< HEAD
+    <BuildType Solution="Release|*" Project="Debug" />
+=======
+>>>>>>> origin/main
     <Platform Project="x64" />
   </Project>
   <Project Path="Scotec.Revit.Ui/Scotec.Revit.Ui.csproj">
