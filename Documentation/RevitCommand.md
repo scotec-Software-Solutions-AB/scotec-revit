@@ -8,7 +8,7 @@ This document provides a detailed guide on how to use the `RevitCommand` base cl
 
 - Transaction management (with multiple modes)
 - Failure handling hooks
-- Dependency injection (DI) scope creation for each command execution
+- Dependency injection (DI) scope creation for each command execution (configurable via `UseNewScope`)
 - Extensibility for registering custom services
 - Explicit lifecycle attributes (`[RevitCommandBeforeExecute]`, `[RevitCommandExecute]`, `[RevitCommandAfterExecute]`) for free-named methods with automatic DI parameter resolution
 - Backward-compatible virtual overrides (`OnExecute(ExternalCommandData, ElementSet)` and the obsolete `OnExecute(ExternalCommandData, IServiceProvider)`)
@@ -204,9 +204,44 @@ public class MyCommand : RevitCommand
 
 ## Dependency Injection (DI) Scope
 
-Each command execution creates a new DI scope using Autofac and `Microsoft.Extensions.DependencyInjection`.
+By default, each command execution creates a new child DI lifetime scope using Autofac and `Microsoft.Extensions.DependencyInjection`. This scope is disposed automatically when execution completes.
+
+### Controlling Scope Creation: `UseNewScope`
+
+The `UseNewScope` property controls whether a new child scope is created for each execution:
+
+| Value   | Behaviour |
+|---------|-----------|
+| `true` *(default)* | A new child lifetime scope is created. Default Revit services and any services registered via `ConfigureServices` are available. |
+| `false` | No scope is created. Services are resolved directly from the root container. `ConfigureServices` is not called and no Revit context objects are registered. |
+
+Override this property when scope creation is not desired — for example, when the command resolves only long-lived singleton services that are already registered in the root container:
+
+```csharp
+public class MyCommand : RevitCommand
+{
+    protected override bool UseNewScope => false;
+
+    [RevitCommandExecute]
+    private Result Execute(IMyRootService service)
+    {
+        service.DoWork();
+        return Result.Succeeded;
+    }
+}
+```
+
+The property is `virtual`, so the override may contain arbitrary logic:
+
+```csharp
+protected override bool UseNewScope => _settings.UseScopedExecution;
+```
+
+> **Note:** When `UseNewScope` is `false`, the types listed in _What Is Registered by Default_ are **not** available for injection, because they are only registered inside the per-execution scope.
 
 ### What Is Registered by Default
+
+The following types are registered in the per-execution scope (only when `UseNewScope` is `true`):
 
 | Type             | Registered when            |
 |------------------|----------------------------|
@@ -243,14 +278,13 @@ public class MyCommand : RevitCommand
 
 ### DI Scope Creation Flow
 
-1. The framework creates a new DI scope for each command execution.
-2. Default Revit-related services are registered in the scope.
-3. `ConfigureServices` is called to register additional services.
-4. `BeforeExecute` is invoked (if declared), with parameters resolved from the scope.
-5. The transaction or transaction group is opened (according to the configured mode).
-6. `OnExecute` is invoked with parameters resolved from the scope.
-7. The transaction is committed or rolled back.
-8. `AfterExecute` is invoked (if declared), with parameters resolved from the scope.
+1. If `UseNewScope` is `true`, a new child DI scope is created; default Revit-related services are registered and `ConfigureServices` is called. Otherwise, the root container is used directly.
+2. `BeforeExecute` is invoked (if declared), with parameters resolved from the scope or root container.
+3. The transaction or transaction group is opened (according to the configured mode).
+4. `OnExecute` is invoked with parameters resolved from the scope or root container.
+5. The transaction is committed or rolled back.
+6. `AfterExecute` is invoked (if declared), with parameters resolved from the scope or root container.
+7. If a scope was created, it is disposed.
 
 ## Summary
 
@@ -263,3 +297,4 @@ public class MyCommand : RevitCommand
 | Pre-transaction setup          | Mark a `void` method with `[RevitCommandBeforeExecute]`                   |
 | Post-transaction cleanup       | Mark a `void` method with `[RevitCommandAfterExecute]`                    |
 | Register additional services   | Override `ConfigureServices(IServiceCollection services)`                 |
+| Disable per-execution scope    | Override `UseNewScope` and return `false`                                 |

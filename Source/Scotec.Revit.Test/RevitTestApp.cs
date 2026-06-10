@@ -18,6 +18,7 @@ using System.Runtime.Loader;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Hosting;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
@@ -95,7 +96,7 @@ public class RevitTestApp : RevitApp
         return base.OnStartup(application);
     }
 
-    [RevitStartup]
+    [RevitApplicationStartup]
     [UsedImplicitly]
     private bool OnStartup(IConfiguration configuration)
     {
@@ -105,6 +106,8 @@ public class RevitTestApp : RevitApp
             var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
             panel.AddItem(CreateTestButtonData());
+            panel.AddItem(CreateShowDialogButtonData());
+
         }
         catch (Exception)
         {
@@ -113,6 +116,17 @@ public class RevitTestApp : RevitApp
         }
 
         return true;
+    }
+
+    protected override void OnConfigure(IHostBuilder builder)
+    {
+        base.OnConfigure(builder);
+
+        builder.ConfigureServices((context, services) =>
+        {
+            services.AddScoped<TestRevitDialog>();
+            services.AddSingleton(new RevitTask());
+        });
     }
 
     private static PushButtonData CreateTestButtonData()
@@ -129,6 +143,20 @@ public class RevitTestApp : RevitApp
             , typeof(RevitTestCommandAvailabilityFactory));
 
         return pushButtonData;
+    }
+
+    private static PushButtonData CreateShowDialogButtonData()
+    {
+        var smallImageSource = BuildImageResourcePath("Information_16.png");
+        var largeImageSource = BuildImageResourcePath("Information_32.png");
+        return RevitControlFactory.CreateButtonData(
+            "ShowTestDialog",
+            "Show Dialog",
+            "Open the test dialog window.",
+            smallImageSource,
+            largeImageSource,
+            typeof(ShowTestDialogCommandFactory),
+            typeof(ShowTestDialogCommandAvailabilityFactory));
     }
 
     private static Uri BuildImageResourcePath(string imageFileName)

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
@@ -178,7 +177,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                           IServiceProvider serviceProvider)
     {
         // Prefer a method explicitly marked with [RevitCommandAvailabilityCheck].
-        var attributedCheck = FindSingleAttributedMethod<RevitCommandAvailabilityCheckAttribute>(typeof(bool));
+        var attributedCheck = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandAvailabilityCheckAttribute>(GetType(), typeof(RevitCommandAvailability), typeof(bool));
         if (attributedCheck is not null)
         {
             return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
@@ -208,32 +207,4 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
 #pragma warning restore CS0618
     }
 
-    /// <summary>
-    ///     Walks the type hierarchy from the concrete type up to (but not including)
-    ///     <see cref="RevitCommandAvailability" /> and collects all methods that carry
-    ///     <typeparamref name="TAttribute" /> and match <paramref name="returnType" />.
-    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" /> if more
-    ///     than one is found.
-    /// </summary>
-    private MethodInfo? FindSingleAttributedMethod<TAttribute>(Type returnType) where TAttribute : Attribute
-    {
-        var matches = new List<MethodInfo>();
-        var type = GetType();
-        while (type != null && type != typeof(RevitCommandAvailability))
-        {
-            matches.AddRange(
-                type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                    .Where(m => m.ReturnType == returnType && m.IsDefined(typeof(TAttribute), false)));
-            type = type.BaseType;
-        }
-
-        if (matches.Count > 1)
-        {
-            throw new InvalidOperationException(
-                $"Multiple methods marked with [{typeof(TAttribute).Name}] were found in the type hierarchy of '{GetType().Name}'. " +
-                $"Only one entry point per lifecycle slot is allowed.");
-        }
-
-        return matches.Count == 1 ? matches[0] : null;
-    }
 }

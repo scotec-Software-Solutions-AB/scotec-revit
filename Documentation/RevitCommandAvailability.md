@@ -1,4 +1,4 @@
-# RevitCommandAvailability Usage Guide
+﻿# RevitCommandAvailability Usage Guide
 
 This document provides a detailed guide on how to use the `RevitCommandAvailability` base class in the `Scotec.Revit` framework. It covers dependency injection (DI) scope creation, how to implement availability logic, and how to register additional services.
 
@@ -38,30 +38,30 @@ public class MyCommandAvailability : RevitCommandAvailability
 
 Any combination of DI-registered types is valid as parameters, including:
 
-- `UIApplication` — passed directly
-- `CategorySet` — passed directly
-- `Document`, `UIDocument`, `Application`, `View` — registered by the framework
-- `IServiceProvider` — registered by the framework
+- `UIApplication` â€” passed directly
+- `CategorySet` â€” passed directly
+- `Document`, `UIDocument`, `Application`, `View` â€” registered by the framework
+- `IServiceProvider` â€” registered by the framework
 - Any type registered via `ConfigureServices`
 
-The attributed method may be `private`, `protected`, or `public`. Only one method per type hierarchy may carry `[RevitCommandAvailabilityCheck]` — the framework throws `InvalidOperationException` at runtime if more than one is found.
+The attributed method may be `private`, `protected`, or `public`. Only one method per type hierarchy may carry `[RevitCommandAvailabilityCheck]` â€” the framework throws `InvalidOperationException` at runtime if more than one is found.
 
 #### Optional Parameters
 
-The framework distinguishes between required and optional parameters using two conventions — not on whether the type is inherently nullable. This applies to all types, including interfaces and classes, which are reference types and therefore always nullable at runtime.
+The framework distinguishes between required and optional parameters using two conventions â€” not on whether the type is inherently nullable. This applies to all types, including interfaces and classes, which are reference types and therefore always nullable at runtime.
 
 | Convention | Example | Behaviour |
 |---|---|---|
-| Nullable annotation | `IMyService? service` | Optional — receives `null` if not registered |
-| Default value of `null` | `IMyService service = null` | Optional — receives `null` if not registered |
-| No annotation, no default | `IMyService service` | Required — throws if not registered |
+| Nullable annotation | `IMyService? service` | Optional â€” receives `null` if not registered |
+| Default value of `null` | `IMyService service = null` | Optional â€” receives `null` if not registered |
+| No annotation, no default | `IMyService service` | Required â€” throws if not registered |
 
 ```csharp
 [RevitCommandAvailabilityCheck]
 private bool CheckAvailability(
-    Document document,              // required (T)      — throws if not registered
-    IMyService? optionalService,    // optional (T?)     — null if not registered
-    ILogging logging = null)        // optional (= null) — null if not registered
+    Document document,              // required (T)      â€” throws if not registered
+    IMyService? optionalService,    // optional (T?)     â€” null if not registered
+    ILogging logging = null)        // optional (= null) â€” null if not registered
 {
 
     logging?.Log("Checking availability");
@@ -87,9 +87,9 @@ public class MyCommandAvailability : RevitCommandAvailability
 
 The framework selects the method to invoke using the following priority:
 
-1. **`[RevitCommandAvailabilityCheck]` attribute** — any `bool`-returning method marked with the attribute. All parameters are resolved from DI. Throws `InvalidOperationException` if more than one such method exists in the type hierarchy.
-2. **`IsCommandAvailable(UIApplication, CategorySet)`** — called directly if overridden in the derived class.
-3. **`IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)`** *(obsolete)* — called for backward compatibility if none of the above is found.
+1. **`[RevitCommandAvailabilityCheck]` attribute** â€” any `bool`-returning method marked with the attribute. All parameters are resolved from DI. Throws `InvalidOperationException` if more than one such method exists in the type hierarchy.
+2. **`IsCommandAvailable(UIApplication, CategorySet)`** â€” called directly if overridden in the derived class.
+3. **`IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)`** *(obsolete)* â€” called for backward compatibility if none of the above is found.
 
 ### Obsolete Overload
 
@@ -99,7 +99,7 @@ The framework selects the method to invoke using the following priority:
 
 ## Dependency Injection (DI) Scope
 
-Each availability check creates a new DI scope using Autofac and `Microsoft.Extensions.DependencyInjection`.
+By default, each availability check creates a new child DI lifetime scope using Autofac and `Microsoft.Extensions.DependencyInjection`.
 
 ### What Is Registered by Default
 
@@ -111,6 +111,38 @@ Each availability check creates a new DI scope using Autofac and `Microsoft.Exte
 | `UIDocument`     | Active document is open    |
 | `Document`       | Active document is open    |
 | `View`           | Active view is available   |
+
+### Controlling Scope Creation: `UseNewScope`
+
+The `UseNewScope` property controls whether a new child scope is created for each availability check:
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` *(default)* | A new child lifetime scope is created. Context objects and any services registered via `ConfigureServices` are available for injection. |
+| `false` | No scope is created. Services are resolved directly from the root container. `ConfigureServices` is not called, and no context objects are registered. |
+
+Override this property when scope creation is not needed — for example, when the check resolves only long-lived singleton services already in the root container:
+
+```csharp
+public class MyCommandAvailability : RevitCommandAvailability
+{
+    protected override bool UseNewScope => false;
+
+    [RevitCommandAvailabilityCheck]
+    private bool CheckAvailability(IMyRootService service)
+    {
+        return service.IsFeatureEnabled();
+    }
+}
+```
+
+The property is `virtual`, so the override may contain arbitrary logic:
+
+```csharp
+protected override bool UseNewScope => _settings.UseScopedChecks;
+```
+
+> **Note:** When `UseNewScope` is `false`, `UIApplication`, `Document`, `View`, and all other context objects listed in _What Is Registered by Default_ are **not** available for injection.
 
 ### Registering Additional Services
 
@@ -147,5 +179,6 @@ public class MyCommandAvailability : RevitCommandAvailability
 |-------------------------------|------------------------------------------------------------------------------------------------|
 | Custom availability logic      | Mark a `bool`-returning method with `[RevitCommandAvailabilityCheck]`                         |
 | Standard availability logic    | Override `IsCommandAvailable(UIApplication, CategorySet)`                                     |
+| Disable per-check scope        | Override `UseNewScope` and return `false`                                                   |
 | Register additional services   | Override `ConfigureServices(IServiceCollection services)`                                     |
 | Connect to a command           | Set `AvailabilityClassName` on `PushButtonData` to the availability type name                 |

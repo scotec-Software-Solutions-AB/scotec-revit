@@ -3,4 +3,5 @@ packages
 obj
 bin
 localPackages
+*.user
 
