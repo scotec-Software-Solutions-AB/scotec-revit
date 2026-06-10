@@ -294,7 +294,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         var document = uiDocument?.Document;
         var view = uiDocument?.ActiveView;
 
-        var autofacRoot = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID()).GetAutofacRoot();
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;

@@ -3,7 +3,6 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -69,28 +68,26 @@ public sealed class RevitApplicationShutdownAttribute : Attribute;
 public abstract class RevitAppBase
 {
     /// <summary>
-    ///     Revit's assembly resolver loads assemblies used by multiple add-ins only once
-    ///     shared across add-ins.
-    ///     To ensure that each add-in uses its own instance of a service provider, service providers are stored in a
-    ///     static dictionary, keyed by the add-in ID.
-    ///     These add-in-specific service providers are utilized during the execution of Revit commands.
-    ///     However, this behavior does not apply if each plugin runs — as recommended — in its own isolation context.
-    ///     In such cases, the Scotec.Revit assembly is loaded separately in each context.
-    ///     Nonetheless, it may be a valid use case to run a set of add-ins within the same context, which is well supported by
-    ///     this library.
-    /// </summary>
-    private static readonly Dictionary<Guid, IServiceProvider> ServiceProviders;
-
-    /// <summary>
-    ///     Initializes static members of the <see cref="RevitAppBase" /> class.
+    ///     Holds the root <see cref="IServiceProvider" /> for the current add-in instance.
     /// </summary>
     /// <remarks>
-    ///     This static constructor initializes the <see cref="ServiceProviders" /> dictionary,
-    ///     ensuring that each Revit add-in has its own dedicated service provider.
+    ///     This property must be <c>static</c> because Revit instantiates types such as
+    ///     <see cref="RevitCommand" />, <see cref="RevitCommandAvailability" />, and
+    ///     <see cref="RevitEventHandler{TEventArgs}" /> directly, without any knowledge of DI.
+    ///     A static entry point is therefore the only way those types can obtain the service provider
+    ///     at runtime without requiring Revit to participate in object construction.
     /// </remarks>
-    static RevitAppBase()
+    private static IServiceProvider? ServiceProvider
     {
-        ServiceProviders = new Dictionary<Guid, IServiceProvider>();
+        get => field;
+        set
+        {
+            if (field is not null && value is not null)
+            {
+                throw new InvalidOperationException("ServiceProvider is already set. Only one instance of a Revit application is allowed per Assembly Load Context.");
+            }
+            field = value;
+        }
     }
 
     /// <summary>
@@ -118,11 +115,6 @@ public abstract class RevitAppBase
     /// </summary>
     protected abstract Type LifecycleStopType { get; }
 
-    /// <summary>
-    ///     Returns the ID of the add-in.
-    /// </summary>
-    [Obsolete("This property is deprecated and will be removed in a future version. Please use the 'AddInId' property instead.")]
-    protected Guid AddinId => AddInId;
 
     /// <summary>
     ///     Gets the unique identifier for the Revit add-in.
@@ -132,34 +124,6 @@ public abstract class RevitAppBase
     ///     It is set during the startup process and cannot be modified afterward.
     /// </remarks>
     protected Guid AddInId { get; private set; }
-
-    /// <summary>
-    ///     Provides access to the service provider associated with the current add-in.
-    /// </summary>
-    /// <remarks>
-    ///     This property is deprecated and will be removed in a future version.
-    ///     Use constructor or method injection via the DI container instead, or resolve services through
-    ///     a method marked with <see cref="RevitApplicationStartupAttribute" /> or <see cref="RevitApplicationShutdownAttribute" />.
-    /// </remarks>
-    [Obsolete("This property is deprecated and will be removed in a future version. Use DI injection via [RevitStartup] / [RevitShutdown] methods instead.")]
-    protected IServiceProvider Services => GetServiceProvider(AddInId);
-
-    /// <summary>
-    ///     Returns the location of the add-in.
-    /// </summary>
-    /// <remarks>
-    ///     This method is deprecated and will be removed in a future version.
-    ///     Please use the <see cref="GetAddInPath" /> method instead.
-    /// </remarks>
-    /// <returns>
-    ///     A string representing the directory path of the add-in.
-    /// </returns>
-    /// <seealso cref="GetAddInPath" />
-    [Obsolete("This method is deprecated and will be removed in a future version. Please use the 'GetAddInPath' method instead.")]
-    public string GetAddinPath()
-    {
-        return GetAddInPath();
-    }
 
     /// <summary>
     ///     Retrieves the directory path of the current add-in.
@@ -237,70 +201,6 @@ public abstract class RevitAppBase
     }
 
     /// <summary>
-    ///     Resolves an assembly when the runtime fails to locate it.
-    /// </summary>
-    /// <param name="args">
-    ///     The <see cref="ResolveEventArgs" /> containing information about the assembly that failed to load.
-    /// </param>
-    /// <returns>
-    ///     An <see cref="Assembly" /> instance representing the resolved assembly, or <c>null</c> if the assembly could not be
-    ///     found.
-    /// </returns>
-    /// <remarks>
-    ///     This method can be overridden in derived classes to implement a custom assembly resolution strategy.
-    ///     By default, it attempts to locate the assembly in the same directory as the current add-in.
-    ///     This method should never be invoked if the add-in runs in its own assembly load context,
-    ///     as the assembly will be loaded into that context separately for each add-in.
-    ///     However, it may still be a valid use case (but not recommended at all) to run a set of add-ins within the
-    ///     same context, which is well supported by this library. In such cases, this method will be invoked if the
-    ///     runtime fails to locate an assembly used by the add-in, and it will attempt to resolve it from the add-in's
-    ///     directory.
-    ///     <br/><br/>
-    ///     This method is marked as obsolete and will be removed in a future version, as it is not needed when
-    ///     running each plugin in its own isolation context, and relying on it encourages bad practices of sharing
-    ///     assemblies across add-ins and running multiple add-ins within the same context.
-    /// </remarks>
-    [Obsolete("This method is not needed when running each plugin in its own isolation context, and relying on it encourages bad practices of sharing assemblies across add-ins and running multiple add-ins within the same context. Consider using a custom AssemblyLoadContext for better isolation and assembly resolution.")]
-    protected virtual Assembly? OnAssemblyResolve(ResolveEventArgs args)
-    {
-        var currentPath = GetAddInPath();
-        var assemblyName = new AssemblyName(args.Name);
-
-        var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
-        return File.Exists(assemblyPath)
-            ? Assembly.LoadFrom(assemblyPath)
-            : null;
-    }
-
-    /// <summary>
-    ///     Resolves and loads an assembly based on the provided assembly name and context.
-    /// </summary>
-    /// <param name="context">
-    ///     The <see cref="AssemblyLoadContext" /> in which the assembly is being resolved.
-    /// </param>
-    /// <param name="assemblyName">
-    ///     The <see cref="AssemblyName" /> of the assembly to resolve.
-    /// </param>
-    /// <returns>
-    ///     The loaded <see cref="Assembly" /> if found; otherwise, <c>null</c>.
-    /// </returns>
-    /// <remarks>
-    ///     This method attempts to locate the assembly in the directory of the current add-in
-    ///     and loads it into the specified load context. If the assembly file does not exist
-    ///     or cannot be loaded, <c>null</c> is returned.
-    /// </remarks>
-    protected virtual Assembly? OnAssemblyResolve(AssemblyLoadContext context, AssemblyName assemblyName)
-    {
-        var currentPath = GetAddInPath();
-        var assemblyPath = Path.Combine(currentPath!, assemblyName.Name + ".dll");
-        var currentContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
-
-        return currentContext != null && File.Exists(assemblyPath)
-            ? currentContext.LoadFromAssemblyPath(assemblyPath)
-            : null;
-    }
-
-    /// <summary>
     ///     Handles the startup process for the Revit application.
     /// </summary>
     /// <param name="addInId">
@@ -318,14 +218,6 @@ public abstract class RevitAppBase
     /// </exception>
     internal bool StartupCore(AddInId addInId)
     {
-        var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
-        if (loadContext != null)
-        {
-            loadContext.Resolving += LoadContextOnResolving;
-        }
-
-        //AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
-
         AddInId = addInId.GetGUID();
 
         try
@@ -336,7 +228,7 @@ public abstract class RevitAppBase
             Host = builder.Build();
             Host.Start();
 
-            AddServiceProvider(Host.Services);
+            ServiceProvider = Host.Services;
             return InvokeOnStartup(Host.Services);
         }
         catch (Exception)
@@ -368,18 +260,10 @@ public abstract class RevitAppBase
         {
             var result = InvokeOnShutdown(Host?.Services);
 
-            ServiceProviders.Remove(application.ActiveAddInId.GetGUID());
+            ServiceProvider = null;
             Host?.StopAsync().GetAwaiter().GetResult();
             Host?.Dispose();
             Host = null;
-
-            AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomainOnAssemblyResolve;
-
-            var loadContext = AssemblyLoadContext.GetLoadContext(GetAssembly());
-            if (loadContext != null)
-            {
-                loadContext.Resolving -= LoadContextOnResolving;
-            }
 
             return result;
         }
@@ -390,37 +274,15 @@ public abstract class RevitAppBase
     }
 
     /// <summary>
-    ///     Retrieves the <see cref="IServiceProvider" /> associated with the specified Add-In ID.
+    ///     Returns the root <see cref="IServiceProvider" /> for the current add-in.
     /// </summary>
-    /// <param name="addInId">The unique identifier of the Add-In for which the service provider is requested.</param>
-    /// <returns>The <see cref="IServiceProvider" /> instance associated with the specified Add-In ID.</returns>
-    /// <exception cref="KeyNotFoundException">
-    ///     Thrown if no service provider is found for the given <paramref name="addInId" />.
-    /// </exception>
-    internal static IServiceProvider GetServiceProvider(Guid addInId)
-    {
-        return ServiceProviders[addInId];
-    }
-
-    /// <summary>
-    ///     Handles the resolution of assemblies within the specified <see cref="AssemblyLoadContext" />.
-    /// </summary>
-    /// <param name="context">
-    ///     The <see cref="AssemblyLoadContext" /> in which the assembly is being resolved.
-    /// </param>
-    /// <param name="assemblyName">
-    ///     The <see cref="AssemblyName" /> of the assembly to resolve.
-    /// </param>
     /// <returns>
-    ///     The resolved <see cref="Assembly" /> if found; otherwise, <c>null</c>.
+    ///     The <see cref="IServiceProvider" /> set during <see cref="StartupCore" />, or <c>null</c> if the
+    ///     add-in has not started or has already shut down.
     /// </returns>
-    /// <remarks>
-    ///     This method delegates the resolution logic to the
-    ///     <see cref="OnAssemblyResolve(AssemblyLoadContext, AssemblyName)" /> method.
-    /// </remarks>
-    private Assembly? LoadContextOnResolving(AssemblyLoadContext context, AssemblyName assemblyName)
+    internal static IServiceProvider GetServiceProvider()
     {
-        return OnAssemblyResolve(context, assemblyName);
+        return ServiceProvider ?? throw new InvalidOperationException("The service provider is not available. Ensure the add-in has started successfully.");
     }
 
     /// <summary>
@@ -508,26 +370,6 @@ public abstract class RevitAppBase
     }
 
     /// <summary>
-    ///     Adds a service provider to the static dictionary of service providers, associating it with the current add-in's ID.
-    /// </summary>
-    /// <param name="services">
-    ///     The <see cref="IServiceProvider" /> instance to associate with the current add-in.
-    /// </param>
-    /// <remarks>
-    ///     This method ensures that each add-in has its own dedicated service provider, avoiding conflicts caused by shared
-    ///     static members when multiple add-ins are loaded in the same Revit process.
-    ///     When running each plugin in its own isolation context, the Scotec.Revit assembly is loaded separately for each
-    ///     context,
-    ///     and this method will not be invoked multiple times for the same assembly. However, it may still be a valid use case
-    ///     to
-    ///     run a set of add-ins within the same context, which is well supported by this library.
-    /// </remarks>
-    private void AddServiceProvider(IServiceProvider services)
-    {
-        ServiceProviders.Add(AddInId, services);
-    }
-
-    /// <summary>
     ///     Creates and configures a new instance of <see cref="IHostBuilder" /> for the Revit application.
     /// </summary>
     /// <remarks>
@@ -541,28 +383,5 @@ public abstract class RevitAppBase
     private IHostBuilder CreateRevitHostBuilder()
     {
         return new RevitHostBuilder(this);
-    }
-
-    /// <summary>
-    ///     Handles the <see cref="AppDomain.AssemblyResolve" /> event to resolve assemblies that cannot be located by the
-    ///     runtime.
-    /// </summary>
-    /// <param name="sender">
-    ///     The source of the event, typically the current <see cref="AppDomain" />.
-    /// </param>
-    /// <param name="args">
-    ///     The <see cref="ResolveEventArgs" /> containing information about the assembly that failed to load.
-    /// </param>
-    /// <returns>
-    ///     An <see cref="Assembly" /> instance representing the resolved assembly, or <c>null</c> if the assembly could not be
-    ///     found.
-    /// </returns>
-    /// <remarks>
-    ///     This method delegates the resolution logic to the <see cref="OnAssemblyResolve(ResolveEventArgs)" /> method.
-    ///     It is automatically attached to the <see cref="AppDomain.AssemblyResolve" /> event during application startup.
-    /// </remarks>
-    private Assembly? CurrentDomainOnAssemblyResolve(object? sender, ResolveEventArgs args)
-    {
-        return OnAssemblyResolve(args);
     }
 }

@@ -294,7 +294,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
         var application = uiApplication.Application;
         var document = uiDocument?.Document;
         var view = uiDocument?.ActiveView;
-        return RevitAppBase.GetServiceProvider(uiApplication.Application.ActiveAddInId.GetGUID())
+        return RevitAppBase.GetServiceProvider()
                            .GetAutofacRoot()
                            .BeginLifetimeScope(builder =>
                            {

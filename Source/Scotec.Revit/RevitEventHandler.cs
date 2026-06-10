@@ -149,7 +149,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;
 
-        var autofacRoot = RevitAppBase.GetServiceProvider(AddInId).GetAutofacRoot();
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         if (UseNewScope)
         {

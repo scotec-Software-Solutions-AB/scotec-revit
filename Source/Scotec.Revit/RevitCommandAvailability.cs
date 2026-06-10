@@ -61,7 +61,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             var document = uiDocument?.Document;
             var view = uiDocument?.ActiveView;
 
-            using var scope = RevitAppBase.GetServiceProvider(uiApplication.ActiveAddInId.GetGUID())
+            using var scope = RevitAppBase.GetServiceProvider()
                                           .GetAutofacRoot()
                                           .BeginLifetimeScope(builder =>
                                           {

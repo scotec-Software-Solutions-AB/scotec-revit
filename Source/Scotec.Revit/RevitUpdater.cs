@@ -95,7 +95,7 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     void IUpdater.Execute(UpdaterData data)
     {
         var document = data.GetDocument();
-        using var scope = RevitAppBase.GetServiceProvider(AddInId.GetGUID())
+        using var scope = RevitAppBase.GetServiceProvider()
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {

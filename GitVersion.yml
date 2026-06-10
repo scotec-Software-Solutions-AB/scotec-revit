@@ -1,5 +1,5 @@
 mode: ContinuousDelivery
-next-version: 2027.3.2
+next-version: 2027.4.0
 branches: 
     main:
         increment: Patch
