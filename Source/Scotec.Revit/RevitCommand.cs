@@ -9,6 +9,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
@@ -97,7 +98,7 @@ public enum RevitTransactionMode
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
 public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 
 /// <summary>
@@ -111,7 +112,7 @@ public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
 public sealed class RevitCommandExecuteAttribute : Attribute;
 
 /// <summary>
@@ -124,7 +125,7 @@ public sealed class RevitCommandExecuteAttribute : Attribute;
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
 public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 
 /// <summary>
@@ -288,12 +289,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </exception>
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
-        var uiApplication = commandData.Application;
-        var application = uiApplication.Application;
-        var uiDocument = uiApplication.ActiveUIDocument;
-        var document = uiDocument?.Document;
-        var view = uiDocument?.ActiveView;
-
+        var context = new RevitUiContext(commandData.Application);
         var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         ILifetimeScope? scope = null;
@@ -301,7 +297,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
         if (UseNewScope)
         {
-            scope = CreateLifetimeScope(autofacRoot, uiApplication, application, uiDocument, document, view);
+            scope = CreateLifetimeScope(autofacRoot, context);
             serviceProvider = scope.Resolve<IServiceProvider>();
         }
         else
@@ -319,7 +315,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             Result result;
 
             // Skip transaction management if no document is open or transaction is not required.
-            if (document is null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+            if (transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
                 result = InvokeOnExecute(commandData, elements, serviceProvider);
             }
@@ -328,9 +324,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                 result = transactionMode switch
                 {
                     RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
-                        => ExecuteTransaction(commandData, elements, document, serviceProvider, transactionMode),
+                        => ExecuteTransaction(commandData, elements, context.Document, serviceProvider, transactionMode),
                     RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
-                        => ExecuteTransactionGroup(commandData, elements, document, serviceProvider, transactionMode),
+                        => ExecuteTransactionGroup(commandData, elements, context.Document, serviceProvider, transactionMode),
                     _ => Result.Failed
                 };
             }
@@ -520,35 +516,13 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
     private ILifetimeScope CreateLifetimeScope(
         ILifetimeScope autofacRoot,
-        UIApplication uiApplication,
-        Autodesk.Revit.ApplicationServices.Application? application,
-        UIDocument? uiDocument,
-        Document? document,
-        View? view)
+        IRevitUiContext context)
     {
         return autofacRoot.BeginLifetimeScope(builder =>
         {
-            builder.RegisterInstance(uiApplication).ExternallyOwned();
-
-            if (application is not null)
-            {
-                builder.RegisterInstance(application).ExternallyOwned();
-            }
-
-            if (uiDocument is not null)
-            {
-                builder.RegisterInstance(uiDocument).ExternallyOwned();
-            }
-
-            if (document is not null)
-            {
-                builder.RegisterInstance(document).ExternallyOwned();
-            }
-
-            if (view is not null)
-            {
-                builder.RegisterInstance(view).ExternallyOwned();
-            }
+            builder.RegisterInstance(context).As<IRevitUiContext>()
+                   .As<IRevitContext>()
+                   .InstancePerLifetimeScope();
 
             // Allow derived classes to add services
             var services = new ServiceCollection();
@@ -577,10 +551,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         }
         finally
         {
-            if(transactionGroup.HasStarted())
+            if (transactionGroup.HasStarted())
             {
                 transactionGroup.RollBack();
-            }   
+            }
         }
     }
 
@@ -612,7 +586,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             {
                 transaction.RollBack();
             }
-
         }
     }
 
@@ -667,7 +640,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                 [typeof(IServiceProvider)] = serviceProvider
             });
     }
-
 
     /// <summary>
     ///     Invokes the command's execute entry point. If a method marked with <see cref="RevitCommandExecuteAttribute" />

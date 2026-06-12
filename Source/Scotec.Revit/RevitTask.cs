@@ -1,4 +1,4 @@
-﻿// Copyright © 2023 - 2026 Olaf Meyer
+// Copyright © 2023 - 2026 Olaf Meyer
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
@@ -24,7 +24,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     private readonly ExternalEvent _externalEvent;
     private readonly string _name;
     private readonly ManualResetEvent _resetEvent = new(false);
-    private Func<UIApplication, object>? _action;
+    private Func<IRevitUiContext, object>? _function;
     private Exception? _exception;
     private object? _result;
 
@@ -60,7 +60,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <summary>
     ///     Executes the external event handler within the Revit API context.
     /// </summary>
-    /// <param name="app">
+    /// <param name="uiApplication">
     ///     An instance of <see cref="Autodesk.Revit.UI.UIApplication" /> that provides access to the Revit application
     ///     and its related objects.
     /// </param>
@@ -68,13 +68,14 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     This method is invoked by the Revit API when the external event is raised. It ensures that the action
     ///     associated with the task is executed on the appropriate thread and signals the completion of the task.
     /// </remarks>
-    void IExternalEventHandler.Execute(UIApplication app)
+    void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
         try
         {
-            if (_action is not null)
+            if (_function is not null)
             {
-                _result = _action(app);
+                var context = new RevitUiContext(uiApplication);
+                _result = _function(context);
             }
         }
         catch (Exception ex)
@@ -110,7 +111,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     The type of the result returned by the task.
     /// </typeparam>
     /// <param name="action">
-    ///     A function that takes an <see cref="Autodesk.Revit.UI.UIApplication" /> instance as a parameter
+    ///     A function that takes an <see cref="IRevitUiContext" /> instance as a parameter
     ///     and returns a result of type <typeparamref name="TResult" />.
     /// </param>
     /// <returns>
@@ -125,9 +126,9 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
     /// </exception>
-    public async Task<TResult> Run<TResult>(Func<UIApplication, TResult> action)
+    public async Task<TResult> Run<TResult>(Func<IRevitUiContext, TResult> action)
     {
-        _action = uiApplication => action(uiApplication)!;
+        _function = context => action(context)!;
         var task = ExecuteInternalAsync<TResult>();
 
         var result = await task;
@@ -139,7 +140,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     Executes a task within the Revit API context.
     /// </summary>
     /// <param name="action">
-    ///     An action that takes an <see cref="Autodesk.Revit.UI.UIApplication" /> instance as a parameter.
+    ///     An action that takes an <see cref="IRevitUiContext" /> instance as a parameter.
     /// </param>
     /// <returns>
     ///     A <see cref="Task" /> representing the asynchronous operation.
@@ -152,11 +153,11 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
     /// </exception>
-    public async Task Run(Action<UIApplication> action)
+    public async Task Run(Action<IRevitUiContext> action)
     {
-        _action = uiApplication =>
+        _function = context =>
         {
-            action(uiApplication);
+            action(context);
             return new object();
         };
         var task = ExecuteInternalAsync<object>();
@@ -172,10 +173,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <param name="action">
     ///     A delegate with any number and types of parameters. All parameters are resolved from the
     ///     scoped service provider. The scope automatically registers the current
-    ///     <see cref="Autodesk.Revit.UI.UIApplication" />, <see cref="Autodesk.Revit.ApplicationServices.Application" />,
-    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if
-    ///     available),
-    ///     and the active <see cref="Autodesk.Revit.DB.View" /> (if available).
+    ///     <see cref="IRevitUiContext" /> (also resolvable as <see cref="IRevitContext" />).
     /// </param>
     /// <param name="configureServices">
     ///     An optional callback to register additional services into the lifetime scope before
@@ -197,9 +195,9 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
                 $"Delegate '{action.Method.Name}' returns void. Use Run(Delegate, ...) instead.");
         }
 
-        _action = uiApplication =>
+        _function = context =>
         {
-            using var scope = CreateLifetimeScope(uiApplication, configureServices);
+            using var scope = CreateLifetimeScope(context, configureServices);
             var serviceProvider = scope.Resolve<IServiceProvider>();
             var args = ResolveParameters(action.Method, serviceProvider);
 
@@ -216,10 +214,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <param name="action">
     ///     A delegate with any number and types of parameters. All parameters are resolved from the
     ///     scoped service provider. The scope automatically registers the current
-    ///     <see cref="Autodesk.Revit.UI.UIApplication" />, <see cref="Autodesk.Revit.ApplicationServices.Application" />,
-    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available), <see cref="Autodesk.Revit.DB.Document" /> (if
-    ///     available),
-    ///     and the active <see cref="Autodesk.Revit.DB.View" /> (if available).
+    ///     <see cref="IRevitUiContext" /> (also resolvable as <see cref="IRevitContext" />).
     /// </param>
     /// <param name="configureServices">
     ///     An optional callback to register additional services into the lifetime scope before
@@ -234,9 +229,9 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
 
         // Return value is discarded; SCOTEC0002 warns at compile time when the caller passes a non-void delegate.
 
-        _action = uiApplication =>
+        _function = context =>
         {
-            using var scope = CreateLifetimeScope(uiApplication, configureServices);
+            using var scope = CreateLifetimeScope(context, configureServices);
             var serviceProvider = scope.Resolve<IServiceProvider>();
 
             var args = ResolveParameters(action.Method, serviceProvider);
@@ -271,15 +266,12 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
 
     /// <summary>
     ///     Creates a scoped Autofac lifetime scope for use within a Revit API context.
-    ///     The scope automatically registers the current <see cref="Autodesk.Revit.UI.UIApplication" />,
-    ///     <see cref="Autodesk.Revit.ApplicationServices.Application" />,
-    ///     <see cref="Autodesk.Revit.UI.UIDocument" /> (if available),
-    ///     <see cref="Autodesk.Revit.DB.Document" /> (if available),
-    ///     and the active <see cref="Autodesk.Revit.DB.View" /> (if available).
+    ///     Registers the provided <see cref="IRevitUiContext" /> as both
+    ///     <see cref="IRevitUiContext" /> and <see cref="IRevitContext" />.
     /// </summary>
-    /// <param name="uiApplication">
-    ///     The current <see cref="Autodesk.Revit.UI.UIApplication" /> instance providing access to
-    ///     the Revit application and its active document context.
+    /// <param name="context">
+    ///     The <see cref="IRevitUiContext" /> instance providing access to the Revit application
+    ///     and its active document context.
     /// </param>
     /// <param name="configureServices">
     ///     An optional callback to register additional services into the lifetime scope before
@@ -288,38 +280,16 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <returns>
     ///     A new <see cref="ILifetimeScope" /> with Revit context services registered.
     /// </returns>
-    private static ILifetimeScope CreateLifetimeScope(UIApplication uiApplication, Action<IServiceCollection>? configureServices)
+    private static ILifetimeScope CreateLifetimeScope(IRevitUiContext context, Action<IServiceCollection>? configureServices)
     {
-        var uiDocument = uiApplication.ActiveUIDocument;
-        var application = uiApplication.Application;
-        var document = uiDocument?.Document;
-        var view = uiDocument?.ActiveView;
         return RevitAppBase.GetServiceProvider()
                            .GetAutofacRoot()
                            .BeginLifetimeScope(builder =>
                            {
-                               if (uiDocument is not null)
-                               {
-                                   builder.RegisterInstance(uiDocument).ExternallyOwned();
-                               }
-
-                               if (document is not null)
-                               {
-                                   builder.RegisterInstance(document).ExternallyOwned();
-                               }
-
-                               if (view is not null)
-                               {
-                                   builder.RegisterInstance(view).ExternallyOwned();
-                               }
-
-                               if (application is not null)
-                               {
-                                   builder.RegisterInstance(application).ExternallyOwned();
-                               }
-
-                               builder.RegisterInstance(uiApplication).ExternallyOwned();
-
+                                   builder.RegisterInstance(context)
+                                          .As<IRevitUiContext>()
+                                          .As<IRevitContext>()
+                                          .InstancePerLifetimeScope();
                                // Allow to add services
                                var services = new ServiceCollection();
                                configureServices?.Invoke(services);

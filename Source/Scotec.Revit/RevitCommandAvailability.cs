@@ -60,11 +60,16 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             var uiDocument = uiApplication.ActiveUIDocument;
             var document = uiDocument?.Document;
             var view = uiDocument?.ActiveView;
+            var context = new RevitUiContext(uiApplication);
 
             using var scope = RevitAppBase.GetServiceProvider()
                                           .GetAutofacRoot()
                                           .BeginLifetimeScope(builder =>
                                           {
+                                              builder.RegisterInstance(context)
+                                                     .As<IRevitUiContext>()
+                                                     .As<IRevitContext>()
+                                                     .InstancePerLifetimeScope();
                                               builder.RegisterInstance(uiApplication).ExternallyOwned();
 
                                               if (application is not null)
