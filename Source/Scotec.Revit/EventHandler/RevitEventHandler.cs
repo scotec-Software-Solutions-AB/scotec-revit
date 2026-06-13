@@ -2,24 +2,14 @@
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
+using Autodesk.Revit.DB.Events;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
 
-namespace Scotec.Revit;
-
-/// <summary>
-///     Marks a method as the execute entry point for a <see cref="RevitEventHandler{TEventArgs}" />.
-/// </summary>
-/// <remarks>
-///     Apply this attribute to a single method in a derived class. The framework discovers and invokes
-///     it with parameters resolved from the per-invocation DI scope. If no method is marked, the framework
-///     falls back to <see cref="RevitEventHandler{TEventArgs}.OnExecute" />.
-/// </remarks>
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class RevitEventHandlerExecuteAttribute : Attribute;
+namespace Scotec.Revit.EventHandler;
 
 /// <summary>
 ///     Abstract generic base class for handling a Revit application event with a DI lifetime scope per invocation.
@@ -45,7 +35,7 @@ public sealed class RevitEventHandlerExecuteAttribute : Attribute;
 ///     </para>
 /// </remarks>
 public abstract class RevitEventHandler<TEventArgs> : IDisposable
-    where TEventArgs : EventArgs
+    where TEventArgs : RevitAPIEventArgs
 {
     private bool _disposed;
 
@@ -133,7 +123,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
     /// <param name="sender">The event sender object.</param>
     /// <param name="args">The event args instance.</param>
-    protected virtual void RegisterEventContext(IServiceCollection services, object sender, TEventArgs args)
+    protected virtual void RegisterEventContext(IServiceCollection services, object? sender, TEventArgs args)
     {
     }
 
@@ -144,7 +134,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     /// </summary>
     /// <param name="sender">The event sender.</param>
     /// <param name="args">The event args.</param>
-    protected void HandleEvent(object sender, TEventArgs args)
+    protected void HandleEvent(object? sender, TEventArgs args)
     {
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;
@@ -156,7 +146,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
             scope = autofacRoot.BeginLifetimeScope(builder =>
             {
                 var services = new ServiceCollection();
-                services.AddSingleton(typeof(TEventArgs), args);
+                services.AddScoped<TEventArgs>(_ => args);
                 RegisterEventContext(services, sender, args);
                 ConfigureServices(services);
                 builder.Populate(services);
@@ -210,3 +200,4 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
         OnExecute(args);
     }
 }
+

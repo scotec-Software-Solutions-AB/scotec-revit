@@ -22,7 +22,6 @@
     <File Path="../Documentation/RevitTask.md" />
     <File Path="../Documentation/RevitUpdater.md" />
   </Folder>
-  <Folder Name="/SolutionItems/NewFolder1/" />
   <Folder Name="/SolutionItems/Source/" />
   <Folder Name="/SolutionItems/Source/.github/" />
     <Folder Name="/SolutionItems/Copilot/">

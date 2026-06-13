@@ -10,6 +10,7 @@ using System.Runtime.Loader;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Microsoft.Extensions.Hosting;
+using Scotec.Revit.EventHandler;
 
 namespace Scotec.Revit;
 

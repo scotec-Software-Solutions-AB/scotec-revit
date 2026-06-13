@@ -520,7 +520,8 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     {
         return autofacRoot.BeginLifetimeScope(builder =>
         {
-            builder.RegisterInstance(context).As<IRevitUiContext>()
+            builder.RegisterInstance(context)
+                   .As<IRevitUiContext>()
                    .As<IRevitContext>()
                    .InstancePerLifetimeScope();
 
@@ -654,6 +655,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
     {
+
         // Prefer a method explicitly marked with [RevitCommandExecute].
         var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandExecuteAttribute>(GetType(), typeof(RevitCommand), typeof(Result));
         if (attributedExecute is not null)

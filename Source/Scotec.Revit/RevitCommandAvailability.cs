@@ -56,10 +56,6 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     {
         try
         {
-            var application = uiApplication.Application;
-            var uiDocument = uiApplication.ActiveUIDocument;
-            var document = uiDocument?.Document;
-            var view = uiDocument?.ActiveView;
             var context = new RevitUiContext(uiApplication);
 
             using var scope = RevitAppBase.GetServiceProvider()
@@ -70,27 +66,6 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                                      .As<IRevitUiContext>()
                                                      .As<IRevitContext>()
                                                      .InstancePerLifetimeScope();
-                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
-
-                                              if (application is not null)
-                                              {
-                                                  builder.RegisterInstance(application).ExternallyOwned();
-                                              }
-
-                                              if (uiDocument is not null)
-                                              {
-                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
-                                              }
-
-                                              if (document is not null)
-                                              {
-                                                  builder.RegisterInstance(document).ExternallyOwned();
-                                              }
-
-                                              if (view is not null)
-                                              {
-                                                  builder.RegisterInstance(view).ExternallyOwned();
-                                              }
 
                                               // Allow derived classes to add services
                                               var services = new ServiceCollection();
@@ -188,7 +163,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
                 new Dictionary<Type, object>
                 {
-                    [typeof(UIApplication)] = applicationData,
+                    [typeof(IRevitUiContext)] = applicationData,
                     [typeof(CategorySet)] = selectedCategories,
                     [typeof(IServiceProvider)] = serviceProvider
                 })!;

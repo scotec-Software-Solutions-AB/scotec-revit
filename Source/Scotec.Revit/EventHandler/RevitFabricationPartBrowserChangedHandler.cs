@@ -1,0 +1,47 @@
+// Copyright (c) 2023 - 2026 Olaf Meyer
+// Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
+// This file is licensed to you under the MIT license.
+
+using System;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Scotec.Revit.EventHandler;
+
+/// <summary>
+///     Handles the Revit <see cref="UIControlledApplication.FabricationPartBrowserChanged" /> event.
+/// </summary>
+/// <remarks>
+///     Only available when the application is registered as <c>IExternalApplication</c> (via <see cref="RevitApp" />).
+///     <para>
+///         The per-invocation DI scope registers <see cref="FabricationPartBrowserChangedEventArgs" />.
+///     </para>
+/// </remarks>
+public abstract class RevitFabricationPartBrowserChangedHandler : RevitSingleEventHandler<FabricationPartBrowserChangedEventArgs>
+{
+    private readonly UIControlledApplication _application;
+
+    /// <summary>
+    ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.FabricationPartBrowserChanged" />.
+    /// </summary>
+    /// <param name="application">The Revit UI controlled application.</param>
+    protected RevitFabricationPartBrowserChangedHandler(UIControlledApplication application)
+        : base(application.ActiveAddInId.GetGUID())
+    {
+        _application = application;
+    }
+
+    /// <inheritdoc />
+    protected override void Subscribe()
+    {
+        _application.FabricationPartBrowserChanged += HandleEvent;
+    }
+
+    /// <inheritdoc />
+    protected override void Unsubscribe()
+    {
+        _application.FabricationPartBrowserChanged -= HandleEvent;
+    }
+}
