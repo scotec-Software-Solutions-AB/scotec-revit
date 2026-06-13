@@ -13,4 +13,14 @@ public abstract class RevitPreEventHandler<TEventArgs> : RevitEventHandler<TEven
     protected RevitPreEventHandler(Guid addInId) : base(addInId)
     {
     }
+
+    public void Cancel()
+    {
+        if(EventArgs is null)
+        {
+            throw new InvalidOperationException("EventArgs not set. This method can only be called during event handling.");
+        }
+
+        EventArgs.Cancel();
+    }
 }

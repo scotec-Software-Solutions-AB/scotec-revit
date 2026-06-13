@@ -2,11 +2,9 @@
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
 

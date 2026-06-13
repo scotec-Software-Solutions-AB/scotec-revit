@@ -57,6 +57,8 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     /// </summary>
     protected Guid AddInId { get; }
 
+    protected TEventArgs? EventArgs { get; private set; }
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -69,6 +71,10 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
+    public bool IsCancellable => EventArgs?.Cancellable ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
+
+    public bool IsCancelled => EventArgs?.IsCancelled() ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
 
     /// <summary>
     ///     Subscribes to the specific Revit event. Called once from the constructor.
@@ -136,9 +142,10 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     /// <param name="args">The event args.</param>
     protected void HandleEvent(object? sender, TEventArgs args)
     {
+        
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;
-
+        
         var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         if (UseNewScope)
