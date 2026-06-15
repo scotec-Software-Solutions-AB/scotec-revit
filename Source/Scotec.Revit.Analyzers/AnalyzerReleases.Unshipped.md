@@ -5,5 +5,3 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-SCOTEC001 | Usage | Error | RevitTaskRunAnalyzer
-SCOTEC002 | Usage | Warning | RevitTaskRunAnalyzer
