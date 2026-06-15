@@ -25,7 +25,7 @@ namespace Scotec.Revit.EventHandler;
 ///         polling is truly required, and revert to the default behavior as soon as possible.
 ///     </para>
 /// </remarks>
-public abstract class RevitIdlingHandler : RevitPreEventHandler<IdlingEventArgs>
+public abstract class RevitIdlingHandler : RevitPreEventHandler<UIApplication, IdlingEventArgs>
 {
     private readonly UIControlledApplication _application;
 
@@ -53,11 +53,11 @@ public abstract class RevitIdlingHandler : RevitPreEventHandler<IdlingEventArgs>
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, object sender, IdlingEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, UIApplication? sender, IdlingEventArgs args)
     {
-        if (sender is UIApplication uiApplication)
+        if (sender is not null)
         {
-            var context = new RevitUiContext(uiApplication);
+            var context = new RevitUiContext(sender);
             services.AddScoped<IRevitUiContext>(_ => context);
             services.AddScoped<IRevitContext>(_ => context);
         }

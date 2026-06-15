@@ -20,7 +20,7 @@ namespace Scotec.Revit.EventHandler;
 ///         No <see cref="Document" /> exists yet at this stage.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentCreatingHandler : RevitPreEventHandler<DocumentCreatingEventArgs>
+public abstract class RevitDocumentCreatingHandler : RevitPreEventHandler<Application, DocumentCreatingEventArgs>
 {
     private readonly ControlledApplication _application;
 

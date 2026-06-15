@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that was printed.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentPrintedHandler : RevitPostDocumentEventHandler<DocumentPrintedEventArgs>
+public abstract class RevitDocumentPrintedHandler : RevitPostDocumentEventHandler<Application, DocumentPrintedEventArgs>
 {
     private readonly ControlledApplication _application;
 

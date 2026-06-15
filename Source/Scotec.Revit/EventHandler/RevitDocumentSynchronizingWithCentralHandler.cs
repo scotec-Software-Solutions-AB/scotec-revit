@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> being synchronized.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitPreDocumentEventHandler<DocumentSynchronizingWithCentralEventArgs>
+public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitPreDocumentEventHandler<Application, DocumentSynchronizingWithCentralEventArgs>
 {
     private readonly ControlledApplication _application;
 
@@ -50,7 +50,7 @@ public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitPreDoc
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentSynchronizingWithCentralEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, Application? sender, DocumentSynchronizingWithCentralEventArgs args)
     {
         var document = args.Document;
 

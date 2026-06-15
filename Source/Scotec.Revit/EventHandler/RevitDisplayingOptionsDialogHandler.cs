@@ -20,7 +20,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Use the event args to add custom tabs to the Revit Options dialog.
 ///     </para>
 /// </remarks>
-public abstract class RevitDisplayingOptionsDialogHandler : RevitPreEventHandler<DisplayingOptionsDialogEventArgs>
+public abstract class RevitDisplayingOptionsDialogHandler : RevitPreEventHandler<UIApplication, DisplayingOptionsDialogEventArgs>
 {
     private readonly UIControlledApplication _application;
 

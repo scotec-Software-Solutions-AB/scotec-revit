@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> being imported into.
 ///     </para>
 /// </remarks>
-public abstract class RevitFileImportingHandler : RevitPreDocumentEventHandler<FileImportingEventArgs>
+public abstract class RevitFileImportingHandler : RevitPreDocumentEventHandler<Application, FileImportingEventArgs>
 {
     private readonly ControlledApplication _application;
 

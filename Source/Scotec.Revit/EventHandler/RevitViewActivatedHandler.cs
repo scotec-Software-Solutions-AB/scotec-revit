@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         and the newly activated <see cref="View" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitViewActivatedHandler : RevitPostDocumentEventHandler<ViewActivatedEventArgs>
+public abstract class RevitViewActivatedHandler : RevitPostDocumentEventHandler<UIApplication, ViewActivatedEventArgs>
 {
     private readonly UIControlledApplication _application;
 
@@ -49,11 +49,11 @@ public abstract class RevitViewActivatedHandler : RevitPostDocumentEventHandler<
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, object sender, ViewActivatedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, UIApplication? sender, ViewActivatedEventArgs args)
     {
-        if (sender is UIApplication uiApplication)
+        if (sender is not null)
         {
-            var context = new RevitUiContext(uiApplication);
+            var context = new RevitUiContext(sender);
             services.AddScoped<IRevitUiContext>(_ => context);
         }
     }

@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="TransferringProjectStandardsEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitTransferringProjectStandardsHandler : RevitPreDocumentEventHandler<TransferringProjectStandardsEventArgs>
+public abstract class RevitTransferringProjectStandardsHandler : RevitPreDocumentEventHandler<UIApplication, TransferringProjectStandardsEventArgs>
 {
     private readonly UIControlledApplication _application;
 

@@ -25,7 +25,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Avoid expensive operations and long-running services inside this handler.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentChangedHandler : RevitSingleEventHandler<DocumentChangedEventArgs>
+public abstract class RevitDocumentChangedHandler : RevitSingleEventHandler<Application, DocumentChangedEventArgs>
 {
     private readonly ControlledApplication _application;
 
@@ -53,7 +53,7 @@ public abstract class RevitDocumentChangedHandler : RevitSingleEventHandler<Docu
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentChangedEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, Application? sender, DocumentChangedEventArgs args)
     {
         var document = args.GetDocument();
 

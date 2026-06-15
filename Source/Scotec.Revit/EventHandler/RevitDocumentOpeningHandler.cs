@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Use <see cref="DocumentOpeningEventArgs.PathName" /> to identify the file being opened.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentOpeningHandler : RevitPreEventHandler<DocumentOpeningEventArgs>
+public abstract class RevitDocumentOpeningHandler : RevitPreEventHandler<Application, DocumentOpeningEventArgs>
 {
     private readonly ControlledApplication _application;
 

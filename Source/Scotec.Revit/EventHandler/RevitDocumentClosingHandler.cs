@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that is about to be closed.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentClosingHandler : RevitPreDocumentEventHandler<DocumentClosingEventArgs>
+public abstract class RevitDocumentClosingHandler : RevitPreDocumentEventHandler<Application, DocumentClosingEventArgs>
 {
     private readonly ControlledApplication _application;
 

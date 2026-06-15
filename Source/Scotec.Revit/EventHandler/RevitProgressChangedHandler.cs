@@ -24,7 +24,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Avoid expensive work inside this handler.
 ///     </para>
 /// </remarks>
-public abstract class RevitProgressChangedHandler : RevitSingleEventHandler<ProgressChangedEventArgs>
+public abstract class RevitProgressChangedHandler : RevitSingleEventHandler<Application, ProgressChangedEventArgs>
 {
     private readonly ControlledApplication _application;
 

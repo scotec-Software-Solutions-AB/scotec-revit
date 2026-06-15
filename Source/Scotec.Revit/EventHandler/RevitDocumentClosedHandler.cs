@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="DocumentClosedEventArgs.Status" /> is available from the event args.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentClosedHandler : RevitPostEventHandler<DocumentClosedEventArgs>
+public abstract class RevitDocumentClosedHandler : RevitPostEventHandler<Application, DocumentClosedEventArgs>
 {
     private readonly ControlledApplication _application;
 

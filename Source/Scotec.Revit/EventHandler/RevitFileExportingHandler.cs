@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> being exported.
 ///     </para>
 /// </remarks>
-public abstract class RevitFileExportingHandler : RevitPreDocumentEventHandler<FileExportingEventArgs>
+public abstract class RevitFileExportingHandler : RevitPreDocumentEventHandler<Application, FileExportingEventArgs>
 {
     private readonly ControlledApplication _application;
 

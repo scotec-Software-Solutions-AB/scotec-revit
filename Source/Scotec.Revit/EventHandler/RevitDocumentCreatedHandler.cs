@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentCreatedHandler : RevitPostDocumentEventHandler<DocumentCreatedEventArgs>
+public abstract class RevitDocumentCreatedHandler : RevitPostDocumentEventHandler<Application, DocumentCreatedEventArgs>
 {
     private readonly ControlledApplication _application;
 

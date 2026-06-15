@@ -33,9 +33,9 @@ public class TestApplicationInitializedHandler : RevitApplicationInitializedHand
     {
     }
 
-    protected override void OnExecute(ApplicationInitializedEventArgs args)
+    protected override void OnExecute(Application? sender, ApplicationInitializedEventArgs args)
     {
-        base.OnExecute(args);
+        base.OnExecute(sender, args);
     }
 }
 
@@ -79,11 +79,12 @@ public class RevitTestApp : RevitApp
 
     [RevitApplicationStartup]
     [UsedImplicitly]
-    private bool OnStartup(UIControlledApplication application, IConfiguration configuration)
+    private bool OnStartup(UIControlledApplication application, IConfiguration configuration,
+                           TestApplicationInitializedHandler applicationInitializedHandler)
     {
         try
         {
-            _applicationInitializedHandler = new TestApplicationInitializedHandler(application);
+            _applicationInitializedHandler = applicationInitializedHandler;
 
             RevitTabManager.CreateTab(Application, "scotec");
             var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
@@ -109,6 +110,7 @@ public class RevitTestApp : RevitApp
         {
             services.AddScoped<TestRevitDialog>();
             services.AddSingleton(new RevitTask());
+            services.AddTransient<TestApplicationInitializedHandler>();
         });
     }
 

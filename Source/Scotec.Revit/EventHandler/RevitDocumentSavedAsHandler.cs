@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that was saved to a new path.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentSavedAsHandler : RevitPostDocumentEventHandler<DocumentSavedAsEventArgs>
+public abstract class RevitDocumentSavedAsHandler : RevitPostDocumentEventHandler<Application, DocumentSavedAsEventArgs>
 {
     private readonly ControlledApplication _application;
 

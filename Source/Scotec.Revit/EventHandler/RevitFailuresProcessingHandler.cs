@@ -21,7 +21,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Use <see cref="FailuresProcessingEventArgs.GetFailuresAccessor" /> to inspect and resolve failures.
 ///     </para>
 /// </remarks>
-public abstract class RevitFailuresProcessingHandler : RevitSingleEventHandler<FailuresProcessingEventArgs>
+public abstract class RevitFailuresProcessingHandler : RevitSingleEventHandler<Application, FailuresProcessingEventArgs>
 {
     private readonly ControlledApplication _application;
 

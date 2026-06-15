@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="ApplicationClosingEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitApplicationClosingHandler : RevitPreEventHandler<ApplicationClosingEventArgs>
+public abstract class RevitApplicationClosingHandler : RevitPreEventHandler<UIApplication, ApplicationClosingEventArgs>
 {
     private readonly UIControlledApplication _application;
 

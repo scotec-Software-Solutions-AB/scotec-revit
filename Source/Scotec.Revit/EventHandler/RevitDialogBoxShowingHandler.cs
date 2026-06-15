@@ -20,7 +20,7 @@ namespace Scotec.Revit.EventHandler;
 ///         Use the event args to suppress or override specific Revit dialog boxes.
 ///     </para>
 /// </remarks>
-public abstract class RevitDialogBoxShowingHandler : RevitPreEventHandler<DialogBoxShowingEventArgs>
+public abstract class RevitDialogBoxShowingHandler : RevitPreEventHandler<UIApplication, DialogBoxShowingEventArgs>
 {
     private readonly UIControlledApplication _application;
 

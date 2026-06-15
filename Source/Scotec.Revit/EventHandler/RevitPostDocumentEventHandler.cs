@@ -8,14 +8,15 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
-public abstract class RevitPostDocumentEventHandler<TEventArgs> : RevitPostEventHandler<TEventArgs>
+public abstract class RevitPostDocumentEventHandler<TSender, TEventArgs> : RevitPostEventHandler<TSender, TEventArgs>
+    where TSender : class
     where TEventArgs : RevitAPIPostDocEventArgs
 {
     protected RevitPostDocumentEventHandler(Guid addInId) : base(addInId)
     {
     }
 
-    protected override void RegisterEventContext(IServiceCollection services, object sender, TEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, TSender? sender, TEventArgs args)
     {
         base.RegisterEventContext(services, sender, args);
         var context = new RevitContext(args.Document);

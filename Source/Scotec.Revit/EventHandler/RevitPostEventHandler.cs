@@ -7,7 +7,8 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
-public abstract class RevitPostEventHandler<TEventArgs> : RevitEventHandler<TEventArgs>
+public abstract class RevitPostEventHandler<TSender, TEventArgs> : RevitEventHandler<TSender, TEventArgs>
+    where TSender : class
     where TEventArgs : RevitAPIPostEventArgs
 {
     protected RevitPostEventHandler(Guid addInId) : base(addInId)

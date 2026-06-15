@@ -20,7 +20,7 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="LinkedResourceOpenedEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitLinkedResourceOpenedHandler : RevitPostDocumentEventHandler<LinkedResourceOpenedEventArgs>
+public abstract class RevitLinkedResourceOpenedHandler : RevitPostDocumentEventHandler<Application, LinkedResourceOpenedEventArgs>
 {
     private readonly ControlledApplication _application;
 

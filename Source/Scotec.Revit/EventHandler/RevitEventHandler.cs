@@ -14,6 +14,7 @@ namespace Scotec.Revit.EventHandler;
 /// <summary>
 ///     Abstract generic base class for handling a Revit application event with a DI lifetime scope per invocation.
 /// </summary>
+/// <typeparam name="TSender">The concrete Revit application sender type for the event.</typeparam>
 /// <typeparam name="TEventArgs">The Revit event-args type for the event being handled.</typeparam>
 /// <remarks>
 ///     <para>
@@ -34,7 +35,8 @@ namespace Scotec.Revit.EventHandler;
 ///         Always dispose handler instances during application shutdown.
 ///     </para>
 /// </remarks>
-public abstract class RevitEventHandler<TEventArgs> : IDisposable
+public abstract class RevitEventHandler<TSender, TEventArgs> : IDisposable
+    where TSender : class
     where TEventArgs : RevitAPIEventArgs
 {
     private bool _disposed;
@@ -120,8 +122,9 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     ///     Called when the event fires and no method marked with <see cref="RevitEventHandlerExecuteAttribute" /> is
     ///     found in the type hierarchy. Override this method for a simple, non-DI handler implementation.
     /// </summary>
+    /// <param name="sender">The typed event sender for the current invocation.</param>
     /// <param name="args">The event args for the current invocation.</param>
-    protected virtual void OnExecute(TEventArgs args)
+    protected virtual void OnExecute(TSender? sender, TEventArgs args)
     {
     }
 
@@ -131,9 +134,9 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     ///     from the specific event args or sender.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
-    /// <param name="sender">The event sender object.</param>
+    /// <param name="sender">The typed event sender.</param>
     /// <param name="args">The event args instance.</param>
-    protected virtual void RegisterEventContext(IServiceCollection services, object? sender, TEventArgs args)
+    protected virtual void RegisterEventContext(IServiceCollection services, TSender? sender, TEventArgs args)
     {
     }
 
@@ -146,10 +149,12 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     /// <param name="args">The event args.</param>
     protected void HandleEvent(object? sender, TEventArgs args)
     {
-        
+        EventArgs = args;
+        var typedSender = sender as TSender;
+
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;
-        
+
         var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         if (UseNewScope)
@@ -158,7 +163,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
             {
                 var services = new ServiceCollection();
                 services.AddScoped<TEventArgs>(_ => args);
-                RegisterEventContext(services, sender, args);
+                RegisterEventContext(services, typedSender, args);
                 ConfigureServices(services);
                 builder.Populate(services);
             });
@@ -171,11 +176,12 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
 
         try
         {
-            InvokeOnExecute(args, serviceProvider);
+            InvokeOnExecute(typedSender, args, serviceProvider);
         }
         finally
         {
             scope?.Dispose();
+            EventArgs = null;
         }
     }
 
@@ -191,10 +197,10 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
         }
     }
 
-    private void InvokeOnExecute(TEventArgs args, IServiceProvider serviceProvider)
+    private void InvokeOnExecute(TSender? sender, TEventArgs args, IServiceProvider serviceProvider)
     {
         var method = RevitReflectionHelper.FindSingleAttributedMethod<RevitEventHandlerExecuteAttribute>(
-            GetType(), typeof(RevitEventHandler<TEventArgs>), typeof(void));
+            GetType(), typeof(RevitEventHandler<TSender, TEventArgs>), typeof(void));
 
         if (method is not null)
         {
@@ -208,7 +214,7 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
             return;
         }
 
-        OnExecute(args);
+        OnExecute(sender, args);
     }
 }
 

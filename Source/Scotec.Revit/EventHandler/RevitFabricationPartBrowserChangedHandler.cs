@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="FabricationPartBrowserChangedEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitFabricationPartBrowserChangedHandler : RevitSingleEventHandler<FabricationPartBrowserChangedEventArgs>
+public abstract class RevitFabricationPartBrowserChangedHandler : RevitSingleEventHandler<UIApplication, FabricationPartBrowserChangedEventArgs>
 {
     private readonly UIControlledApplication _application;
 

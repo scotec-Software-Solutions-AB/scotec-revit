@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="FormulaEditingEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitFormulaEditingHandler : RevitPreEventHandler<FormulaEditingEventArgs>
+public abstract class RevitFormulaEditingHandler : RevitPreEventHandler<UIApplication, FormulaEditingEventArgs>
 {
     private readonly UIControlledApplication _application;
 

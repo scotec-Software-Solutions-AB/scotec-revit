@@ -8,14 +8,15 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
-public abstract class RevitPreDocumentEventHandler<TEventArgs> : RevitPreEventHandler<TEventArgs>
+public abstract class RevitPreDocumentEventHandler<TSender, TEventArgs> : RevitPreEventHandler<TSender, TEventArgs>
+    where TSender : class
     where TEventArgs : RevitAPIPreDocEventArgs
 {
     protected RevitPreDocumentEventHandler(Guid addInId) : base(addInId)
     {
     }
 
-    protected override void RegisterEventContext(IServiceCollection services, object sender, TEventArgs args)
+    protected override void RegisterEventContext(IServiceCollection services, TSender? sender, TEventArgs args)
     {
         base.RegisterEventContext(services, sender, args);
         var context = new RevitContext(args.Document);
