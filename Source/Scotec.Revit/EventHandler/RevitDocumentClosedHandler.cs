@@ -31,16 +31,17 @@ public abstract class RevitDocumentClosedHandler : RevitPostEventHandler<Documen
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.DocumentClosed += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.DocumentClosed -= HandleEvent;
     }

@@ -33,16 +33,17 @@ public abstract class RevitFileExportingHandler : RevitPreDocumentEventHandler<F
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.FileExporting += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.FileExporting -= HandleEvent;
     }

@@ -34,16 +34,17 @@ public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitPreDoc
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.DocumentSynchronizingWithCentral += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.DocumentSynchronizingWithCentral -= HandleEvent;
     }

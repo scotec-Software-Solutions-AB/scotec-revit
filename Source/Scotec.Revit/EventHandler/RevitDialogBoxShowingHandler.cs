@@ -32,16 +32,17 @@ public abstract class RevitDialogBoxShowingHandler : RevitPreEventHandler<Dialog
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.DialogBoxShowing += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.DialogBoxShowing -= HandleEvent;
     }

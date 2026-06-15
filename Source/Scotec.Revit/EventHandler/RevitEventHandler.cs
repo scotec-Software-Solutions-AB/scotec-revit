@@ -40,16 +40,19 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     private bool _disposed;
 
     /// <summary>
-    ///     Initializes a new instance of <see cref="RevitEventHandler{TEventArgs}" /> and subscribes to the event.
+    ///     Initializes a new instance of <see cref="RevitEventHandler{TEventArgs}" />.
     /// </summary>
     /// <param name="addInId">
     ///     The add-in GUID used to look up the root Autofac container via
     ///     <see cref="RevitAppBase.GetServiceProvider(System.Guid)" />.
     /// </param>
+    /// <remarks>
+    ///     Derived classes must call <see cref="Subscribe" /> at the end of their own constructor,
+    ///     after all fields are initialized.
+    /// </remarks>
     protected RevitEventHandler(Guid addInId)
     {
         AddInId = addInId;
-        Subscribe();
     }
 
     /// <summary>
@@ -77,8 +80,9 @@ public abstract class RevitEventHandler<TEventArgs> : IDisposable
     public bool IsCancelled => EventArgs?.IsCancelled() ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
 
     /// <summary>
-    ///     Subscribes to the specific Revit event. Called once from the constructor.
+    ///     Subscribes to the specific Revit event.
     ///     Wire <see cref="HandleEvent" /> to the event here.
+    ///     Must be called explicitly at the end of the derived class constructor.
     /// </summary>
     protected abstract void Subscribe();
 

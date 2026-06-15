@@ -32,16 +32,17 @@ public abstract class RevitDocumentCreatingHandler : RevitPreEventHandler<Docume
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.DocumentCreating += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.DocumentCreating -= HandleEvent;
     }

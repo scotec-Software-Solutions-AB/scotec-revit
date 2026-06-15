@@ -32,16 +32,17 @@ public abstract class RevitDisplayingOptionsDialogHandler : RevitPreEventHandler
         : base(application.ActiveAddInId.GetGUID())
     {
         _application = application;
+        Subscribe();
     }
 
     /// <inheritdoc />
-    protected override void Subscribe()
+    protected sealed override void Subscribe()
     {
         _application.DisplayingOptionsDialog += HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void Unsubscribe()
+    protected sealed override void Unsubscribe()
     {
         _application.DisplayingOptionsDialog -= HandleEvent;
     }
