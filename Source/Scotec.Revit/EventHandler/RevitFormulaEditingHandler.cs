@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -19,30 +20,29 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="FormulaEditingEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitFormulaEditingHandler : RevitPreEventHandler<UIApplication, FormulaEditingEventArgs>
+[PublicAPI]
+public abstract class RevitFormulaEditingHandler : RevitUiPreEventHandler<FormulaEditingEventArgs>
 {
-    private readonly UIControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.FormulaEditing" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
     protected RevitFormulaEditingHandler(UIControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.FormulaEditing += HandleEvent;
+        Application.FormulaEditing += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.FormulaEditing -= HandleEvent;
+        Application.FormulaEditing -= HandleEvent;
     }
 }

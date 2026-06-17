@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -20,30 +21,29 @@ namespace Scotec.Revit.EventHandler;
 ///         Use the event args to add custom tabs to the Revit Options dialog.
 ///     </para>
 /// </remarks>
-public abstract class RevitDisplayingOptionsDialogHandler : RevitPreEventHandler<UIApplication, DisplayingOptionsDialogEventArgs>
+[PublicAPI]
+public abstract class RevitDisplayingOptionsDialogHandler : RevitUiPreEventHandler<DisplayingOptionsDialogEventArgs>
 {
-    private readonly UIControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.DisplayingOptionsDialog" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
     protected RevitDisplayingOptionsDialogHandler(UIControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DisplayingOptionsDialog += HandleEvent;
+        Application.DisplayingOptionsDialog += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DisplayingOptionsDialog -= HandleEvent;
+        Application.DisplayingOptionsDialog -= HandleEvent;
     }
 }

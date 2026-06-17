@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -21,30 +22,29 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that was saved.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentSavedHandler : RevitPostDocumentEventHandler<Application, DocumentSavedEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentSavedHandler : RevitAppPostDocumentEventHandler<DocumentSavedEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentSaved" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentSavedHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentSaved += HandleEvent;
+        Application.DocumentSaved += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentSaved -= HandleEvent;
+        Application.DocumentSaved -= HandleEvent;
     }
 }

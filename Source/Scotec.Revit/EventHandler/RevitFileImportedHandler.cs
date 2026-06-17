@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -21,30 +22,29 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> into which the import was performed.
 ///     </para>
 /// </remarks>
-public abstract class RevitFileImportedHandler : RevitPostDocumentEventHandler<Application, FileImportedEventArgs>
+[PublicAPI]
+public abstract class RevitFileImportedHandler : RevitAppPostDocumentEventHandler<FileImportedEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.FileImported" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitFileImportedHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.FileImported += HandleEvent;
+        Application.FileImported += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.FileImported -= HandleEvent;
+        Application.FileImported -= HandleEvent;
     }
 }

@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -20,30 +21,29 @@ namespace Scotec.Revit.EventHandler;
 ///         No <see cref="Document" /> exists yet at this stage.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentCreatingHandler : RevitPreEventHandler<Application, DocumentCreatingEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentCreatingHandler : RevitAppPreEventHandler<DocumentCreatingEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentCreating" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentCreatingHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentCreating += HandleEvent;
+        Application.DocumentCreating += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentCreating -= HandleEvent;
+        Application.DocumentCreating -= HandleEvent;
     }
 }

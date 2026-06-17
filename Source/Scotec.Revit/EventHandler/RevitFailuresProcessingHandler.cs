@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -21,30 +22,29 @@ namespace Scotec.Revit.EventHandler;
 ///         Use <see cref="FailuresProcessingEventArgs.GetFailuresAccessor" /> to inspect and resolve failures.
 ///     </para>
 /// </remarks>
-public abstract class RevitFailuresProcessingHandler : RevitSingleEventHandler<Application, FailuresProcessingEventArgs>
+[PublicAPI]
+public abstract class RevitFailuresProcessingHandler : RevitAppSingleEventHandler<FailuresProcessingEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.FailuresProcessing" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitFailuresProcessingHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.FailuresProcessing += HandleEvent;
+        Application.FailuresProcessing += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.FailuresProcessing -= HandleEvent;
+        Application.FailuresProcessing -= HandleEvent;
     }
 }

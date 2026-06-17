@@ -6,7 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
-using Microsoft.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 
 namespace Scotec.Revit.EventHandler;
 
@@ -21,9 +21,9 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that was synchronized.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitPostDocumentEventHandler<Application, DocumentSynchronizedWithCentralEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitAppPostDocumentEventHandler<DocumentSynchronizedWithCentralEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to
@@ -31,32 +31,30 @@ public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitPostDoc
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentSynchronizedWithCentralHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentSynchronizedWithCentral += HandleEvent;
+        Application.DocumentSynchronizedWithCentral += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentSynchronizedWithCentral -= HandleEvent;
+        Application.DocumentSynchronizedWithCentral -= HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, Application? sender, DocumentSynchronizedWithCentralEventArgs args)
+    /// <remarks>
+    ///     Creates an <see cref="IRevitContext" /> from <see cref="DocumentSynchronizedWithCentralEventArgs.Document" />
+    ///     when a document is available.
+    /// </remarks>
+    protected override IRevitContext? CreateContext(Application? sender, DocumentSynchronizedWithCentralEventArgs args)
     {
-        var document = args.Document;
-
-        if (document is not null)
-        {
-            services.AddSingleton(document);
-        }
+        return args.Document is not null ? new RevitContext(args.Document) : null;
     }
 }

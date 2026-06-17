@@ -8,7 +8,7 @@ using Autodesk.Revit.DB;
 
 namespace Scotec.Revit;
 
-internal class RevitContext : IRevitContext
+internal class RevitContext : IRevitContext, IDisposable
 {
     public RevitContext(Document document)
     {

@@ -2,25 +2,63 @@
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB.Events;
-using Microsoft.Extensions.DependencyInjection;
+using Autodesk.Revit.UI;
 using System;
 
 namespace Scotec.Revit.EventHandler;
 
-public abstract class RevitPostDocumentEventHandler<TSender, TEventArgs> : RevitPostEventHandler<TSender, TEventArgs>
+public abstract class RevitPostDocumentEventHandler<TSender, TEventArgs, TContext> : RevitPostEventHandler<TSender, TEventArgs, TContext>
     where TSender : class
     where TEventArgs : RevitAPIPostDocEventArgs
+    where TContext : class, IRevitContext
 {
     protected RevitPostDocumentEventHandler(Guid addInId) : base(addInId)
     {
     }
+}
 
-    protected override void RegisterEventContext(IServiceCollection services, TSender? sender, TEventArgs args)
+/// <summary>
+///     Convenience base class for post-document-event handlers whose sender is
+///     <see cref="Application" /> and whose context is <see cref="IRevitContext" />.
+/// </summary>
+/// <typeparam name="TEventArgs">The Revit event-args type.</typeparam>
+public abstract class RevitAppPostDocumentEventHandler<TEventArgs>
+    : RevitPostDocumentEventHandler<Application, TEventArgs, IRevitContext>
+    where TEventArgs : RevitAPIPostDocEventArgs
+{
+    protected RevitAppPostDocumentEventHandler(ControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
-        base.RegisterEventContext(services, sender, args);
-        var context = new RevitContext(args.Document);
-
-        services.AddScoped<IRevitContext>(_ => context);
+        Application = application;
     }
+
+    /// <summary>Gets the controlled application this handler is registered on.</summary>
+    protected ControlledApplication Application { get; }
+
+    /// <inheritdoc />
+    protected override IRevitContext? CreateContext(Application? sender, TEventArgs args)
+        => args.Document is not null ? new RevitContext(args.Document) : null;
+}
+
+/// <summary>
+///     Convenience base class for post-document-event handlers whose sender is
+///     <see cref="UIApplication" /> and whose context is <see cref="IRevitUiContext" />.
+/// </summary>
+/// <typeparam name="TEventArgs">The Revit event-args type.</typeparam>
+public abstract class RevitUiPostDocumentEventHandler<TEventArgs>
+    : RevitPostDocumentEventHandler<UIApplication, TEventArgs, IRevitUiContext>
+    where TEventArgs : RevitAPIPostDocEventArgs
+{
+    protected RevitUiPostDocumentEventHandler(UIControlledApplication application) : base(application.ActiveAddInId.GetGUID())
+    {
+        Application = application;
+    }
+
+    /// <summary>Gets the UI controlled application this handler is registered on.</summary>
+    protected UIControlledApplication Application { get; }
+
+    /// <inheritdoc />
+    protected override IRevitUiContext? CreateContext(UIApplication? sender, TEventArgs args)
+        => sender?.ActiveUIDocument is not null ? new RevitUiContext(sender) : null;
 }

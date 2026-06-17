@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -17,7 +18,7 @@ namespace Scotec.Revit.EventHandler;
 ///     Available when the application is registered as either <c>IExternalApplication</c> (via <see cref="RevitApp" />)
 ///     or <c>IExternalDBApplication</c> (via <see cref="RevitDbApp" />).
 ///     <para>
-///         The per-invocation DI scope registers <see cref="DocumentChangedEventArgs" /> and the
+///         The per-invocation DI scope registers <see cref="Autodesk.Revit.DB.Events.DocumentChangedEventArgs" /> and the
 ///         modified <see cref="Document" />.
 ///     </para>
 ///     <para>
@@ -25,41 +26,40 @@ namespace Scotec.Revit.EventHandler;
 ///         Avoid expensive operations and long-running services inside this handler.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentChangedHandler : RevitSingleEventHandler<Application, DocumentChangedEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentChangedHandler : RevitAppSingleEventHandler<DocumentChangedEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentChanged" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentChangedHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentChanged += HandleEvent;
+        Application.DocumentChanged += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentChanged -= HandleEvent;
+        Application.DocumentChanged -= HandleEvent;
     }
 
     /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, Application? sender, DocumentChangedEventArgs args)
+    /// <remarks>
+    ///     Creates an <see cref="IRevitContext" /> from the <see cref="Autodesk.Revit.DB.Events.DocumentChangedEventArgs.GetDocument" /> result
+    ///     when a document is available.
+    /// </remarks>
+    protected override IRevitContext? CreateContext(Application? sender, DocumentChangedEventArgs args)
     {
         var document = args.GetDocument();
-
-        if (document is not null)
-        {
-            services.AddSingleton(document);
-        }
+        return document is not null ? new RevitContext(document) : null;
     }
 }

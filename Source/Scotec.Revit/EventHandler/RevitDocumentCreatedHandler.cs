@@ -2,11 +2,9 @@
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
-using Microsoft.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 
 namespace Scotec.Revit.EventHandler;
 
@@ -17,34 +15,32 @@ namespace Scotec.Revit.EventHandler;
 ///     Available when the application is registered as either <c>IExternalApplication</c> (via <see cref="RevitApp" />)
 ///     or <c>IExternalDBApplication</c> (via <see cref="RevitDbApp" />).
 ///     <para>
-///         The per-invocation DI scope registers <see cref="DocumentCreatedEventArgs" /> and the newly created
-///         <see cref="Document" />.
+///         The per-invocation DI scope registers <see cref="Autodesk.Revit.DB.Events.DocumentCreatedEventArgs" /> and the newly created
+///         <see cref="Autodesk.Revit.DB.Document" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentCreatedHandler : RevitPostDocumentEventHandler<Application, DocumentCreatedEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentCreatedHandler : RevitAppPostDocumentEventHandler<DocumentCreatedEventArgs>
 {
-    private readonly ControlledApplication _application;
-
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentCreated" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentCreatedHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentCreated += HandleEvent;
+        Application.DocumentCreated += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentCreated -= HandleEvent;
+        Application.DocumentCreated -= HandleEvent;
     }
 }

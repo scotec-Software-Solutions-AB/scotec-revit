@@ -3,10 +3,9 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
-using Microsoft.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 
 namespace Scotec.Revit.EventHandler;
 
@@ -17,44 +16,33 @@ namespace Scotec.Revit.EventHandler;
 ///     Only available when the application is registered as <c>IExternalApplication</c> (via <see cref="RevitApp" />).
 ///     <para>
 ///         The per-invocation DI scope registers <see cref="ViewActivatedEventArgs" />, the
-///         <see cref="UIApplication" />, the active <see cref="UIDocument" />, the active <see cref="Document" />,
-///         and the newly activated <see cref="View" />.
+///         <see cref="UIApplication" />, the active <see cref="UIDocument" />, the active <see cref="Autodesk.Revit.DB.Document" />,
+///         and the newly activated <see cref="Autodesk.Revit.DB.View" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitViewActivatedHandler : RevitPostDocumentEventHandler<UIApplication, ViewActivatedEventArgs>
+[PublicAPI]
+public abstract class RevitViewActivatedHandler : RevitUiPostDocumentEventHandler<ViewActivatedEventArgs>
 {
-    private readonly UIControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.ViewActivated" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
     protected RevitViewActivatedHandler(UIControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.ViewActivated += HandleEvent;
+        Application.ViewActivated += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.ViewActivated -= HandleEvent;
-    }
-
-    /// <inheritdoc />
-    protected override void RegisterEventContext(IServiceCollection services, UIApplication? sender, ViewActivatedEventArgs args)
-    {
-        if (sender is not null)
-        {
-            var context = new RevitUiContext(sender);
-            services.AddScoped<IRevitUiContext>(_ => context);
-        }
+        Application.ViewActivated -= HandleEvent;
     }
 }

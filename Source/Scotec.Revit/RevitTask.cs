@@ -2,15 +2,16 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using Autodesk.Revit.UI;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Autodesk.Revit.UI;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -153,6 +154,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
     /// </exception>
+    [UsedImplicitly]
     public async Task Run(Action<IRevitUiContext> action)
     {
         _function = context =>
@@ -185,6 +187,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     Thrown if a required service cannot be resolved from the container,
     ///     or if the delegate returns void.
     /// </exception>
+    [UsedImplicitly]
     public async Task<TResult> Run<TResult>(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -250,19 +253,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     ///     All other parameters are required and will throw if not registered.
     /// </summary>
     private static object?[] ResolveParameters(MethodInfo method, IServiceProvider serviceProvider)
-    {
-        var nullabilityContext = new NullabilityInfoContext();
-        return method.GetParameters()
-                     .Select(p =>
-                     {
-                         var isOptional = nullabilityContext.Create(p).WriteState == NullabilityState.Nullable
-                                          || p.HasDefaultValue;
-                         return isOptional
-                             ? serviceProvider.GetService(p.ParameterType)
-                             : serviceProvider.GetRequiredService(p.ParameterType);
-                     })
-                     .ToArray();
-    }
+        => RevitReflectionHelper.ResolveParameters(method, serviceProvider);
 
     /// <summary>
     ///     Creates a scoped Autofac lifetime scope for use within a Revit API context.

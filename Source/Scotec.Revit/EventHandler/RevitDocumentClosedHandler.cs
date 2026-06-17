@@ -5,6 +5,7 @@
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 
 namespace Scotec.Revit.EventHandler;
 
@@ -19,30 +20,29 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="DocumentClosedEventArgs.Status" /> is available from the event args.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentClosedHandler : RevitPostEventHandler<Application, DocumentClosedEventArgs>
+[PublicAPI] 
+public abstract class RevitDocumentClosedHandler : RevitAppPostEventHandler<DocumentClosedEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentClosed" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentClosedHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentClosed += HandleEvent;
+        Application.DocumentClosed += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentClosed -= HandleEvent;
+        Application.DocumentClosed -= HandleEvent;
     }
 }

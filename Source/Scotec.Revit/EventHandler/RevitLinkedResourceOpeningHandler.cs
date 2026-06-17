@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -20,30 +21,29 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="LinkedResourceOpeningEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitLinkedResourceOpeningHandler : RevitPreEventHandler<Application, LinkedResourceOpeningEventArgs>
+[PublicAPI]
+public abstract class RevitLinkedResourceOpeningHandler : RevitAppPreEventHandler<LinkedResourceOpeningEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.LinkedResourceOpening" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitLinkedResourceOpeningHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.LinkedResourceOpening += HandleEvent;
+        Application.LinkedResourceOpening += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.LinkedResourceOpening -= HandleEvent;
+        Application.LinkedResourceOpening -= HandleEvent;
     }
 }

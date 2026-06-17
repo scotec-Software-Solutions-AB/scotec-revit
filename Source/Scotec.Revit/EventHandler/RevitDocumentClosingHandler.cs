@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -21,30 +22,29 @@ namespace Scotec.Revit.EventHandler;
 ///         <see cref="Document" /> that is about to be closed.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentClosingHandler : RevitPreDocumentEventHandler<Application, DocumentClosingEventArgs>
+[PublicAPI] 
+public abstract class RevitDocumentClosingHandler : RevitAppPreDocumentEventHandler<DocumentClosingEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentClosing" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentClosingHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentClosing += HandleEvent;
+        Application.DocumentClosing += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentClosing -= HandleEvent;
+        Application.DocumentClosing -= HandleEvent;
     }
 }

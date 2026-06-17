@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -21,30 +22,29 @@ namespace Scotec.Revit.EventHandler;
 ///         Use <see cref="DocumentOpeningEventArgs.PathName" /> to identify the file being opened.
 ///     </para>
 /// </remarks>
-public abstract class RevitDocumentOpeningHandler : RevitPreEventHandler<Application, DocumentOpeningEventArgs>
+[PublicAPI]
+public abstract class RevitDocumentOpeningHandler : RevitAppPreEventHandler<DocumentOpeningEventArgs>
 {
-    private readonly ControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentOpening" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
     protected RevitDocumentOpeningHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DocumentOpening += HandleEvent;
+        Application.DocumentOpening += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DocumentOpening -= HandleEvent;
+        Application.DocumentOpening -= HandleEvent;
     }
 }

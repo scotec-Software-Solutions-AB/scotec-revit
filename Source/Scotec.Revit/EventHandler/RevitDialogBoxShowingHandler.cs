@@ -6,6 +6,7 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.EventHandler;
@@ -20,30 +21,29 @@ namespace Scotec.Revit.EventHandler;
 ///         Use the event args to suppress or override specific Revit dialog boxes.
 ///     </para>
 /// </remarks>
-public abstract class RevitDialogBoxShowingHandler : RevitPreEventHandler<UIApplication, DialogBoxShowingEventArgs>
+[PublicAPI] 
+public abstract class RevitDialogBoxShowingHandler : RevitUiPreEventHandler<DialogBoxShowingEventArgs>
 {
-    private readonly UIControlledApplication _application;
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.DialogBoxShowing" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
     protected RevitDialogBoxShowingHandler(UIControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+        : base(application)
     {
-        _application = application;
         Subscribe();
     }
 
     /// <inheritdoc />
     protected sealed override void Subscribe()
     {
-        _application.DialogBoxShowing += HandleEvent;
+        Application.DialogBoxShowing += HandleEvent;
     }
 
     /// <inheritdoc />
     protected sealed override void Unsubscribe()
     {
-        _application.DialogBoxShowing -= HandleEvent;
+        Application.DialogBoxShowing -= HandleEvent;
     }
 }
