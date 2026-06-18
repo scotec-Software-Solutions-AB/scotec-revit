@@ -2,6 +2,7 @@
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using JetBrains.Annotations;
 using System;
 
 namespace Scotec.Revit.EventHandler;
@@ -15,4 +16,6 @@ namespace Scotec.Revit.EventHandler;
 ///     falls back to <see cref="RevitEventHandler{TEventArgs}.OnExecute" />.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
+[MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitEventHandlerExecuteAttribute : Attribute;

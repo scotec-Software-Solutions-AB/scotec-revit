@@ -99,6 +99,7 @@ public enum RevitTransactionMode
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
 [MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 
 /// <summary>
@@ -113,6 +114,7 @@ public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
 [MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitCommandExecuteAttribute : Attribute;
 
 /// <summary>
@@ -126,6 +128,7 @@ public sealed class RevitCommandExecuteAttribute : Attribute;
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
 [MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 
 /// <summary>
@@ -136,6 +139,7 @@ public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 ///     indicating how transactions should be handled during the execution of the command.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
+[PublicAPI]
 public class RevitTransactionModeAttribute : Attribute
 {
     /// <summary>

@@ -2,15 +2,16 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
+using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.DB;
+using JetBrains.Annotations;
+using Microsoft.Extensions.Hosting;
+using Scotec.Revit.EventHandler;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.DB;
-using Microsoft.Extensions.Hosting;
-using Scotec.Revit.EventHandler;
 
 namespace Scotec.Revit;
 
@@ -35,7 +36,8 @@ namespace Scotec.Revit;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitApplicationStartupAttribute : Attribute;
 
 /// <summary>
@@ -59,7 +61,8 @@ public sealed class RevitApplicationStartupAttribute : Attribute;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitApplicationShutdownAttribute : Attribute;
 
 /// <summary>
