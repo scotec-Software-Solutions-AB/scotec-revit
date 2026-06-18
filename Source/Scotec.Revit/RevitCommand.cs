@@ -189,10 +189,9 @@ public class RevitTransactionModeAttribute : Attribute
 ///     This class provides a framework for handling Revit external commands, including failure preprocessing and
 ///     processing.
 ///     It includes methods that can be overridden to customize behavior during command execution and failure handling.
-///     During execution, this class creates a new scope for the DI container and adds the current <see cref="Document" />
-///     if available, the current <see cref="View" /> if available, the <see cref="Autodesk.Revit.UI.UIApplication" />,
-///     and the JournalData.
-///     Override <see cref="ConfigureServices" /> to apply custom services to the current scope.
+///     During execution, this class creates a new DI scope and registers <see cref="IRevitUiContext" /> (and
+///     <see cref="IRevitContext" />) for the current invocation. Override <see cref="ConfigureServices" /> to
+///     register additional services into the scope.
 /// </remarks>
 //[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
