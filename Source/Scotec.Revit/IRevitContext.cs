@@ -15,8 +15,8 @@ public interface IRevitContext
     Application Application { get; }
 
     /// <summary>
-    ///     Gets the current Revit document, or throws <see cref="System.InvalidOperationException" />
-    ///     when no document is available (e.g. commands executed without an open document).
+    ///     Gets the current Revit document, or <c>null</c> when no document is available
+    ///     (e.g. commands executed without an open document).
     /// </summary>
     Document? Document { get; }
 }

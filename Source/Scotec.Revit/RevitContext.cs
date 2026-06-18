@@ -29,8 +29,7 @@ internal class RevitContext : IRevitContext, IDisposable
     {
         ArgumentNullException.ThrowIfNull(application);
         Application = application;
-        Document = null!;
-        // Document is not set. The Document getter throws InvalidOperationException when accessed.
+        // Document is intentionally left null for no-document contexts.
     }
 
     protected bool Disposed { get; private set; }
@@ -47,14 +46,12 @@ internal class RevitContext : IRevitContext, IDisposable
         private init;
     }
 
-    public Document Document
+    public Document? Document
     {
         get
         {
             ObjectDisposedException.ThrowIf(Disposed, GetType());
-            // ReferenceEquals avoids a false NRT warning: the Revit API is not fully nullable-annotated
-            // so the backing field may be null at runtime even though the property type is non-nullable.
-            if (ReferenceEquals(field, null)) throw new InvalidOperationException("No document is available in the current context.");
+            if (field is null) return null;
             // Revit API: Document.IsValidObject must be checked before access after potential document lifecycle events.
             if (!field.IsValidObject) throw new InvalidOperationException("The Revit document is no longer valid.");
             return field;
