@@ -1,4 +1,4 @@
-﻿# RevitCommandAvailability Usage Guide
+# RevitCommandAvailability Usage Guide
 
 This document provides a detailed guide on how to use the `RevitCommandAvailability` base class in the `Scotec.Revit` framework. It covers dependency injection (DI) scope creation, how to implement availability logic, and how to register additional services.
 
@@ -28,19 +28,19 @@ public class MyCommandAvailability : RevitCommandAvailability
     }
 
     [RevitCommandAvailabilityCheck]
-    private bool CheckAvailability(Document document, CategorySet selectedCategories, IMyService myService)
+    private bool CheckAvailability(IRevitUiContext context, CategorySet selectedCategories, IMyService myService)
     {
-        // document, selectedCategories, and myService are resolved automatically.
-        return document is not null && myService.IsFeatureEnabled();
+        return context.Document is not null && myService.IsFeatureEnabled();
     }
 }
 ```
 
 Any combination of DI-registered types is valid as parameters, including:
 
-- `UIApplication` — passed directly
-- `CategorySet` — passed directly
-- `Document`, `UIDocument`, `Application`, `View` — registered by the framework
+- `UIApplication` — passed through directly
+- `CategorySet` — passed through directly
+- `IRevitContext` — always registered; provides `Application` and `Document`
+- `IRevitUiContext` — always registered; extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView`
 - `IServiceProvider` — registered by the framework
 - Any type registered via `ConfigureServices`
 
@@ -59,11 +59,10 @@ The framework distinguishes between required and optional parameters using two c
 ```csharp
 [RevitCommandAvailabilityCheck]
 private bool CheckAvailability(
-    Document document,              // required (T)      — throws if not registered
+    IRevitUiContext context,         // required (T)      — always registered
     IMyService? optionalService,    // optional (T?)     — null if not registered
     ILogging logging = null)        // optional (= null) — null if not registered
 {
-
     logging?.Log("Checking availability");
     return optionalService?.IsFeatureEnabled() ?? context.Document is not null;
 }
