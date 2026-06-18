@@ -10,7 +10,10 @@ namespace Scotec.Revit;
 
 internal sealed class RevitUiContext : RevitContext, IRevitUiContext
 {
-    public RevitUiContext(UIApplication uiApplication) : base(uiApplication.ActiveUIDocument.Document)
+    public RevitUiContext(UIApplication uiApplication)
+        // Revit API: ActiveUIDocument may be null when no document is open; guard before dereferencing.
+        : base((uiApplication ?? throw new ArgumentNullException(nameof(uiApplication))).ActiveUIDocument?.Document
+               ?? throw new ArgumentException("No active UI document is open.", nameof(uiApplication)))
     {
         UiApplication = uiApplication;
         UiDocument = uiApplication.ActiveUIDocument;
@@ -18,16 +21,28 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
 
     public UIApplication UiApplication
     {
-        get => Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : field;
-        private init => field = Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : value;
+        get
+        {
+            if (Disposed) throw new ObjectDisposedException(nameof(RevitUiContext));
+            // Revit API: UIApplication.IsValidObject must be checked before access after potential application lifecycle events.
+            if (!field.IsValidObject) throw new InvalidOperationException("The Revit UI application is no longer valid.");
+            return field;
+        }
+        private init => field = value;
     }
 
     public UIDocument UiDocument
     {
-        get => Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : field;
-        private init => field = Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : value;
+        get
+        {
+            if (Disposed) throw new ObjectDisposedException(nameof(RevitUiContext));
+            // Revit API: UIDocument.IsValidObject must be checked before access after potential document lifecycle events.
+            if (!field.IsValidObject) throw new InvalidOperationException("The Revit UI document is no longer valid.");
+            return field;
+        }
+        private init => field = value;
     }
 
-    // Lazy property, to reflect the view active at the moment of access rather than at handler invocation start.
+    // Lazy property: reflects the view active at the moment of access rather than at handler invocation start.
     public View ActiveView => UiDocument.ActiveView;
 }

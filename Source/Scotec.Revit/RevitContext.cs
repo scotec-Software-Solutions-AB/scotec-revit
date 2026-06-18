@@ -20,14 +20,26 @@ internal class RevitContext : IRevitContext, IDisposable
 
     public Application Application
     {
-        get => Disposed ? throw new ObjectDisposedException(nameof(RevitContext)) : field;
-        set => field = Disposed ? throw new ObjectDisposedException(nameof(RevitContext)) : value;
+        get
+        {
+            if (Disposed) throw new ObjectDisposedException(nameof(RevitContext));
+            // Revit API: Application.IsValidObject must be checked before access after potential application lifecycle events.
+            if (!field.IsValidObject) throw new InvalidOperationException("The Revit application is no longer valid.");
+            return field;
+        }
+        private init => field = value;
     }
 
     public Document Document
     {
-        get => Disposed ? throw new ObjectDisposedException(nameof(RevitContext)) : field;
-        set => field = Disposed ? throw new ObjectDisposedException(nameof(RevitContext)) : value;
+        get
+        {
+            if (Disposed) throw new ObjectDisposedException(nameof(RevitContext));
+            // Revit API: Document.IsValidObject must be checked before access after potential document lifecycle events.
+            if (!field.IsValidObject) throw new InvalidOperationException("The Revit document is no longer valid.");
+            return field;
+        }
+        private init => field = value;
     }
 
     public void Dispose()

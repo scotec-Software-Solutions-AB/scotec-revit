@@ -319,7 +319,6 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                 ConfigureServices(services);
                 // IRevitContext is always registered.
                 // IRevitUiContext is additionally registered when the context is a UI context.
-                services.AddScoped<IRevitContext>(_ => context!);
                 builder.RegisterInstance(context!).As<IRevitContext>().OwnedByLifetimeScope();
                 if (context is IRevitUiContext uiContext)
                 {
