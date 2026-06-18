@@ -15,12 +15,12 @@ public interface IRevitUiContext : IRevitContext
     UIApplication UiApplication { get; }
 
     /// <summary>
-    ///     Gets the current Revit UI document.
+    ///     Gets the current Revit UI document, or <c>null</c> when no document is open.
     /// </summary>
-    UIDocument UiDocument { get; }
+    UIDocument? UiDocument { get; }
 
     /// <summary>
-    ///     Gets the active view in the current Revit UI document.
+    ///     Gets the active view in the current Revit UI document, or <c>null</c> when no document is open.
     /// </summary>
-    View ActiveView { get; }
+    View? ActiveView { get; }
 }
