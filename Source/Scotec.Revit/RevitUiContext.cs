@@ -50,5 +50,14 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     }
 
     // Lazy property: reflects the view active at the moment of access rather than at handler invocation start.
-    public View? ActiveView => UiDocument?.ActiveView;
+    // Revit API: View.IsValidObject must be checked before access after potential document lifecycle events.
+    public View? ActiveView
+    {
+        get
+        {
+            var view = UiDocument?.ActiveView;
+            if (view is not null && !view.IsValidObject) throw new InvalidOperationException("The active Revit view is no longer valid.");
+            return view;
+        }
+    }
 }
