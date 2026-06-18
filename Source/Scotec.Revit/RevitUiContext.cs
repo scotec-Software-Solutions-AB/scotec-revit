@@ -30,7 +30,6 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
         get
         {
             ObjectDisposedException.ThrowIf(Disposed, typeof(RevitUiContext));
-            if (Disposed) throw new ObjectDisposedException(nameof(RevitUiContext));
             // Revit API: UIApplication.IsValidObject must be checked before access after potential application lifecycle events.
             if (!field.IsValidObject) throw new InvalidOperationException("The Revit UI application is no longer valid.");
             return field;
