@@ -5,6 +5,7 @@
 using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -21,7 +22,7 @@ namespace Scotec.Revit;
 /// </remarks>
 public abstract class RevitApp : RevitAppBase, IExternalApplication
 {
-    private static readonly Type[] UIControlledApplicationSignature = [typeof(UIControlledApplication)];
+    private static readonly Type[] UiControlledApplicationSignature = [typeof(UIControlledApplication)];
 
     /// <summary>
     ///     Gets the <see cref="UIControlledApplication" /> instance associated with the Revit application.
@@ -34,10 +35,10 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     This property is initialized during the startup process of the Revit application and provides access to
     ///     Revit's API for managing add-ins, events, and other application-level functionalities.
     /// </remarks>
-    public UIControlledApplication? Application { get; private set; }
+    protected UIControlledApplication? Application { get; private set; }
 
     /// <inheritdoc />
-    protected override Type[] StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
+    protected override Type[] StandardLifecycleApplicationSignature => UiControlledApplicationSignature;
 
     /// <inheritdoc />
     protected override Type LifecycleStopType => typeof(RevitApp);
@@ -107,6 +108,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
     ///     <see cref="RevitApplicationStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
+    [UsedImplicitly]
     protected virtual bool OnStartup(UIControlledApplication application)
     {
         return true;
@@ -126,6 +128,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
     ///     <see cref="RevitApplicationShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
+    [UsedImplicitly]
     protected virtual bool OnShutdown(UIControlledApplication application)
     {
         return true;
