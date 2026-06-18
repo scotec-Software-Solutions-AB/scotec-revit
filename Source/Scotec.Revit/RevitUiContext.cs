@@ -14,7 +14,6 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     {
         UiApplication = uiApplication;
         UiDocument = uiApplication.ActiveUIDocument;
-        ActiveView = uiApplication.ActiveUIDocument.ActiveView;
     }
 
     public UIApplication UiApplication
@@ -29,9 +28,6 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
         private init => field = Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : value;
     }
 
-    public View ActiveView
-    {
-        get => Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : field;
-        private init => field = Disposed ? throw new ObjectDisposedException(nameof(RevitUiContext)) : value;
-    }
+    // Lazy property, to reflect the view active at the moment of access rather than at handler invocation start.
+    public View ActiveView => UiDocument.ActiveView;
 }
