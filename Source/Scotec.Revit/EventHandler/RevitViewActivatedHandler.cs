@@ -23,7 +23,6 @@ namespace Scotec.Revit.EventHandler;
 [PublicAPI]
 public abstract class RevitViewActivatedHandler : RevitUiPostDocumentEventHandler<ViewActivatedEventArgs>
 {
-
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.ViewActivated" />.
     /// </summary>

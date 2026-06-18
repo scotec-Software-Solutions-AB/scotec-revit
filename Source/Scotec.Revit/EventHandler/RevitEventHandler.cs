@@ -14,27 +14,48 @@ using System.Reflection;
 namespace Scotec.Revit.EventHandler;
 
 /// <summary>
-///     Abstract generic base class for handling a Revit application event with a DI lifetime scope per invocation.
+///     Abstract generic base class for handling a Revit application event with a per-invocation DI lifetime scope.
 /// </summary>
-/// <typeparam name="TSender">The concrete Revit application sender type for the event.</typeparam>
+/// <typeparam name="TSender">
+///     The typed Revit application sender for the event — either
+///     <c>Autodesk.Revit.ApplicationServices.Application</c> (for <c>ControlledApplication</c>-source events) or
+///     <c>Autodesk.Revit.UI.UIApplication</c> (for <c>UIControlledApplication</c>-source events).
+/// </typeparam>
 /// <typeparam name="TEventArgs">The Revit event-args type for the event being handled.</typeparam>
+/// <typeparam name="TContext">
+///     The context interface registered in the per-invocation DI scope.
+///     Must be <see cref="IRevitContext" /> or a type derived from it (such as <see cref="IRevitUiContext" />).
+///     The context is created by <see cref="CreateContext" /> before any handler logic runs and is shared by
+///     all delegates and the execute method within the same invocation.
+/// </typeparam>
 /// <remarks>
 ///     <para>
-///         Derived classes subscribe to a specific Revit event by overriding <see cref="Subscribe" /> and
-///         <see cref="Unsubscribe" />, calling <see cref="HandleEvent" /> as the event callback. The framework
-///         opens a new Autofac lifetime scope for each event invocation, registers the <typeparamref name="TEventArgs" />
-///         instance, and calls <see cref="RegisterEventContext" /> so that concrete handlers can additionally
-///         register well-known types such as <c>Document</c>, <c>View</c>, <c>UIApplication</c>, or
-///         <c>UIDocument</c>.
+///         Derived classes subscribe to a specific Revit event by implementing <see cref="Subscribe" /> and
+///         <see cref="Unsubscribe" />, wiring <see cref="HandleEvent" /> as the event callback.
+///         When the event fires, the framework:
+///         <list type="number">
+///             <item>Creates a child Autofac lifetime scope (unless <see cref="UseNewScope" /> is <c>false</c>).</item>
+///             <item>Calls <see cref="CreateContext" /> to produce a <typeparamref name="TContext" /> and registers it
+///                   as <see cref="IRevitContext" /> in the scope. For UI-specific events, the context is additionally
+///                   registered as <see cref="IRevitUiContext" />.</item>
+///             <item>Calls <see cref="RegisterEventContext" /> to register any additional event-specific
+///                   objects that cannot be obtained through <typeparamref name="TContext" />.</item>
+///             <item>Calls <see cref="ConfigureServices" /> for user-provided service registrations.</item>
+///             <item>Invokes registered <see cref="AddHandler(Delegate,Action{IServiceCollection}?)">delegates</see>,
+///                   or falls back to a method marked with <see cref="RevitEventHandlerExecuteAttribute" />,
+///                   or finally to <see cref="OnExecute" />.</item>
+///         </list>
 ///     </para>
 ///     <para>
-///         Override <see cref="ConfigureServices" /> to register further services into the scope.
-///         Declare a single method marked with <see cref="RevitEventHandlerExecuteAttribute" /> to receive
-///         DI-resolved parameters, or override <see cref="OnExecute" /> for a simple non-DI fallback.
+///         Use <see cref="AddHandler(Delegate,Action{IServiceCollection}?)">AddHandler</see> to register delegates
+///         at runtime. All delegates on the same handler instance share the same invocation scope and the same
+///         <typeparamref name="TContext" /> instance. When <see cref="AddHandler(Delegate,Action{IServiceCollection}?)">AddHandler</see>
+///         registrations are present, the <see cref="RevitEventHandlerExecuteAttribute" /> method and
+///         <see cref="OnExecute" /> are not called.
 ///     </para>
 ///     <para>
-///         The handler self-subscribes in the constructor and self-unsubscribes in <see cref="Dispose()" />.
-///         Always dispose handler instances during application shutdown.
+///         The handler self-unsubscribes in <see cref="Dispose()" />. Always dispose handler instances
+///         when their owner is done — for application-lifetime handlers this is typically during add-in shutdown.
 ///     </para>
 /// </remarks>
 public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDisposable
@@ -77,15 +98,16 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     // --------------------------------------------------------------------------------------------
 
     /// <summary>
-    ///     Initializes a new instance of <see cref="RevitEventHandler{TEventArgs}" />.
+    ///     Initializes a new instance of <see cref="RevitEventHandler{TSender, TEventArgs, TContext}" />.
     /// </summary>
     /// <param name="addInId">
     ///     The add-in GUID used to look up the root Autofac container via
     ///     <see cref="RevitAppBase.GetServiceProvider(System.Guid)" />.
+    ///     Pass <c>application.ActiveAddInId.GetGUID()</c> from the concrete constructor.
     /// </param>
     /// <remarks>
     ///     Derived classes must call <see cref="Subscribe" /> at the end of their own constructor,
-    ///     after all fields are initialized.
+    ///     after all fields are initialized, to avoid virtual-member-call issues during construction.
     /// </remarks>
     protected RevitEventHandler(Guid addInId)
     {
@@ -151,6 +173,9 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         return new DelegateHandle(_delegateRegistrations, registration);
     }
 
+    /// <summary>
+    ///     Gets the event args for the currently executing invocation, or <c>null</c> when no invocation is active.
+    /// </summary>
     protected TEventArgs? EventArgs { get; private set; }
 
     /// <inheritdoc />
@@ -166,8 +191,20 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    ///     Gets a value indicating whether the current event supports cancellation.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown when accessed outside of an active event invocation.
+    /// </exception>
     public bool IsCancellable => EventArgs?.Cancellable ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
 
+    /// <summary>
+    ///     Gets a value indicating whether the current event has already been cancelled.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown when accessed outside of an active event invocation.
+    /// </exception>
     public bool IsCancelled => EventArgs?.IsCancelled() ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
 
     /// <summary>
@@ -184,9 +221,14 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     protected abstract void Unsubscribe();
 
     /// <summary>
-    ///     Allows derived classes to add additional services into the per-invocation DI scope.
+    ///     Allows derived classes to register additional services into the per-invocation DI scope.
+    ///     Called once per event invocation when <see cref="UseNewScope" /> is <c>true</c>.
     /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
+    /// <param name="services">
+    ///     The <see cref="IServiceCollection" /> for the current invocation scope.
+    ///     Registrations made here are available to all delegates and the execute method
+    ///     within the same invocation.
+    /// </param>
     protected virtual void ConfigureServices(IServiceCollection services)
     {
         // Derived classes can override to add services.
@@ -208,8 +250,10 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     protected virtual bool UseNewScope { get; } = true;
 
     /// <summary>
-    ///     Called when the event fires and no method marked with <see cref="RevitEventHandlerExecuteAttribute" /> is
-    ///     found in the type hierarchy. Override this method for a simple, non-DI handler implementation.
+    ///     Called when the event fires and no delegates have been registered via
+    ///     <see cref="AddHandler(Delegate, Action{IServiceCollection}?)" /> and no method marked with
+    ///     <see cref="RevitEventHandlerExecuteAttribute" /> is found in the type hierarchy.
+    ///     Override this method for a simple, non-DI handler implementation.
     /// </summary>
     /// <param name="sender">The typed event sender for the current invocation.</param>
     /// <param name="args">The event args for the current invocation.</param>
@@ -218,9 +262,10 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     }
 
     /// <summary>
-    ///     Registers well-known Revit context objects (such as <c>Document</c>, <c>View</c>, <c>UIApplication</c>)
-    ///     into the per-invocation scope. Override in concrete handlers to expose the types that are available
-    ///     from the specific event args or sender.
+    ///     Registers additional event-specific objects into the per-invocation DI scope.
+    ///     Called once per invocation after <see cref="CreateContext" /> when <see cref="UseNewScope" /> is <c>true</c>.
+    ///     Override only when objects that are not reachable through <see cref="IRevitContext" /> or
+    ///     <see cref="IRevitUiContext" /> need to be available for injection.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> for the current invocation scope.</param>
     /// <param name="sender">The typed event sender.</param>
@@ -231,16 +276,18 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
     /// <summary>
     ///     Creates the <typeparamref name="TContext" /> instance for the current event invocation.
-    ///     The returned context is registered in the per-invocation DI scope as both
-    ///     <typeparamref name="TContext" /> and <see cref="IRevitContext" /> before delegates and
-    ///     <see cref="OnExecute" /> are called. Override in derived classes to supply the appropriate
-    ///     context object for the specific event and sender.
+    ///     The returned context is registered in the per-invocation DI scope as
+    ///     <typeparamref name="TContext" /> and, when <typeparamref name="TContext" /> is a more-derived
+    ///     interface (such as <see cref="IRevitUiContext" />), also as <see cref="IRevitContext" />,
+    ///     so that both keys are resolvable from the scope.
+    ///     The context is created once per invocation and shared by all delegates and the execute method.
     /// </summary>
     /// <param name="sender">The typed event sender.</param>
     /// <param name="args">The event args instance.</param>
     /// <returns>
     ///     A <typeparamref name="TContext" /> instance, or <c>null</c> when no context is available
-    ///     for the current invocation (for example, before a document is opened).
+    ///     for the current invocation — for example, before a document has been opened or after it
+    ///     has been destroyed (such as in <c>DocumentClosed</c>).
     /// </returns>
     protected abstract TContext? CreateContext(TSender? sender, TEventArgs args);
 
