@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
 		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
@@ -18,6 +18,7 @@
 		<Description>Support for Revit add-in isolation.</Description>
 		<IsPublishable>True</IsPublishable>
 		<Title>Scotec.Revit.Isolation</Title>
+		<PackageReleaseNotes>Breaking change: Running multiple Scotec.Revit-based add-ins within a single AssemblyLoadContext is no longer supported. Each add-in must use its own isolated context. Use SharedContextName and RevitSharedIsolationContext for sharing assemblies across add-ins. See CHANGELOG.md for details.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -40,9 +41,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPI">
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>

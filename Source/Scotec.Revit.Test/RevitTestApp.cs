@@ -17,13 +17,28 @@ using System.Resources;
 using System.Runtime.Loader;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Autodesk.Revit.DB.Events;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Hosting;
+using Scotec.Revit.EventHandler;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
 
 namespace Scotec.Revit.Test;
+
+public class TestApplicationInitializedHandler : RevitApplicationInitializedHandler
+{
+    public TestApplicationInitializedHandler(UIControlledApplication application) : base(application)
+    {
+    }
+
+    protected override void OnExecute(Application? sender, ApplicationInitializedEventArgs args)
+    {
+        base.OnExecute(sender, args);
+    }
+}
+
 
 [RevitDbApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class DbApp : IExternalDBApplication
@@ -42,66 +57,35 @@ public class DbApp : IExternalDBApplication
 [RevitApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestApp : RevitApp
 {
-    protected override bool OnStartup()
-    {
-        //Assembly assembly = null;
-        //try
-        //{
-        //    var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-        //    var generator = new RevitDynamicActionCommandGenerator("TestCommands", loadContext);
-        //    generator.GenerateActionCommandType("TestCommands.TestCommand1", (data, provider) =>
-        //    {
-        //        Debugger.Launch();
-        //    });
-        //    assembly = generator.FinalizeAssembly(@"C:\Temp\TestCommands.dll");
-        //}
-        //catch (Exception e)
-        //{
-        //    Debugger.Launch();
-        //    throw;
-        //}
+    //protected bool OnStartup(UIControlledApplication application, IConfiguration configuration)
+    //{
+    //    try
+    //    {
+    //        RevitTabManager.CreateTab(Application, "scotec");
+    //        var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
-        try
-        {
-            var config = Services.GetService<IConfiguration>();
-            RevitTabManager.CreateTab(Application, "scotec");
-            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
+    //        panel.AddItem(CreateTestButtonData());
+    //    }
+    //    catch (Exception)
+    //    {
+    //        Debugger.Launch();
+    //        return false;
+    //    }
 
-            panel.AddItem(CreateTestButtonData());
-        }
-        catch (Exception)
-        {
-            return false;
-        }
+    //    return base.OnStartup(application);
+    //}
 
-        return true;
-    }
-
-    protected override bool OnStartup(UIControlledApplication application)
-    {
-        try
-        {
-            var config = Services.GetService<IConfiguration>();
-            RevitTabManager.CreateTab(Application, "scotec");
-            var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
-
-            panel.AddItem(CreateTestButtonData());
-        }
-        catch (Exception)
-        {
-            Debugger.Launch();
-            return false;
-        }
-
-        return base.OnStartup(application);
-    }
+    private TestApplicationInitializedHandler? _applicationInitializedHandler;
 
     [RevitApplicationStartup]
     [UsedImplicitly]
-    private bool OnStartup(IConfiguration configuration)
+    private bool OnStartup(UIControlledApplication application, IConfiguration configuration,
+                           TestApplicationInitializedHandler applicationInitializedHandler)
     {
         try
         {
+            _applicationInitializedHandler = applicationInitializedHandler;
+
             RevitTabManager.CreateTab(Application, "scotec");
             var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
@@ -126,6 +110,7 @@ public class RevitTestApp : RevitApp
         {
             services.AddScoped<TestRevitDialog>();
             services.AddSingleton(new RevitTask());
+            services.AddTransient<TestApplicationInitializedHandler>();
         });
     }
 

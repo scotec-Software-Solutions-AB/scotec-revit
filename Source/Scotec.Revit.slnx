@@ -24,6 +24,55 @@
   </Folder>
   <Folder Name="/SolutionItems/Source/" />
   <Folder Name="/SolutionItems/Source/.github/" />
+    <Folder Name="/SolutionItems/Copilot/">
+    <File Path="../.github/copilot-instructions.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/agents/">
+    <File Path=".github/agents/code-reviewer.agent.md" />
+    <File Path=".github/agents/csharp-documentation.agent.md" />
+    <File Path=".github/agents/csharp-planner.agent.md" />
+    <File Path=".github/agents/csharp-refactoring-expert.agent.md" />
+    <File Path=".github/agents/documentation-writer.agent.md" />
+    <File Path=".github/agents/efcore-reviewer.agent.md" />
+    <File Path=".github/agents/pullrequest-creator.agent.md" />
+    <File Path=".github/agents/revit-add-in-architect.agent.md" />
+    <File Path=".github/agents/revit-add-in-developer.agent.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/instructions/">
+    <File Path=".github/instructions/architecture.instructions.md" />
+    <File Path=".github/instructions/build-verification.instructions.md" />
+    <File Path=".github/instructions/cmis-rules.instructions.md" />
+    <File Path=".github/instructions/dependency-injection.instructions.md" />
+    <File Path=".github/instructions/documentation.instructions.md" />
+    <File Path=".github/instructions/efcore-patterns.instructions.md" />
+    <File Path=".github/instructions/exception-handling.instructions.md" />
+    <File Path=".github/instructions/logging.instructions.md" />
+    <File Path=".github/instructions/refactoring.instructions.md" />
+    <File Path=".github/instructions/testing.instructions.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/" />
+  <Folder Name="/SolutionItems/Copilot/skills/dotnet8/">
+    <File Path=".github/skills/dotnet8/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/efcore-testing/">
+    <File Path=".github/skills/efcore-testing/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/efcore8/">
+    <File Path=".github/skills/efcore8/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/revit/">
+    <File Path=".github/skills/revit/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/sql-server/">
+    <File Path=".github/skills/sql-server/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/xml-docs/">
+    <File Path=".github/skills/xml-docs/SKILL.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/Copilot/skills/xunit/">
+    <File Path=".github/skills/xunit/SKILL.md" />
+  </Folder>
+
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
     <Platform Project="x64" />
   </Project>

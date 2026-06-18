@@ -11,7 +11,7 @@ thread, or from an external UI (such as WPF or WinForms).
 
 | Mode | When to use |
 |---|---|
-| **Direct** (`Func`/`Action`) | Simple callbacks that receive `UIApplication` directly; no DI container required |
+| **Direct** (`Func`/`Action`) | Simple callbacks that receive `IRevitUiContext` directly; no DI container required |
 | **DI-based** (`Delegate`) | Callbacks whose parameters are resolved automatically from the DI container |
 
 ## Understanding IExternalEventHandler and the Revit API Context
@@ -57,7 +57,7 @@ the Revit context.
 
 ## Basic Usage (Direct Mode)
 
-Direct mode requires no DI container. The callback receives a `UIApplication` and all Revit API access goes through it.
+Direct mode requires no DI container. The callback receives an `IRevitUiContext` and all Revit API access goes through it.
 
 ### Creating a RevitTask
 
@@ -69,17 +69,16 @@ var revitTask = new RevitTask("MyRevitOperation");
 ### Running a Task with a Result
 
 ```csharp
-int elementCount = await revitTask.Run(app =>
+int elementCount = await revitTask.Run(context =>
 {
-    var doc = app.ActiveUIDocument.Document;
-    return doc.GetElementIds().Count;
+    return context.Document.GetElementIds().Count;
 });
 ```
 
 ### Running a Task without a Result
 
 ```csharp
-await revitTask.Run(app =>
+await revitTask.Run(context =>
 {
     TaskDialog.Show("Revit", "Operation executed in Revit context!");
 });
@@ -102,23 +101,22 @@ registered DI container (provided by `RevitApp` or `RevitDbApp`).
 
 The following services are registered in the scope before your delegate is invoked:
 
-| Type            | Registered when            |
-|-----------------|----------------------------|
-| `UIApplication` | Always                     |
-| `Application`   | Always                     |
-| `UIDocument`    | Active document is open    |
-| `Document`      | Active document is open    |
-| `View`          | Active view is available   |
+| Type | Notes |
+|------|-------|
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
+| `IRevitUiContext` | Always registered — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+
+The `Document` and `UiDocument` properties may be `null` when no document is currently open.
 
 ### Running a DI-Based Task with a Result
 
 Declare a `Delegate` whose parameters are services. The framework resolves them from the scope:
 
 ```csharp
-Delegate action = (Document doc, IMyService myService) =>
+Delegate action = (IRevitUiContext context, IMyService myService) =>
 {
-    myService.ProcessDocument(doc);
-    return doc.Title;
+    myService.ProcessDocument(context.Document);
+    return context.Document.Title;
 };
 
 string title = await revitTask.Run<string>(action);
@@ -127,9 +125,9 @@ string title = await revitTask.Run<string>(action);
 ### Running a DI-Based Task without a Result
 
 ```csharp
-Delegate action = (Document doc, IMyService myService) =>
+Delegate action = (IRevitUiContext context, IMyService myService) =>
 {
-    myService.ProcessDocument(doc);
+    myService.ProcessDocument(context.Document);
 };
 
 await revitTask.Run(action);
@@ -140,9 +138,9 @@ await revitTask.Run(action);
 Pass an optional `configureServices` callback to add services that are not registered in the root container:
 
 ```csharp
-Delegate action = (Document doc, ITransientHelper helper) =>
+Delegate action = (IRevitUiContext context, ITransientHelper helper) =>
 {
-    helper.Execute(doc);
+    helper.Execute(context.Document);
 };
 
 await revitTask.Run(action, services =>
@@ -163,10 +161,10 @@ and `RevitApp`:
 | No annotation, no default | `IMyService service` | Required — throws if not registered |
 
 ```csharp
-Delegate action = (Document doc, IMyService myService, IOptionalLogger? logger) =>
+Delegate action = (IRevitUiContext context, IMyService myService, IOptionalLogger? logger) =>
 {
     logger?.Log("Starting");
-    myService.ProcessDocument(doc);
+    myService.ProcessDocument(context.Document);
 };
 
 await revitTask.Run(action);
@@ -232,7 +230,7 @@ Call `Dispose()` when the instance is no longer required.
 Use **direct mode** when:
 
 - The add-in does not use a DI container.
-- The callback only needs `UIApplication` and derives everything else from it.
+- The callback only needs `IRevitUiContext` and derives everything else from it.
 - You want the simplest possible integration.
 
 Use **DI mode** when:
@@ -275,18 +273,18 @@ public class MyViewModel : IDisposable
     // Direct mode — no DI container required
     public async Task ShowInfoAsync()
     {
-        await _revitTask.Run(app =>
+        await _revitTask.Run(context =>
         {
-            TaskDialog.Show("Info", app.ActiveUIDocument.Document.Title);
+            TaskDialog.Show("Info", context.Document.Title);
         });
     }
 
     // DI mode — services injected automatically
     public async Task ProcessDocumentAsync()
     {
-        Delegate action = (Document doc, IMyService myService) =>
+        Delegate action = (IRevitUiContext context, IMyService myService) =>
         {
-            myService.ProcessDocument(doc);
+            myService.ProcessDocument(context.Document);
         };
 
         await _revitTask.Run(action);

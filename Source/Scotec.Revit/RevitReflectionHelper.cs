@@ -52,6 +52,28 @@ internal static class RevitReflectionHelper
     }
 
     /// <summary>
+    ///     Resolves the parameters of <paramref name="method" /> from <paramref name="serviceProvider" />.
+    ///     Parameters with nullable types or default values are optional; non-nullable parameters are required.
+    /// </summary>
+    /// <param name="method">The method whose parameters should be resolved.</param>
+    /// <param name="serviceProvider">The <see cref="IServiceProvider" /> used to resolve each parameter.</param>
+    /// <returns>An array of resolved parameter values ready to pass to <c>DynamicInvoke</c>.</returns>
+    internal static object?[] ResolveParameters(MethodInfo method, IServiceProvider serviceProvider)
+    {
+        var nullabilityContext = new NullabilityInfoContext();
+        return method.GetParameters()
+                     .Select(p =>
+                     {
+                         var isOptional = nullabilityContext.Create(p).WriteState == NullabilityState.Nullable
+                                          || p.HasDefaultValue;
+                         return isOptional
+                             ? serviceProvider.GetService(p.ParameterType)
+                             : serviceProvider.GetRequiredService(p.ParameterType);
+                     })
+                     .ToArray<object?>();
+    }
+
+    /// <summary>
     ///     Resolves the parameters of <paramref name="method" /> from <paramref name="serviceProvider" />,
     ///     substituting any type present in <paramref name="passthroughs" /> with its corresponding instance directly
     ///     instead of resolving it from the container.

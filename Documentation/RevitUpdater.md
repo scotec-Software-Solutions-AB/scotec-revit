@@ -38,9 +38,9 @@ protected override void OnRegisterUpdater()
 
 ### The Recommended Approach: `[RevitUpdaterExecute]` Attribute
 
-The preferred way to implement execute logic is to declare a method with the `[RevitUpdaterExecute]` attribute. The method must return `void`. It can have any name and any combination of DI-resolvable parameters. The framework discovers it automatically at runtime, resolves all parameters from the DI scope, and invokes it. `UpdaterData` and `Document` are passed through directly without going to DI.
+The preferred way to implement execute logic is to declare a method with the `[RevitUpdaterExecute]` attribute. The method must return `void`. It can have any name and any combination of DI-resolvable parameters. The framework discovers it automatically at runtime, resolves all parameters from the DI scope, and invokes it. `UpdaterData` is passed through directly.
 
-**Example: injecting a document and a custom service**
+**Example: injecting context and a custom service**
 
 ```csharp
 public class MyUpdater : RevitUpdater
@@ -61,13 +61,13 @@ public class MyUpdater : RevitUpdater
     }
 
     [RevitUpdaterExecute]
-    private void OnExecute(UpdaterData data, Document document, IMyService myService)
+    private void OnExecute(UpdaterData data, IRevitContext context, IMyService myService)
     {
-        // data and document are passed through directly.
-        // myService is resolved from the DI scope.
+        // data is passed through directly.
+        // context and myService are resolved from the DI scope.
         foreach (var id in data.GetModifiedElementIds(Element.GetChangeTypeGeometry()))
         {
-            var wall = document.GetElement(id) as Wall;
+            var wall = context.Document.GetElement(id) as Wall;
             if (wall is not null)
             {
                 myService.ProcessWall(wall);
@@ -79,10 +79,10 @@ public class MyUpdater : RevitUpdater
 
 Any combination of DI-registered types is valid as parameters, including:
 
-- `UpdaterData` — passed directly
-- `Document` — passed directly
-- `IServiceProvider` — passed directly
-- Any type registered in the application's DI container
+- `UpdaterData` — passed through directly
+- `IRevitContext` — always registered; provides `Application` and `Document`
+- `IServiceProvider` — registered by the framework
+- Any type registered in the application’s DI container
 
 Parameters declared as nullable (e.g. `IMyService?`) are treated as optional and receive `null` when not registered. Non-nullable parameters are required and will cause an exception if not registered.
 
@@ -124,10 +124,10 @@ Each updater execution creates a new DI scope using Autofac and `Microsoft.Exten
 
 ### What Is Registered by Default
 
-| Type           | Registered when           |
-|----------------|---------------------------|
-| `UpdaterData`  | Always                    |
-| `Document`     | Document is available     |
+| Type | Notes |
+|------|-------|
+| `UpdaterData` | Always registered — passed through directly |
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
 
 ### Registering Additional Services
 
@@ -146,9 +146,9 @@ public class MyUpdater : RevitUpdater
     }
 
     [RevitUpdaterExecute]
-    private void OnExecute(UpdaterData data, Document document, IMyService myService)
+    private void OnExecute(UpdaterData data, IRevitContext context, IMyService myService)
     {
-        myService.ProcessChanges(data, document);
+        myService.ProcessChanges(data, context.Document);
     }
 }
 ```
@@ -156,7 +156,7 @@ public class MyUpdater : RevitUpdater
 ### DI Scope Creation Flow
 
 1. The framework creates a new DI scope for each updater execution.
-2. `UpdaterData` and `Document` (if available) are registered in the scope.
+2. `UpdaterData` and `IRevitContext` are registered in the scope.
 3. `ConfigureServices` is called to register additional services.
 4. The method marked with `[RevitUpdaterExecute]` is invoked with parameters resolved from the scope.
 5. If no attributed method is found, `OnExecute(UpdaterData)` is called instead.

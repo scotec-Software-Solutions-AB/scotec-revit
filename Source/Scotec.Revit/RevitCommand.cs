@@ -9,6 +9,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
@@ -97,7 +98,8 @@ public enum RevitTransactionMode
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 
 /// <summary>
@@ -111,7 +113,8 @@ public sealed class RevitCommandBeforeExecuteAttribute : Attribute;
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitCommandExecuteAttribute : Attribute;
 
 /// <summary>
@@ -124,7 +127,8 @@ public sealed class RevitCommandExecuteAttribute : Attribute;
 ///     passed through directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI] 
 public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 
 /// <summary>
@@ -135,6 +139,7 @@ public sealed class RevitCommandAfterExecuteAttribute : Attribute;
 ///     indicating how transactions should be handled during the execution of the command.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]
+[PublicAPI]
 public class RevitTransactionModeAttribute : Attribute
 {
     /// <summary>
@@ -188,10 +193,9 @@ public class RevitTransactionModeAttribute : Attribute
 ///     This class provides a framework for handling Revit external commands, including failure preprocessing and
 ///     processing.
 ///     It includes methods that can be overridden to customize behavior during command execution and failure handling.
-///     During execution, this class creates a new scope for the DI container and adds the current <see cref="Document" />
-///     if available, the current <see cref="View" /> if available, the <see cref="Autodesk.Revit.UI.UIApplication" />,
-///     and the JournalData.
-///     Override <see cref="ConfigureServices" /> to apply custom services to the current scope.
+///     During execution, this class creates a new DI scope and registers <see cref="IRevitUiContext" /> (and
+///     <see cref="IRevitContext" />) for the current invocation. Override <see cref="ConfigureServices" /> to
+///     register additional services into the scope.
 /// </remarks>
 //[RevitTransactionMode(Mode = RevitTransactionMode.Transaction)]
 public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IFailuresProcessor
@@ -288,20 +292,15 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </exception>
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
-        var uiApplication = commandData.Application;
-        var application = uiApplication.Application;
-        var uiDocument = uiApplication.ActiveUIDocument;
-        var document = uiDocument?.Document;
-        var view = uiDocument?.ActiveView;
-
-        var autofacRoot = RevitAppBase.GetServiceProvider(commandData.Application.ActiveAddInId.GetGUID()).GetAutofacRoot();
+        var context = new RevitUiContext(commandData.Application);
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
         ILifetimeScope? scope = null;
         IServiceProvider serviceProvider;
 
         if (UseNewScope)
         {
-            scope = CreateLifetimeScope(autofacRoot, uiApplication, application, uiDocument, document, view);
+            scope = CreateLifetimeScope(autofacRoot, context);
             serviceProvider = scope.Resolve<IServiceProvider>();
         }
         else
@@ -319,7 +318,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             Result result;
 
             // Skip transaction management if no document is open or transaction is not required.
-            if (document is null || transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+            if (transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
                 result = InvokeOnExecute(commandData, elements, serviceProvider);
             }
@@ -328,9 +327,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
                 result = transactionMode switch
                 {
                     RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
-                        => ExecuteTransaction(commandData, elements, document, serviceProvider, transactionMode),
+                        => ExecuteTransaction(commandData, elements, context.Document, serviceProvider, transactionMode),
                     RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
-                        => ExecuteTransactionGroup(commandData, elements, document, serviceProvider, transactionMode),
+                        => ExecuteTransactionGroup(commandData, elements, context.Document, serviceProvider, transactionMode),
                     _ => Result.Failed
                 };
             }
@@ -520,35 +519,13 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
     private ILifetimeScope CreateLifetimeScope(
         ILifetimeScope autofacRoot,
-        UIApplication uiApplication,
-        Autodesk.Revit.ApplicationServices.Application? application,
-        UIDocument? uiDocument,
-        Document? document,
-        View? view)
+        IRevitUiContext context)
     {
         return autofacRoot.BeginLifetimeScope(builder =>
         {
-            builder.RegisterInstance(uiApplication).ExternallyOwned();
-
-            if (application is not null)
-            {
-                builder.RegisterInstance(application).ExternallyOwned();
-            }
-
-            if (uiDocument is not null)
-            {
-                builder.RegisterInstance(uiDocument).ExternallyOwned();
-            }
-
-            if (document is not null)
-            {
-                builder.RegisterInstance(document).ExternallyOwned();
-            }
-
-            if (view is not null)
-            {
-                builder.RegisterInstance(view).ExternallyOwned();
-            }
+            builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+            // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+            builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
 
             // Allow derived classes to add services
             var services = new ServiceCollection();
@@ -577,10 +554,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         }
         finally
         {
-            if(transactionGroup.HasStarted())
+            if (transactionGroup.HasStarted())
             {
                 transactionGroup.RollBack();
-            }   
+            }
         }
     }
 
@@ -612,7 +589,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             {
                 transaction.RollBack();
             }
-
         }
     }
 
@@ -668,7 +644,6 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             });
     }
 
-
     /// <summary>
     ///     Invokes the command's execute entry point. If a method marked with <see cref="RevitCommandExecuteAttribute" />
     ///     exists in the type hierarchy, it is invoked with DI-resolved parameters. Otherwise falls back to the
@@ -682,6 +657,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
     {
+
         // Prefer a method explicitly marked with [RevitCommandExecute].
         var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandExecuteAttribute>(GetType(), typeof(RevitCommand), typeof(Result));
         if (attributedExecute is not null)

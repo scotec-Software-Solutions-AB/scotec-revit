@@ -9,6 +9,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
@@ -23,7 +24,8 @@ namespace Scotec.Revit;
 ///     directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitCommandAvailabilityCheckAttribute : Attribute;
 
 /// <summary>
@@ -56,37 +58,16 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     {
         try
         {
-            var application = uiApplication.Application;
-            var uiDocument = uiApplication.ActiveUIDocument;
-            var document = uiDocument?.Document;
-            var view = uiDocument?.ActiveView;
+            var context = new RevitUiContext(uiApplication);
 
-            using var scope = RevitAppBase.GetServiceProvider(uiApplication.ActiveAddInId.GetGUID())
+            using var scope = RevitAppBase.GetServiceProvider()
                                           .GetAutofacRoot()
                                           .BeginLifetimeScope(builder =>
                                           {
-                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
-
-                                              if (application is not null)
-                                              {
-                                                  builder.RegisterInstance(application).ExternallyOwned();
-                                              }
-
-                                              if (uiDocument is not null)
-                                              {
-                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
-                                              }
-
-                                              if (document is not null)
-                                              {
-                                                  builder.RegisterInstance(document).ExternallyOwned();
-                                              }
-
-                                              if (view is not null)
-                                              {
-                                                  builder.RegisterInstance(view).ExternallyOwned();
-                                              }
-
+                                              builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                                              // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                                              builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
+                                              
                                               // Allow derived classes to add services
                                               var services = new ServiceCollection();
                                               ConfigureServices(services);

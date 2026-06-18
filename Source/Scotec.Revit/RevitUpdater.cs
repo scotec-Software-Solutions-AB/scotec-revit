@@ -9,6 +9,7 @@ using System.Reflection;
 using Autodesk.Revit.DB;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
@@ -23,6 +24,8 @@ namespace Scotec.Revit;
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitUpdaterExecuteAttribute : Attribute;
 
 /// <summary>
@@ -94,17 +97,14 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     void IUpdater.Execute(UpdaterData data)
     {
-        var document = data.GetDocument();
-        using var scope = RevitAppBase.GetServiceProvider(AddInId.GetGUID())
+        var context = new RevitContext(data.GetDocument());
+
+        using var scope = RevitAppBase.GetServiceProvider()
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {
+                                          builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
                                           builder.RegisterInstance(data).ExternallyOwned();
-
-                                          if (document is not null)
-                                          {
-                                              builder.RegisterInstance(document).ExternallyOwned();
-                                          }
 
                                           var services = new ServiceCollection();
                                           ConfigureServices(services);

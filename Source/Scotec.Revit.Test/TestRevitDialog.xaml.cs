@@ -12,7 +12,7 @@ namespace Scotec.Revit.Test
     {
         private readonly RevitTask _revitTask;
 
-        public TestRevitDialog(UIApplication revitApp, RevitTask revitTask) : base(revitApp)
+        public TestRevitDialog(IRevitUiContext context, RevitTask revitTask) : base(context.UiApplication)
         {
             _revitTask = revitTask;
             InitializeComponent();
@@ -20,14 +20,14 @@ namespace Scotec.Revit.Test
 
         private async void DialogButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = await _revitTask.Run(uiApp =>
+            var result = await _revitTask.Run(context =>
             {
-                TaskDialog.Show("Revit Task", "This is a message from the Revit task!");
+                TaskDialog.Show("Revit Task 1", "This is a message from the Revit task!");
                 return true;
             });
-            await _revitTask.Run((Document document) =>
+            await _revitTask.Run((context) =>
             {
-                TaskDialog.Show("Revit Task", "This is a message from the Revit task!");
+                TaskDialog.Show("Revit Task 2", "This is a message from the Revit task!");
             });
             await _revitTask.Run(MyRevitTask);
         }
@@ -37,9 +37,9 @@ namespace Scotec.Revit.Test
             // Register additional services if needed.
         }
 
-        private void MyRevitTask(Document document)
+        private void MyRevitTask(IRevitUiContext context)
         {
-            TaskDialog.Show("Revit Task", "This is a message from the Revit task!");
+            TaskDialog.Show("Revit Task 3", "This is a message from the Revit task!");
         }
     }
 }
