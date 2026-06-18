@@ -28,7 +28,7 @@ public class ShowTestDialogCommand : RevitCommand
     }
 
     [RevitCommandExecute]
-    protected Result Run(Document document, TestRevitDialog dialog) 
+    protected Result Run(IRevitUiContext context, TestRevitDialog dialog) 
     {
         dialog.Show();
         return Result.Succeeded;
