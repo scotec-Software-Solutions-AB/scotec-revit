@@ -320,8 +320,12 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                 // IRevitContext is always registered.
                 // IRevitUiContext is additionally registered when the context is a UI context.
                 services.AddScoped<IRevitContext>(_ => context!);
+                builder.RegisterInstance(context!).As<IRevitContext>().OwnedByLifetimeScope();
                 if (context is IRevitUiContext uiContext)
-                    services.AddScoped<IRevitUiContext>(_ => uiContext);
+                {
+                    // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                    builder.RegisterInstance(uiContext).As<IRevitUiContext>().ExternallyOwned();
+                }
                 builder.Populate(services);
             });
             serviceProvider = scope.Resolve<IServiceProvider>();

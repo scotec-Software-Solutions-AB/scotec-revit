@@ -33,7 +33,7 @@ public class RevitTestCommand : RevitCommand
     }
 
     [RevitCommandExecute]
-    protected Result Run(Document document)
+    protected Result Run(IRevitUiContext context)
     {
         return Result.Succeeded;
     }

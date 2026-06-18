@@ -523,10 +523,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     {
         return autofacRoot.BeginLifetimeScope(builder =>
         {
-            builder.RegisterInstance(context)
-                   .As<IRevitUiContext>()
-                   .As<IRevitContext>()
-                   .InstancePerLifetimeScope();
+            builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+            // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+            builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
 
             // Allow derived classes to add services
             var services = new ServiceCollection();
