@@ -6,7 +6,9 @@
     <BuildType Name="Revit2027" />
     <Platform Name="x64" />
   </Configurations>
-  <Folder Name="/SolutionItems/" />
+  <Folder Name="/SolutionItems/">
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Folder Name="/SolutionItems/Documentation/">
     <File Path="../Documentation/RevitAddinIsolation.md" />
     <File Path="../Documentation/RevitApp.md" />
