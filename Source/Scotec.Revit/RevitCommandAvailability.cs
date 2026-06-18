@@ -164,7 +164,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
             return (bool)RevitReflectionHelper.Invoke(this, attributedCheck, serviceProvider,
                 new Dictionary<Type, object>
                 {
-                    [typeof(IRevitUiContext)] = applicationData,
+                    [typeof(UIApplication)] = applicationData,
                     [typeof(CategorySet)] = selectedCategories,
                     [typeof(IServiceProvider)] = serviceProvider
                 })!;

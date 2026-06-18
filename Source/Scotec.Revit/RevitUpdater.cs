@@ -97,17 +97,14 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     void IUpdater.Execute(UpdaterData data)
     {
-        var document = data.GetDocument();
+        var context = new RevitContext(data.GetDocument());
+
         using var scope = RevitAppBase.GetServiceProvider()
                                       .GetAutofacRoot()
                                       .BeginLifetimeScope(builder =>
                                       {
+                                          builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
                                           builder.RegisterInstance(data).ExternallyOwned();
-
-                                          if (document is not null)
-                                          {
-                                              builder.RegisterInstance(document).ExternallyOwned();
-                                          }
 
                                           var services = new ServiceCollection();
                                           ConfigureServices(services);
