@@ -317,12 +317,11 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                 services.AddScoped<TEventArgs>(_ => args);
                 RegisterEventContext(services, typedSender, args);
                 ConfigureServices(services);
-                // Register TContext (e.g. IRevitContext or IRevitUiContext) when a context was created.
-                // Also register IRevitContext separately when TContext is a more-derived interface
-                // so that both resolvable keys are available in DI.
-                services.AddScoped<TContext>(_ => context!);
-                if (typeof(TContext) != typeof(IRevitContext))
-                    services.AddScoped<IRevitContext>(_ => context!);
+                // IRevitContext is always registered.
+                // IRevitUiContext is additionally registered when the context is a UI context.
+                services.AddScoped<IRevitContext>(_ => context!);
+                if (context is IRevitUiContext uiContext)
+                    services.AddScoped<IRevitUiContext>(_ => uiContext);
                 builder.Populate(services);
             });
             serviceProvider = scope.Resolve<IServiceProvider>();
