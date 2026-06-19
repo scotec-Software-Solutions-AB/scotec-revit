@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitFailuresProcessingHandler : RevitAppSingleEventHandler<FailuresProcessingEventArgs>
+public class RevitFailuresProcessingHandler : RevitAppSingleEventHandler<FailuresProcessingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.FailuresProcessing" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitFailuresProcessingHandler(ControlledApplication application)
+    public RevitFailuresProcessingHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

@@ -28,7 +28,7 @@ public class RevitTestCommand : RevitCommand
     }
 
     [RevitCommandAfterExecute]
-    protected virtual void Cleanup(ExternalCommandData commandData, ElementSet elements)
+    protected virtual void Cleanup(IGlobalRevitUiContext context, ExternalCommandData commandData, ElementSet elements)
     {
     }
 

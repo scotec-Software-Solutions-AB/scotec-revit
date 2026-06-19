@@ -27,14 +27,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentChangedHandler : RevitAppSingleEventHandler<DocumentChangedEventArgs>
+public class RevitDocumentChangedHandler : RevitAppSingleEventHandler<DocumentChangedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentChanged" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentChangedHandler(ControlledApplication application)
+    public RevitDocumentChangedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();
@@ -57,9 +57,9 @@ public abstract class RevitDocumentChangedHandler : RevitAppSingleEventHandler<D
     ///     Creates an <see cref="IRevitContext" /> from the <see cref="Autodesk.Revit.DB.Events.DocumentChangedEventArgs.GetDocument" /> result
     ///     when a document is available.
     /// </remarks>
-    protected override IRevitContext? CreateContext(Application? sender, DocumentChangedEventArgs args)
+    protected sealed override IRevitContext? CreateContext(Application? sender, DocumentChangedEventArgs args)
     {
         var document = args.GetDocument();
-        return document is not null ? new RevitContext(document) : null;
+        return document is not null ? new RevitContext(document) : base.CreateContext(sender, args);
     }
 }

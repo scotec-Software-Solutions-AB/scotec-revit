@@ -20,13 +20,13 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentCreatedHandler : RevitAppPostDocumentEventHandler<DocumentCreatedEventArgs>
+public class RevitDocumentCreatedHandler : RevitAppPostDocumentEventHandler<DocumentCreatedEventArgs>
 {
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentCreated" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentCreatedHandler(ControlledApplication application)
+    public RevitDocumentCreatedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

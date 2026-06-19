@@ -21,14 +21,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitTransferringProjectStandardsHandler : RevitUiPreDocumentEventHandler<TransferringProjectStandardsEventArgs>
+public class RevitTransferringProjectStandardsHandler : RevitUiPreDocumentEventHandler<TransferringProjectStandardsEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.TransferringProjectStandards" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitTransferringProjectStandardsHandler(UIControlledApplication application)
+    public RevitTransferringProjectStandardsHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

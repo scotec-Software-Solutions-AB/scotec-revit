@@ -21,14 +21,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitFormulaEditingHandler : RevitUiPreEventHandler<FormulaEditingEventArgs>
+public class RevitFormulaEditingHandler : RevitUiPreEventHandler<FormulaEditingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.FormulaEditing" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitFormulaEditingHandler(UIControlledApplication application)
+    public RevitFormulaEditingHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

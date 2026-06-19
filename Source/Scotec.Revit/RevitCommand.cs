@@ -619,7 +619,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <summary>
     ///     Finds the unique method in the type hierarchy that is marked with <typeparamref name="TAttribute" />,
     ///     resolves its parameters from the <paramref name="serviceProvider" />, and invokes it.
-    ///     Does nothing if no such method exists. Throws <see cref="InvalidOperationException" /> if more than one
+    ///     Does nothing if no such method exists. Throws <see cref="System.InvalidOperationException" /> if more than one
     ///     method in the hierarchy carries the attribute.
     /// </summary>
     /// <typeparam name="TAttribute">The lifecycle attribute type to search for.</typeparam>
@@ -649,7 +649,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     exists in the type hierarchy, it is invoked with DI-resolved parameters. Otherwise falls back to the
     ///     standard <see cref="OnExecute(ExternalCommandData, ElementSet)" /> override, and finally to the obsolete
     ///     <see cref="OnExecute(ExternalCommandData, IServiceProvider)" /> for backward compatibility.
-    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
+    ///     Throws <see cref="System.InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>

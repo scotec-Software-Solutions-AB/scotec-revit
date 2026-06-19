@@ -22,7 +22,7 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitAppPostDocumentEventHandler<DocumentSynchronizedWithCentralEventArgs>
+public class RevitDocumentSynchronizedWithCentralHandler : RevitAppPostDocumentEventHandler<DocumentSynchronizedWithCentralEventArgs>
 {
 
     /// <summary>
@@ -30,7 +30,7 @@ public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitAppPost
     ///     <see cref="ControlledApplication.DocumentSynchronizedWithCentral" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentSynchronizedWithCentralHandler(ControlledApplication application)
+    public RevitDocumentSynchronizedWithCentralHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();
@@ -50,11 +50,13 @@ public abstract class RevitDocumentSynchronizedWithCentralHandler : RevitAppPost
 
     /// <inheritdoc />
     /// <remarks>
-    ///     Creates an <see cref="IRevitContext" /> from <see cref="DocumentSynchronizedWithCentralEventArgs.Document" />
+    ///     Creates an <see cref="IRevitContext" /> from <see cref="Autodesk.Revit.DB.Events.DocumentSynchronizedWithCentralEventArgs.Document" />
     ///     when a document is available.
     /// </remarks>
-    protected override IRevitContext? CreateContext(Application? sender, DocumentSynchronizedWithCentralEventArgs args)
+    protected sealed override IRevitContext? CreateContext(Application? sender, DocumentSynchronizedWithCentralEventArgs args)
     {
-        return args.Document is not null ? new RevitContext(args.Document) : null;
+        // Revit API: args.Document is the synchronized document.
+        // Fall back to Application when args.Document is null.
+        return args.Document is not null ? new RevitContext(args.Document) : base.CreateContext(sender, args);
     }
 }

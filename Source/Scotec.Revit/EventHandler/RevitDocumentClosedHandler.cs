@@ -21,14 +21,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI] 
-public abstract class RevitDocumentClosedHandler : RevitAppPostEventHandler<DocumentClosedEventArgs>
+public class RevitDocumentClosedHandler : RevitAppPostEventHandler<DocumentClosedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentClosed" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentClosedHandler(ControlledApplication application)
+    public RevitDocumentClosedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

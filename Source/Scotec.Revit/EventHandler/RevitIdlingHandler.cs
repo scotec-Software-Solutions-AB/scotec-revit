@@ -25,14 +25,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitIdlingHandler : RevitUiPreEventHandler<IdlingEventArgs>
+public class RevitIdlingHandler : RevitUiPreEventHandler<IdlingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.Idling" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitIdlingHandler(UIControlledApplication application)
+    public RevitIdlingHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

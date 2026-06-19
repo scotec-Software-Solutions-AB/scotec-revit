@@ -22,14 +22,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitLinkedResourceOpeningHandler : RevitAppPreEventHandler<LinkedResourceOpeningEventArgs>
+public class RevitLinkedResourceOpeningHandler : RevitAppPreEventHandler<LinkedResourceOpeningEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.LinkedResourceOpening" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitLinkedResourceOpeningHandler(ControlledApplication application)
+    public RevitLinkedResourceOpeningHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitFileImportedHandler : RevitAppPostDocumentEventHandler<FileImportedEventArgs>
+public class RevitFileImportedHandler : RevitAppPostDocumentEventHandler<FileImportedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.FileImported" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitFileImportedHandler(ControlledApplication application)
+    public RevitFileImportedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

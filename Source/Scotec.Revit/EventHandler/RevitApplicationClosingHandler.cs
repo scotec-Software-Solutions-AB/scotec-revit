@@ -21,14 +21,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]     
-public abstract class RevitApplicationClosingHandler : RevitUiPreEventHandler<ApplicationClosingEventArgs>
+public class RevitApplicationClosingHandler : RevitUiPreEventHandler<ApplicationClosingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.ApplicationClosing" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitApplicationClosingHandler(UIControlledApplication application)
+    public RevitApplicationClosingHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

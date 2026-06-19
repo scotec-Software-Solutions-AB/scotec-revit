@@ -24,21 +24,7 @@ using Scotec.Revit.EventHandler;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
-
 namespace Scotec.Revit.Test;
-
-public class TestApplicationInitializedHandler : RevitApplicationInitializedHandler
-{
-    public TestApplicationInitializedHandler(UIControlledApplication application) : base(application)
-    {
-    }
-
-    protected override void OnExecute(Application? sender, ApplicationInitializedEventArgs args)
-    {
-        base.OnExecute(sender, args);
-    }
-}
-
 
 [RevitDbApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class DbApp : IExternalDBApplication
@@ -57,35 +43,12 @@ public class DbApp : IExternalDBApplication
 [RevitApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestApp : RevitApp
 {
-    //protected bool OnStartup(UIControlledApplication application, IConfiguration configuration)
-    //{
-    //    try
-    //    {
-    //        RevitTabManager.CreateTab(Application, "scotec");
-    //        var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
-
-    //        panel.AddItem(CreateTestButtonData());
-    //    }
-    //    catch (Exception)
-    //    {
-    //        Debugger.Launch();
-    //        return false;
-    //    }
-
-    //    return base.OnStartup(application);
-    //}
-
-    private TestApplicationInitializedHandler? _applicationInitializedHandler;
-
     [RevitApplicationStartup]
     [UsedImplicitly]
-    private bool OnStartup(UIControlledApplication application, IConfiguration configuration,
-                           TestApplicationInitializedHandler applicationInitializedHandler)
+    private bool OnStartup(UIControlledApplication application, IConfiguration configuration)
     {
         try
         {
-            _applicationInitializedHandler = applicationInitializedHandler;
-
             RevitTabManager.CreateTab(Application, "scotec");
             var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 
@@ -110,7 +73,6 @@ public class RevitTestApp : RevitApp
         {
             services.AddScoped<TestRevitDialog>();
             services.AddSingleton(new RevitTask());
-            services.AddTransient<TestApplicationInitializedHandler>();
         });
     }
 

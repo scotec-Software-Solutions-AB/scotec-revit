@@ -15,7 +15,7 @@ namespace Scotec.Revit;
 /// <remarks>
 ///     When no document is open at construction time, <see cref="RevitUiContext.UiDocument" />,
 ///     <see cref="RevitContext.Document" />, and <see cref="RevitUiContext.ActiveView" /> are
-///     <c>null</c>; <see cref="RevitUiContext.UiApplication" /> and
+///     <c>null</c>; <see cref="UiApplication" /> and
 ///     <see cref="RevitContext.Application" /> are always set.
 ///     <para>
 ///         All property accessors throw <see cref="ObjectDisposedException" /> after

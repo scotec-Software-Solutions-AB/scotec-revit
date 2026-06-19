@@ -21,14 +21,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitFabricationPartBrowserChangedHandler : RevitUiSingleEventHandler<FabricationPartBrowserChangedEventArgs>
+public class RevitFabricationPartBrowserChangedHandler : RevitUiSingleEventHandler<FabricationPartBrowserChangedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.FabricationPartBrowserChanged" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitFabricationPartBrowserChangedHandler(UIControlledApplication application)
+    public RevitFabricationPartBrowserChangedHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

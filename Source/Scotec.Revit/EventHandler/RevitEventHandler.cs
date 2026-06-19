@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Scotec.Revit.EventHandler;
 
@@ -362,7 +363,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         // Delegate-subscription path: runs instead of the attribute/OnExecute path when registrations exist.
         if (_delegateRegistrations.Count > 0)
         {
-            foreach (var registration in _delegateRegistrations)
+            foreach (var registration in _delegateRegistrations.ToList())
             {
                 IServiceProvider resolvedProvider;
                 ILifetimeScope? childScope = null;

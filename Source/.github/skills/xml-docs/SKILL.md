@@ -95,6 +95,6 @@ Use `<see>` and `<seealso>` where helpful.
 
 Prefer strongly typed references:
 
-```csharp
-<see cref="IContentStorage"/>
+```xml
+<see cref="Scotec.Revit.IRevitContext"/>
 ```
