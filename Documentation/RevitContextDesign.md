@@ -9,20 +9,26 @@ internal class CurrentDocumentProvider : ICurrentDocumentProvider, IDisposable
 {
 	private volatile Document?   _activeDocument;
 	private volatile UIDocument? _activeUiDocument;
+	private readonly UIControlledApplication _application;
 
 	public Document?   ActiveDocument   => _activeDocument;
 	public UIDocument? ActiveUiDocument => _activeUiDocument;
 
-	public CurrentDocumentProvider(IEventAggregator eventAggregator)
+	public CurrentDocumentProvider(UIControlledApplication application)
 	{
-		_subscriptionToken = eventAggregator.Subscribe<DocumentActivatedEvent>(
-			OnCurrentDocumentActivatedEvent);
+		_application = application;
+		_application.ViewActivated += OnViewActivated;
 	}
 
-	private void OnCurrentDocumentActivatedEvent(DocumentActivatedEvent e)
+	private void OnViewActivated(object sender, ViewActivatedEventArgs e)
 	{
 		_activeDocument   = e.Document;
-		_activeUiDocument = new UIDocument(_activeDocument);
+		_activeUiDocument = ((UIApplication)sender).ActiveUIDocument;
+	}
+
+	public void Dispose()
+	{
+		_application.ViewActivated -= OnViewActivated;
 	}
 }
 ```
@@ -34,11 +40,11 @@ This looks convenient, but it introduces a set of structural problems.
 | Issue | `CurrentDocumentProvider` | `IRevitContext` / `IRevitUiContext` |
 |---|---|---|
 | **Staleness** | Holds the *last seen* document — may already be closed | Created from the *current event sender* — always correct for this invocation |
-| **Thread safety** | Needs `volatile`, possibly locks | Not shared; no concurrent access possible |
+| **Thread safety** | `volatile` guards the reference, but Revit API objects are only valid on the Revit main thread — a background thread that reads the cached reference cannot call any API on it | Not shared; confined to the event call stack on the Revit main thread |
 | **Revit API lifetime** | `Document` / `UIDocument` can become invalid between event and consumption | Consumed within the scope created by the event — same call stack |
-| **Coupling** | Consumers depend on `DocumentActivatedEvent` having fired *first* | No ordering dependency; context is injected by the framework at the right moment |
-| **Subscription leaks** | Must `Dispose()` to unsubscribe; forgetting causes a memory leak | No manual subscription; DI scope disposal handles cleanup |
-| **Testability** | Requires wiring an event aggregator and firing events in sequence | Inject a mock `IRevitContext` — one line |
+| **Coupling** | Consumers get `null` until `ViewActivated` has fired at least once; no document is available at startup until the user activates a view | No ordering dependency; context is injected by the framework at the right moment |
+| **Subscription management** | Must implement `IDisposable`, ensure the container disposes it, and unsubscribe during shutdown to prevent callbacks firing during teardown | No manual subscription; the framework subscribes and unsubscribes automatically |
+| **Testability** | Requires mocking `UIControlledApplication` and raising `ViewActivated` in the right sequence to put the provider in a testable state | Inject a mock `IRevitContext` — one line |
 
 ## Why the Scoped Context Wins
 
@@ -57,9 +63,9 @@ Revit fires event
 The singleton provider tries to simulate this by watching events, but it is a simulation that can be
 wrong whenever:
 
-- Events arrive out of order.
-- The document is closed before the consumer acts.
-- A handler is invoked on a different activation state than expected.
+- `ViewActivated` does not fire when a document is closed. The cached reference remains set after closure, pointing to an invalid `Document` object.
+- The document is closed before the consumer acts on the cached reference.
+- A handler is invoked while the active document has changed since the last `ViewActivated` fired.
 
 ## The Design Principle
 
@@ -85,30 +91,44 @@ public class MyService(ICurrentDocumentProvider provider)
 }
 ```
 
-Inject the scoped context directly into a handler:
+Inject the scoped context directly into a handler. The recommended approach uses `AddHandler()` with a
+delegate whose parameters are resolved from the per-invocation DI scope:
 
 ```csharp
 // ✅ Scoped — always matches the current event
-public class MyDocumentOpenedHandler : RevitAppPostDocumentEventHandler<DocumentOpenedEventArgs>
+public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
+{
+	public MyDocumentOpenedHandler(ControlledApplication application, IMyService service)
+		: base(application)
+	{
+		AddHandler((IRevitContext context) =>
+			service.DoWork(context.Document!)); // document guaranteed valid here
+	}
+}
+```
+
+`RevitDocumentOpenedHandler` already subscribes to `Application.DocumentOpened` in its constructor.
+The `AddHandler` delegate receives `IRevitContext` resolved from the per-invocation DI scope.
+
+Alternatively, use the `[RevitEventHandlerExecute]` attribute on a method with any combination of
+DI-resolved parameters:
+
+```csharp
+public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
 {
 	private readonly IMyService _service;
 
-	protected MyDocumentOpenedHandler(ControlledApplication application, IMyService service)
+	public MyDocumentOpenedHandler(ControlledApplication application, IMyService service)
 		: base(application)
 	{
 		_service = service;
 	}
 
-	protected override Task OnExecuteAsync(
-		DocumentOpenedEventArgs args,
-		IRevitContext context,          // document guaranteed valid here
-		CancellationToken cancellationToken)
+	[RevitEventHandlerExecute]
+	protected void Execute(IRevitContext context, DocumentOpenedEventArgs args)
 	{
-		return _service.DoWorkAsync(context.Document, cancellationToken);
+		_service.DoWork(context.Document!); // document guaranteed valid here
 	}
-
-	protected sealed override void Subscribe()   => Application.DocumentOpened += HandleEvent;
-	protected sealed override void Unsubscribe() => Application.DocumentOpened -= HandleEvent;
 }
 ```
 
