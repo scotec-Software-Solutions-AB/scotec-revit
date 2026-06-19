@@ -112,7 +112,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     <c>true</c> if the command is available for execution; otherwise, <c>false</c>.
     /// </returns>
     /// <remarks>
-    ///     This method is obsolete. Override <see cref="IsCommandAvailable(UIApplication, CategorySet)" /> instead,
+    ///     This method is obsolete. Override <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet)" /> instead,
     ///     or declare a custom <c>IsCommandAvailable</c> overload with DI-resolved parameters, which the framework will
     ///     discover and invoke automatically.
     ///     This method will not be called if a custom <c>IsCommandAvailable</c> overload is provided in the derived class.
@@ -150,9 +150,9 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     Invokes the availability-check entry point. If a method marked with
     ///     <see cref="RevitCommandAvailabilityCheckAttribute" /> exists in the type hierarchy it is invoked with
     ///     DI-resolved parameters. Otherwise falls back to the standard
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)" /> override, and finally to the obsolete
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)" /> for backward compatibility.
-    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
+    ///     <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet)" /> override, and finally to the obsolete
+    ///     <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet, System.IServiceProvider)" /> for backward compatibility.
+    ///     Throws <see cref="System.InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
     private bool InvokeIsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                           IServiceProvider serviceProvider)

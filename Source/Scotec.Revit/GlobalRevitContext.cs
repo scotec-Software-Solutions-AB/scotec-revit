@@ -17,9 +17,9 @@ namespace Scotec.Revit;
 /// </summary>
 /// <remarks>
 ///     Suitable for DB-level add-ins (<see cref="RevitDbApp" />) that do not have a
-///     <see cref="UIApplication" />. For UI add-ins use <see cref="GlobalRevitUiContext" />.
+///     <see cref="Autodesk.Revit.UI.UIApplication" />. For UI add-ins use <see cref="GlobalRevitUiContext" />.
 ///     <para>
-///         <see cref="Application" /> becomes available after Revit fires
+///         <see cref="GlobalRevitContext.Application" /> becomes available after Revit fires
 ///         <c>ApplicationInitialized</c>. Accessing it before that event will throw.
 ///     </para>
 ///     <para>
@@ -32,7 +32,7 @@ public class GlobalRevitContext : IGlobalRevitContext
 {
     /// <summary>
     ///     Initializes a new instance. Subscribes to <c>ApplicationInitialized</c> once
-    ///     to capture the <see cref="Application" /> reference, then unsubscribes.
+    ///     to capture the <see cref="GlobalRevitContext.Application" /> reference, then unsubscribes.
     /// </summary>
     /// <param name="application">The Revit controlled application provided at add-in startup.</param>
     /// <exception cref="System.ArgumentNullException">
@@ -44,10 +44,10 @@ public class GlobalRevitContext : IGlobalRevitContext
         Application = null!; // Will be set in the handler before any access is possible.
 
         var initializedHandler = new RevitApplicationInitializedHandler(application);
-        IDisposable initializedHandlerHandle = null!;
-        initializedHandlerHandle = initializedHandler.AddHandler(context =>
+        var initializedHandlerHandle = new SerialDisposable();
+        initializedHandlerHandle.Disposable = initializedHandler.AddHandler(context =>
         {
-            Application = context.Application;
+            Application = context.Application;  
             initializedHandlerHandle.Dispose();
         });
     }
@@ -71,7 +71,7 @@ public class GlobalRevitContext : IGlobalRevitContext
 
 /// <summary>
 ///     A long-lived, application-scoped implementation of <see cref="IGlobalRevitUiContext" /> that
-///     wraps the Revit <see cref="UIApplication" /> for use as a singleton outside individual event
+///     wraps the Revit <see cref="Autodesk.Revit.UI.UIApplication" /> for use as a singleton outside individual event
 ///     handler or command scopes.
 /// </summary>
 /// <remarks>
@@ -95,7 +95,7 @@ public class GlobalRevitUiContext : GlobalRevitContext, IGlobalRevitUiContext
 
     /// <inheritdoc />
     /// <exception cref="InvalidOperationException">
-    ///     Thrown when the underlying <see cref="UIApplication" /> is no longer valid.
+    ///     Thrown when the underlying <see cref="Autodesk.Revit.UI.UIApplication" /> is no longer valid.
     /// </exception>
     public UIApplication UiApplication
     {
