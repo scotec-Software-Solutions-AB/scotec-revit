@@ -160,6 +160,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
             services.AddSingleton(Application);
             services.AddSingleton(Application.ActiveAddInId);
             services.AddSingleton(Application.ControlledApplication);
+            services.AddGlobalRevitContext(Application);
         });
     }
 }

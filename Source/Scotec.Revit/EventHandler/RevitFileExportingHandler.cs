@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitFileExportingHandler : RevitAppPreDocumentEventHandler<FileExportingEventArgs>
+public class RevitFileExportingHandler : RevitAppPreDocumentEventHandler<FileExportingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.FileExporting" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitFileExportingHandler(ControlledApplication application)
+    public RevitFileExportingHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

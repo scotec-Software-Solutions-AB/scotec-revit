@@ -21,15 +21,15 @@ namespace Scotec.Revit.EventHandler;
 ///         The per-invocation DI scope registers <see cref="Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs" />.
 ///     </para>
 /// </remarks>
-public abstract class RevitApplicationInitializedHandler : RevitAppSingleEventHandler<ApplicationInitializedEventArgs>
+public class RevitApplicationInitializedHandler : RevitAppSingleEventHandler<ApplicationInitializedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitApplicationInitializedHandler(UIControlledApplication application)
-        : base(application.ControlledApplication)
+    public RevitApplicationInitializedHandler(ControlledApplication application)
+        : base(application)
     {
         Subscribe();
     }

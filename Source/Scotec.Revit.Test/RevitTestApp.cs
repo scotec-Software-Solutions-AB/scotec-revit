@@ -29,7 +29,7 @@ namespace Scotec.Revit.Test;
 
 public class TestApplicationInitializedHandler : RevitApplicationInitializedHandler
 {
-    public TestApplicationInitializedHandler(UIControlledApplication application) : base(application)
+    public TestApplicationInitializedHandler(ControlledApplication application) : base(application)
     {
     }
 
@@ -57,35 +57,12 @@ public class DbApp : IExternalDBApplication
 [RevitApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class RevitTestApp : RevitApp
 {
-    //protected bool OnStartup(UIControlledApplication application, IConfiguration configuration)
-    //{
-    //    try
-    //    {
-    //        RevitTabManager.CreateTab(Application, "scotec");
-    //        var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
-
-    //        panel.AddItem(CreateTestButtonData());
-    //    }
-    //    catch (Exception)
-    //    {
-    //        Debugger.Launch();
-    //        return false;
-    //    }
-
-    //    return base.OnStartup(application);
-    //}
-
-    private TestApplicationInitializedHandler? _applicationInitializedHandler;
-
     [RevitApplicationStartup]
     [UsedImplicitly]
-    private bool OnStartup(UIControlledApplication application, IConfiguration configuration,
-                           TestApplicationInitializedHandler applicationInitializedHandler)
+    private bool OnStartup(UIControlledApplication application, IConfiguration configuration)
     {
         try
         {
-            _applicationInitializedHandler = applicationInitializedHandler;
-
             RevitTabManager.CreateTab(Application, "scotec");
             var panel = RevitTabManager.GetPanel(Application, "Test", "scotec");
 

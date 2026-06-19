@@ -26,14 +26,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitProgressChangedHandler : RevitAppSingleEventHandler<ProgressChangedEventArgs>
+public class RevitProgressChangedHandler : RevitAppSingleEventHandler<ProgressChangedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.ProgressChanged" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitProgressChangedHandler(ControlledApplication application)
+    public RevitProgressChangedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

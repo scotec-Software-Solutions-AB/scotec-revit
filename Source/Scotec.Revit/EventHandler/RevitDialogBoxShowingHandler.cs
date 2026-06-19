@@ -22,14 +22,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI] 
-public abstract class RevitDialogBoxShowingHandler : RevitUiPreEventHandler<DialogBoxShowingEventArgs>
+public class RevitDialogBoxShowingHandler : RevitUiPreEventHandler<DialogBoxShowingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="UIControlledApplication.DialogBoxShowing" />.
     /// </summary>
     /// <param name="application">The Revit UI controlled application.</param>
-    protected RevitDialogBoxShowingHandler(UIControlledApplication application)
+    public RevitDialogBoxShowingHandler(UIControlledApplication application)
         : base(application)
     {
         Subscribe();

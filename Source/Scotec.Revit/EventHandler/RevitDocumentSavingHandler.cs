@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentSavingHandler : RevitAppPreDocumentEventHandler<DocumentSavingEventArgs>
+public class RevitDocumentSavingHandler : RevitAppPreDocumentEventHandler<DocumentSavingEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentSaving" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentSavingHandler(ControlledApplication application)
+    public RevitDocumentSavingHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

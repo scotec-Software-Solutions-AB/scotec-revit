@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentOpeningHandler : RevitAppPreEventHandler<DocumentOpeningEventArgs>
+public class RevitDocumentOpeningHandler : RevitAppPreEventHandler<DocumentOpeningEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentOpening" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentOpeningHandler(ControlledApplication application)
+    public RevitDocumentOpeningHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();

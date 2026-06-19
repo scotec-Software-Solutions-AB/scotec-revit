@@ -23,14 +23,14 @@ namespace Scotec.Revit.EventHandler;
 ///     </para>
 /// </remarks>
 [PublicAPI]
-public abstract class RevitDocumentPrintedHandler : RevitAppPostDocumentEventHandler<DocumentPrintedEventArgs>
+public class RevitDocumentPrintedHandler : RevitAppPostDocumentEventHandler<DocumentPrintedEventArgs>
 {
 
     /// <summary>
     ///     Initializes a new instance and subscribes to <see cref="ControlledApplication.DocumentPrinted" />.
     /// </summary>
     /// <param name="application">The Revit controlled application.</param>
-    protected RevitDocumentPrintedHandler(ControlledApplication application)
+    public RevitDocumentPrintedHandler(ControlledApplication application)
         : base(application)
     {
         Subscribe();
