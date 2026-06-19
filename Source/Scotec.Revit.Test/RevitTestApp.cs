@@ -24,21 +24,7 @@ using Scotec.Revit.EventHandler;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
 
-
 namespace Scotec.Revit.Test;
-
-public class TestApplicationInitializedHandler : RevitApplicationInitializedHandler
-{
-    public TestApplicationInitializedHandler(ControlledApplication application) : base(application)
-    {
-    }
-
-    protected override void OnExecute(Application? sender, ApplicationInitializedEventArgs args)
-    {
-        base.OnExecute(sender, args);
-    }
-}
-
 
 [RevitDbApplicationIsolation(ContextName = "Scotec.Revit.Test")]
 public class DbApp : IExternalDBApplication
@@ -87,7 +73,6 @@ public class RevitTestApp : RevitApp
         {
             services.AddScoped<TestRevitDialog>();
             services.AddSingleton(new RevitTask());
-            services.AddTransient<TestApplicationInitializedHandler>();
         });
     }
 
