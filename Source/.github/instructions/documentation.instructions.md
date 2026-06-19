@@ -41,6 +41,6 @@ When writing user-facing documentation:
 
 - Start with the purpose.
 - Explain the workflow.
-- Include examples.
+- Include examples if they provide additional value.
 - Avoid implementation details unless relevant.
 - Keep wording clear and professional.

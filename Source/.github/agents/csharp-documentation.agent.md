@@ -17,15 +17,15 @@ You are a C# XML documentation specialist.
 - Keep comments concise and useful.
 - Document parameters, return values, exceptions, and remarks where appropriate.
 - Avoid comments that simply repeat member names.
-- Always use fully qualified `<see cref="..."/>` references to avoid ambiguity.
+- Always use fully qualified `<see cref="Scotec.Revit.IRevitContext"/>` references to avoid ambiguity.
 
 
 ## Rules
 
 - Documentation must match actual behavior.
 - Do not invent behavior not visible in the code.
-- Use `<see cref="..."/>` where helpful.
-- Use `<exception cref="...">` for documented exceptions.
+- Use `<see cref="Scotec.Revit.IRevitContext"/>` where helpful.
+- Use `<exception cref="System.Exception"/>` for documented exceptions.
 - Prefer clarity over verbosity.
 
 ## Verification
