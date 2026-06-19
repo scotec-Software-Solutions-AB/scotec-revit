@@ -60,6 +60,6 @@ public abstract class RevitDocumentChangedHandler : RevitAppSingleEventHandler<D
     protected override IRevitContext? CreateContext(Application? sender, DocumentChangedEventArgs args)
     {
         var document = args.GetDocument();
-        return document is not null ? new RevitContext(document) : null;
+        return document is not null ? new RevitContext(document) : base.CreateContext(sender, args);
     }
 }

@@ -25,7 +25,7 @@ internal class RevitContext : IRevitContext, IDisposable
     ///     Initializes a new instance for contexts where no document is required,
     ///     for example commands that run without an open document.
     /// </summary>
-    protected RevitContext(Application application)
+    protected internal RevitContext(Application application)
     {
         ArgumentNullException.ThrowIfNull(application);
         Application = application;

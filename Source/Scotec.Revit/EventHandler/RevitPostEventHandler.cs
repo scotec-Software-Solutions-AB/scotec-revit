@@ -1,4 +1,4 @@
-// Copyright (c) 2023 - 2026 Olaf Meyer
+ï»¿// Copyright (c) 2023 - 2026 Olaf Meyer
 // Copyright (c) 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
@@ -37,8 +37,8 @@ public abstract class RevitAppPostEventHandler<TEventArgs>
     protected ControlledApplication Application { get; }
 
     /// <inheritdoc />
-    /// <remarks>Returns <c>null</c> — a bare <see cref="Application" /> sender carries no context at this level.</remarks>
-    protected override IRevitContext? CreateContext(Application? sender, TEventArgs args) => null;
+    protected override IRevitContext? CreateContext(Application? sender, TEventArgs args)
+        => sender is not null ? new RevitContext(sender) : null;
 }
 
 /// <summary>
@@ -60,5 +60,5 @@ public abstract class RevitUiPostEventHandler<TEventArgs>
 
     /// <inheritdoc />
     protected override IRevitUiContext? CreateContext(UIApplication? sender, TEventArgs args)
-        => sender?.ActiveUIDocument is not null ? new RevitUiContext(sender) : null;
+        => sender is not null ? new RevitUiContext(sender) : null;
 }

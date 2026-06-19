@@ -38,7 +38,13 @@ public abstract class RevitAppPostDocumentEventHandler<TEventArgs>
 
     /// <inheritdoc />
     protected override IRevitContext? CreateContext(Application? sender, TEventArgs args)
-        => args.Document is not null ? new RevitContext(args.Document) : null;
+    {
+        // Revit API: args.Document is preferred when available (e.g. DocumentSaved, DocumentClosed before GC).
+        // Fall back to Application when args.Document is null (e.g. DocumentClosed after the document is destroyed).
+        if (args.Document is { } document)
+            return new RevitContext(document);
+        return sender is not null ? new RevitContext(sender) : null;
+    }
 }
 
 /// <summary>
@@ -60,5 +66,5 @@ public abstract class RevitUiPostDocumentEventHandler<TEventArgs>
 
     /// <inheritdoc />
     protected override IRevitUiContext? CreateContext(UIApplication? sender, TEventArgs args)
-        => sender?.ActiveUIDocument is not null ? new RevitUiContext(sender) : null;
+        => sender is not null ? new RevitUiContext(sender) : null;
 }

@@ -50,7 +50,7 @@ public abstract class RevitDocumentSynchronizingWithCentralHandler : RevitAppPre
 
     /// <inheritdoc />
     /// <remarks>
-    ///     Creates an <see cref="IRevitContext" /> from <see cref="DocumentSynchronizingWithCentralEventArgs.Document" />
+    ///     Creates an <see cref="IRevitContext" /> from <see cref="Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs.Document" />
     ///     when a document is available.
     /// </remarks>
     protected override IRevitContext? CreateContext(Application? sender, DocumentSynchronizingWithCentralEventArgs args)
