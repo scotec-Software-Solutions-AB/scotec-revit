@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit.Test;
@@ -20,6 +21,12 @@ public partial class TestRevitDialog
         _globalContext = globalContext;
         _revitTask = revitTask;
         InitializeComponent();
+
+        // Revit API: SelectionChanged is raised on the UIApplication whenever the active
+        // selection in the current document changes. Subscribe here and unsubscribe in
+        // the Closed handler to match the dialog lifetime.
+        _globalContext.UiApplication.SelectionChanged += OnSelectionChanged;
+        Closed += OnClosed;
     }
 
     private async void DialogButton_Click(object sender, RoutedEventArgs e)
@@ -31,6 +38,25 @@ public partial class TestRevitDialog
         });
         await _revitTask.Run(context => { TaskDialog.Show("Revit Task 2", "This is a message from the Revit task!"); });
         await _revitTask.Run(MyRevitTask);
+    }
+
+    private async void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        await _revitTask.Run(context =>
+        {
+            // Revit API: SelectionChangedEventArgs.GetSelectedIds() returns the current
+            // element selection. Access is valid only on the Revit API thread.
+            var selectedIds = e.GetSelectedIds();
+            TaskDialog.Show("Selection Changed", $"Selected element count: {selectedIds.Count}");
+        });
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        // Revit API: Always unsubscribe from UIApplication events when the subscribing
+        // object is no longer active to avoid memory leaks and stale callbacks.
+        _globalContext.UiApplication.SelectionChanged -= OnSelectionChanged;
+        Closed -= OnClosed;
     }
 
     private void ConfigureServices(IServiceCollection services)
