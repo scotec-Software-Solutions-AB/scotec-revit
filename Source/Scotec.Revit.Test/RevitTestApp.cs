@@ -45,7 +45,7 @@ public class RevitTestApp : RevitApp
 {
     [RevitApplicationStartup]
     [UsedImplicitly]
-    private bool OnStartup(UIControlledApplication application, IConfiguration configuration)
+    private bool OnStartup(IConfiguration configuration)
     {
         try
         {
@@ -72,7 +72,7 @@ public class RevitTestApp : RevitApp
         builder.ConfigureServices((context, services) =>
         {
             services.AddScoped<TestRevitDialog>();
-            services.AddSingleton(new RevitTask());
+            services.AddRevitTask();
         });
     }
 
