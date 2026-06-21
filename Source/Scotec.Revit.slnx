@@ -18,6 +18,8 @@
     <File Path="../Documentation/RevitApp.md" />
     <File Path="../Documentation/RevitCommand.md" />
     <File Path="../Documentation/RevitCommandAvailability.md" />
+    <File Path="../Documentation/RevitContext.md" />
+    <File Path="../Documentation/RevitContextDesign.md" />
     <File Path="../Documentation/RevitEventHandler.md" />
     <File Path="../Documentation/RevitTask.md" />
     <File Path="../Documentation/RevitUpdater.md" />
