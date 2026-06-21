@@ -26,6 +26,7 @@ namespace Scotec.Revit;
 ///         <see cref="IGlobalRevitUiContext.ActiveDocument" /> from the UI context instead.
 ///     </para>
 /// </remarks>
+// ReSharper disable once InconsistentNaming
 public class GlobalRevitContext : IGlobalRevitContext
 {
     /// <summary>

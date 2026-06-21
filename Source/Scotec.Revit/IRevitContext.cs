@@ -13,12 +13,18 @@ namespace Scotec.Revit;
 ///     and the current <see cref="Autodesk.Revit.DB.Document" /> within the scope of a
 ///     Revit event handler or external command.
 /// </summary>
+/// <remarks>
+///     Implementations capture Revit API object references at construction time, which must
+///     occur inside the safe execution window established by the Revit host (a UI event
+///     callback or external command). Once the context is disposed, all property accessors
+///     throw <see cref="System.ObjectDisposedException" />.
+/// </remarks>
 public interface IRevitContext
 {
     /// <summary>
-    ///     Gets the current Revit application.
+    ///     Gets the Revit application captured at context creation.
     /// </summary>
-    /// <exception cref="ObjectDisposedException">
+    /// <exception cref="System.ObjectDisposedException">
     ///     Thrown when the context has been disposed.
     /// </exception>
     /// <exception cref="System.InvalidOperationException">
@@ -28,14 +34,14 @@ public interface IRevitContext
     Application Application { get; }
 
     /// <summary>
-    ///     Gets the current Revit document, or <c>null</c> when no document is available
-    ///     (e.g. commands executed without an open document).
+    ///     Gets the Revit document captured at context creation, or <see langword="null" />
+    ///     when no document was available (e.g. commands executed without an open document).
     /// </summary>
-    /// <exception cref="ObjectDisposedException">
+    /// <exception cref="System.ObjectDisposedException">
     ///     Thrown when the context has been disposed.
     /// </exception>
     /// <exception cref="System.InvalidOperationException">
-    ///     Thrown when the document reference is non-null and the underlying
+    ///     Thrown when the document reference is non-<see langword="null" /> and the underlying
     ///     <see cref="Autodesk.Revit.DB.Document" /> is no longer valid.
     /// </exception>
     Document? Document { get; }
