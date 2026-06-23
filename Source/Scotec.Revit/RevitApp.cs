@@ -7,6 +7,7 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
@@ -157,9 +158,9 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
 
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton(Application);
-            services.AddSingleton(Application.ActiveAddInId);
-            services.AddSingleton(Application.ControlledApplication);
+            services.TryAddSingleton(Application);
+            services.TryAddSingleton(Application.ActiveAddInId);
+            services.TryAddSingleton(Application.ControlledApplication);
             services.AddGlobalRevitContext(Application);
         });
     }

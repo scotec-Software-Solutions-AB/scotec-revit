@@ -39,8 +39,9 @@ public partial class TestRevitDialog
             TaskDialog.Show("Selection Changed", $"Selected element count: {selectedIds.Count}");
         });
 
-        Closed += OnClosed;
+        Closed += async (_,_) => await revitTask.Run(context => OnClosed());
     }
+
 
     private async void DialogButton_Click(object sender, RoutedEventArgs e)
     {
@@ -53,11 +54,10 @@ public partial class TestRevitDialog
         await _revitTask.Run(MyRevitTask);
     }
 
-    private void OnClosed(object sender, EventArgs e)
+    private void OnClosed()
     {
         // Disposing the handler unsubscribes from UIControlledApplication.SelectionChanged.
         _selectionChangedHandler.Dispose();
-        Closed -= OnClosed;
     }
 
     private void ConfigureServices(IServiceCollection services)

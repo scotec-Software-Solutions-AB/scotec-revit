@@ -2,10 +2,11 @@
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
-using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using System;
 
 namespace Scotec.Revit;
 
@@ -37,7 +38,7 @@ public static class RevitGlobalContextServiceExtensions
         ArgumentNullException.ThrowIfNull(application);
 
         var context = new GlobalRevitContext(application);
-        services.AddSingleton<IGlobalRevitContext>(context);
+        services.TryAddSingleton<IGlobalRevitContext>(context);
 
         return services;
     }
@@ -64,8 +65,8 @@ public static class RevitGlobalContextServiceExtensions
         ArgumentNullException.ThrowIfNull(application);
 
         var context = new GlobalRevitUiContext(application);
-        services.AddSingleton<IGlobalRevitUiContext>(context);
-        services.AddSingleton<IGlobalRevitContext>(context);
+        services.TryAddSingleton<IGlobalRevitUiContext>(context);
+        services.TryAddSingleton<IGlobalRevitContext>(context);
 
         return services;
     }
@@ -97,6 +98,8 @@ public static class RevitTaskServiceExtensions
     public static IServiceCollection AddRevitTask(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        return services.AddSingleton(new RevitTask());
+        services.TryAddSingleton(new RevitTask());
+
+        return services;
     }
 }

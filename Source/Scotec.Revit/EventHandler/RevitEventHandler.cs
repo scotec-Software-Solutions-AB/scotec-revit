@@ -313,7 +313,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
             var context = CreateContext(typedSender, args);
             scope = autofacRoot.BeginLifetimeScope(builder =>
             {
-                var services = new ServiceCollection();
+                IServiceCollection services = new ServiceCollection();
                 services.AddScoped<TEventArgs>(_ => args);
                 RegisterEventContext(services, typedSender, args);
                 ConfigureServices(services);
