@@ -8,44 +8,104 @@ The framework provides two distinct groups of context interfaces, each with a di
 
 | Interface | Lifetime | Available |
 |---|---|---|
-| `IRevitContext` | Scoped — per event invocation or command execution | Only inside an active Revit callback |
-| `IRevitUiContext` | Scoped — per event invocation or command execution | Only inside an active Revit UI callback |
+| `IRevitContext` | Scoped — per command execution or event invocation | Only inside an active Revit callback |
+| `IRevitUiContext` | Scoped — per command execution or event invocation | Only inside an active Revit UI callback |
 | `IGlobalRevitContext` | Singleton — entire add-in lifetime | Always, from any component |
 | `IGlobalRevitUiContext` | Singleton — entire add-in lifetime | Always, from any component |
+
+The scoped interfaces — `IRevitContext` and `IRevitUiContext` — are the standard mechanism for accessing Revit data within any active Revit API context. The framework registers them automatically in a per-invocation DI scope across three integration points:
+
+| Integration point | How the scope is created |
+|---|---|
+| `RevitCommand` | One scope per command execution |
+| `RevitEventHandler<>` | One scope per event invocation |
+| `RevitTask` | One scope per `Run` call (DI-based overloads only) |
+
+All three integration points follow the same injection rules — the sections below use `RevitCommand` for most examples because it is the most common case, but everything applies equally to event handlers and `RevitTask`.
 
 ---
 
 ## Scoped Contexts
 
+Scoped contexts are created by the framework at the start of each `RevitCommand` execution, `RevitEventHandler<>` invocation, or `RevitTask.Run` call (DI-based overloads), and disposed when it ends. They are the standard way to access `Application`, `Document`, `UIApplication`, and related objects inside any of those contexts.
+
 ### `IRevitContext`
 
-Provides access to `Application` and `Document` within the scope of a single Revit event handler or external command invocation. The context is created by the framework at the start of each invocation and disposed at the end.
+Provides access to `Application` and `Document`. This is the minimum interface needed to read or write document data inside a command.
 
 ```
 Application   — always set
 Document      — set when a document is open; null otherwise
 ```
 
-Use `IRevitContext` when your service or handler needs to read or write document data.
+#### In a RevitCommand
+
+Inject `IRevitContext` directly into the method marked with `[RevitCommandExecute]`:
 
 ```csharp
-public class MyDocumentHandler : RevitEventHandler<..., IRevitContext>
+[RevitTransactionMode(RevitTransactionMode.Transaction)]
+public class UpdateParameterCommand : RevitCommand
 {
-	protected override void OnExecute(IRevitContext context)
+	protected override string TransactionName => "Update Parameter";
+
+	[RevitCommandExecute]
+	private Result Execute(IRevitContext context)
 	{
 		var doc = context.Document;
-		// Read or write document data here.
+		if (doc is null)
+			return Result.Cancelled;
+
+		// Read or modify document elements here.
+		return Result.Succeeded;
 	}
 }
 ```
 
 `Document` may be `null` for commands that do not require an open document. Always null-check before use.
 
+#### In a scoped service called from a command
+
+Any service resolved within the command's DI scope can also receive `IRevitContext` by constructor injection:
+
+```csharp
+public class ParameterWriter
+{
+	private readonly IRevitContext _context;
+
+	public ParameterWriter(IRevitContext context)
+	{
+		_context = context;
+	}
+
+	public void Write(ElementId id, string value)
+	{
+		var element = _context.Document?.GetElement(id);
+		// Modify element...
+	}
+}
+```
+
+Register the service via `ConfigureServices` and inject it alongside the context:
+
+```csharp
+protected override void ConfigureServices(IServiceCollection services)
+{
+	services.AddTransient<ParameterWriter>();
+}
+
+[RevitCommandExecute]
+private Result Execute(IRevitContext context, ParameterWriter writer)
+{
+	writer.Write(someId, "new value");
+	return Result.Succeeded;
+}
+```
+
 ---
 
 ### `IRevitUiContext`
 
-Extends `IRevitContext` with UI-layer access: `UiApplication`, `UiDocument`, and `ActiveView`. Use this when your handler or command also needs ribbon interaction, selection, or active view access.
+Extends `IRevitContext` with UI-layer access: `UiApplication`, `UiDocument`, and `ActiveView`. Use this when the command also needs ribbon interaction, element selection, or access to the active view.
 
 ```
 UiApplication — always set
@@ -53,42 +113,127 @@ UiDocument    — set when a document is open; null otherwise
 ActiveView    — reflects the view active at the moment of access; null when no document is open
 ```
 
+#### In a RevitCommand
+
 ```csharp
-public class MyUiHandler : RevitEventHandler<..., IRevitUiContext>
+[RevitTransactionMode(RevitTransactionMode.Transaction)]
+public class PlaceElementCommand : RevitCommand
+{
+	protected override string TransactionName => "Place Element";
+
+	[RevitCommandExecute]
+	private Result Execute(IRevitUiContext context)
+	{
+		var view = context.ActiveView;
+		if (view is null)
+			return Result.Cancelled;
+
+		var selection = context.UiDocument?.Selection;
+		// Work with the current selection or active view.
+		return Result.Succeeded;
+	}
+}
+```
+
+`IRevitUiContext` is always registered in the command scope — prefer it over `IRevitContext` when you need UI access. The two interfaces can be injected independently into different methods or services within the same scope.
+
+Note that `ActiveView` is evaluated lazily — it reflects the view that is active when you read the property, not the view that was active when the command started executing.
+
+#### In lifecycle methods
+
+Both `[RevitCommandBeforeExecute]` and `[RevitCommandAfterExecute]` methods participate in the same DI scope and can receive `IRevitUiContext` as a parameter:
+
+```csharp
+[RevitTransactionMode(RevitTransactionMode.Transaction)]
+public class MyCommand : RevitCommand
+{
+	protected override string TransactionName => "My Command";
+
+	[RevitCommandBeforeExecute]
+	private void Setup(IRevitUiContext context)
+	{
+		// Runs before the transaction opens.
+		// Suitable for pre-checks or reading current selection.
+		var selected = context.UiDocument?.Selection.GetElementIds();
+	}
+
+	[RevitCommandExecute]
+	private Result Execute(IRevitUiContext context, IMyService service)
+	{
+		service.DoWork(context.Document);
+		return Result.Succeeded;
+	}
+
+	[RevitCommandAfterExecute]
+	private void Cleanup(IRevitUiContext context)
+	{
+		// Runs after the transaction has been committed or rolled back.
+		// Suitable for refreshing the UI or post-processing.
+		context.UiDocument?.RefreshActiveView();
+	}
+}
+```
+
+---
+
+### In event handlers
+
+Event handlers are an equally important integration point. `RevitEventHandler<>` creates the same per-invocation DI scope and registers `IRevitContext` and `IRevitUiContext` using identical rules. The context type is declared as the third type parameter of `RevitEventHandler<TSender, TEventArgs, TContext>`.
+
+```csharp
+public class MyDocumentHandler : RevitEventHandler<Application, DocumentOpenedEventArgs, IRevitContext>
+{
+	protected override void OnExecute(IRevitContext context)
+	{
+		var doc = context.Document;
+		// React to the document-opened event.
+	}
+}
+```
+
+```csharp
+public class MyViewActivatedHandler : RevitEventHandler<UIApplication, ViewActivatedEventArgs, IRevitUiContext>
 {
 	protected override void OnExecute(IRevitUiContext context)
 	{
 		var view = context.ActiveView;
-		// Interact with the active view.
+		// React to the view-activated event.
 	}
 }
 ```
 
-Note that `ActiveView` is evaluated lazily — it reflects the view that is active when you read the property, not the view that was active when the event fired.
+Services registered via `ConfigureServices` on the handler class are resolved from the same scope and can receive `IRevitContext` or `IRevitUiContext` by constructor injection, just as in a command.
 
 ---
 
-### Injection inside scoped services
+### In RevitTask
 
-Scoped contexts are registered automatically in the per-invocation DI scope. Inject them via the constructor of any service that is resolved within that scope.
+`RevitTask` implements `IExternalEventHandler` and is the standard way to execute Revit API code from a background thread, a modeless WPF window, or any other context that is not itself a command or event handler.
+
+The direct-mode overloads (`Func<IRevitUiContext, TResult>` / `Action<IRevitUiContext>`) pass `IRevitUiContext` directly to your lambda — no DI scope is created:
 
 ```csharp
-public class MyService
+var revitTask = new RevitTask("ReadElements");
+
+int count = await revitTask.Run(context =>
 {
-	private readonly IRevitUiContext _context;
-
-	public MyService(IRevitUiContext context)
-	{
-		_context = context;
-	}
-
-	public void DoWork()
-	{
-		var doc = _context.Document;
-		// ...
-	}
-}
+	return context.Document?.GetElementIds().Count ?? 0;
+});
 ```
+
+The DI-based overloads accept a `Delegate` whose parameters are resolved from a scoped lifetime. `IRevitContext` and `IRevitUiContext` are both registered in that scope, so they can be injected alongside any other service:
+
+```csharp
+await revitTask.Run(
+	(IRevitUiContext context, IMyService service) =>
+	{
+		service.DoWork(context.Document);
+	},
+	configureServices: services => services.AddTransient<IMyService, MyService>()
+);
+```
+
+> **Note:** `RevitTask` only provides `IRevitUiContext` (it wraps a `UIApplication`). `IRevitContext` is also resolvable from the scope because `IRevitUiContext` extends it and is registered under both keys.
 
 ---
 
@@ -200,7 +345,7 @@ builder.ConfigureServices(services =>
 
 ### Injecting a scoped context into a singleton
 
-`IRevitContext` and `IRevitUiContext` are scoped. Injecting them into a singleton service will either fail at resolution time or produce a captured, already-disposed context.
+`IRevitContext` and `IRevitUiContext` are scoped to a single command execution or event invocation. Injecting them into a singleton service will either fail at resolution time or produce a captured, already-disposed context.
 
 ```csharp
 // Wrong — IRevitContext is scoped; this singleton will capture a disposed context.
@@ -210,7 +355,7 @@ public class MySingletonService
 }
 ```
 
-Use `IGlobalRevitContext` or `IGlobalRevitUiContext` in singleton services, or restructure so document access happens in a scoped component.
+Use `IGlobalRevitContext` or `IGlobalRevitUiContext` in singleton services, or restructure so document access happens inside a scoped component (command method or scoped service).
 
 ---
 
@@ -224,7 +369,7 @@ var doc = _globalUiContext.ActiveDocument;
 transaction.Start(); // doc may be stale or null
 ```
 
-Transactional access and any work that reads or modifies document elements belongs inside a scoped `IRevitContext`, obtained from a command or event handler.
+Transactional access and any work that reads or modifies document elements belongs inside a scoped `IRevitContext`, obtained from a `[RevitCommandExecute]` method or a command's scoped service — not from the global context.
 
 ---
 
@@ -247,24 +392,28 @@ Defer access to `Application` until after the `ApplicationInitialized` event, or
 
 ---
 
-### Storing a scoped context beyond the invocation scope
+### Storing a scoped context beyond the execution scope
 
-A scoped context is disposed at the end of the invocation that created it. Storing it in a field and reading it later will throw `ObjectDisposedException`.
+A scoped context is disposed at the end of the command execution, event invocation, or `RevitTask.Run` call that created it. Storing it in a field and reading it later will throw `ObjectDisposedException`.
 
 ```csharp
-// Wrong — context is disposed after the handler returns.
-public class MyHandler : RevitEventHandler<..., IRevitContext>
+// Wrong — context is disposed when Execute() returns.
+public class MyCommand : RevitCommand
 {
 	private IRevitContext? _stored;
 
-	protected override void OnExecute(IRevitContext context)
+	[RevitCommandExecute]
+	private Result Execute(IRevitContext context)
 	{
 		_stored = context; // Never do this.
+		return Result.Succeeded;
 	}
 
 	public void Later() => _ = _stored!.Document; // Throws ObjectDisposedException.
 }
 ```
+
+The same rule applies in event handlers and `RevitTask` lambdas. All work that requires the context must complete before the enclosing callback returns. If you need data later, copy it out into plain values — not the context object itself.
 
 ---
 
@@ -286,9 +435,11 @@ The global and scoped hierarchies are independent. There is no inheritance relat
 
 | Need | Use |
 |---|---|
-| Read or write document data inside a command or event handler | `IRevitContext` |
-| Access the active view or UIDocument inside a command or event handler | `IRevitUiContext` |
+| Read or write document data inside a command | `IRevitContext` — inject into `[RevitCommandExecute]` or a scoped service |
+| Access the active view, selection, or `UIDocument` inside a command | `IRevitUiContext` — inject into `[RevitCommandExecute]`, `[RevitCommandBeforeExecute]`, or `[RevitCommandAfterExecute]` |
+| Read or write document data inside an event handler | `IRevitContext` — third type parameter of `RevitEventHandler<>` or constructor-injected into a scoped service |
+| Access the active view or `UIDocument` inside an event handler | `IRevitUiContext` — third type parameter of `RevitEventHandler<>` |
+| Execute Revit API code from a background thread or modeless UI | `RevitTask.Run` — receives `IRevitUiContext` directly (direct mode) or via DI (delegate mode) |
 | Read stable application metadata (language, version, paths) or iterate open documents from a singleton service | `IGlobalRevitContext` |
 | Check ribbon state or command availability from a singleton service | `IGlobalRevitUiContext` |
-| Handle Revit events | `RevitEventHandler<>` — not the context interfaces |
-| Do transactional document work from a singleton | Restructure — use a scoped context |
+| Do transactional document work from a singleton | Restructure — use a scoped context inside a command, event handler, or `RevitTask.Run` |
