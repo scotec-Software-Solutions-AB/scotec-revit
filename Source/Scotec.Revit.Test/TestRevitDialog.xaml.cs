@@ -39,7 +39,7 @@ public partial class TestRevitDialog
             TaskDialog.Show("Selection Changed", $"Selected element count: {selectedIds.Count}");
         });
 
-        Closed += async (_,_) => await revitTask.Run(context => OnClosed());
+        Closed += async (_,_) => await _revitTask.Run(_ => OnClosed());
     }
 
 
