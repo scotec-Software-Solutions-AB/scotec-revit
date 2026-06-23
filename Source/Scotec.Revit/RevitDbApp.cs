@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Scotec.Revit;
 
@@ -179,8 +180,8 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
 
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton(Application);
-            services.AddSingleton(Application.ActiveAddInId);
+            services.TryAddSingleton(Application);
+            services.TryAddSingleton(Application.ActiveAddInId);
             services.AddGlobalRevitContext(Application);
         });
     }
