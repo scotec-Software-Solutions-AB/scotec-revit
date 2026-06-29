@@ -392,6 +392,85 @@ Defer access to `Application` until after the `ApplicationInitialized` event, or
 
 ---
 
+### Caching a Revit API object from the context in a service constructor
+
+Injecting `IRevitUiContext` into a service constructor and reading a property to store in a field looks harmless but loses the safety guarantees the context provides. The three problems described below do not apply equally to every property — `ActiveView` is the most dangerous case because all three apply simultaneously, while the others carry a subset.
+
+```csharp
+// Wrong — problems explained below.
+public class ViewProcessor
+{
+    private readonly View _view;
+
+    public ViewProcessor(IRevitUiContext context)
+    {
+        _view = context.ActiveView; // captured once at construction time
+    }
+
+    public void Process()
+    {
+        var name = _view.Name; // may be stale, unguarded, or from a disposed scope
+    }
+}
+```
+
+**Problem 1 — lazy evaluation bypassed (`ActiveView` only).**
+`ActiveView` is the one property on `IRevitUiContext` that is *not* captured at context construction time. The implementation reads `UIDocument.ActiveView` on every access because the active view can change during a single command or event invocation. Storing the result of one read means the field holds the view that was active when the service was constructed — potentially before the command has run any logic — not when `Process` is called.
+
+All other properties — `Application`, `Document`, `UiApplication`, and `UiDocument` — are captured once when the context itself is constructed, so Problem 1 does not apply to them.
+
+**Problem 2 — validity guard bypassed (all properties).**
+Every context property getter validates the underlying Revit API object via `IsValidObject` before returning it, and throws `InvalidOperationException` if the object has been invalidated by the Revit host. Once the raw reference is stored in a field, that guard is gone. Any access on the cached reference after the object is invalidated produces either an exception or undefined behavior, with no diagnostic information.
+
+This problem applies to all five properties. The practical risk varies:
+
+- `Application` and `UiApplication` are session-stable; they are invalidated only on Revit shutdown, which cannot happen during a running command or event handler. The risk is low but the guarantee is still removed.
+- `Document` and `UiDocument`: the practical risk depends on where the reference is used.
+  - During a **synchronous command execution** (`IExternalCommand.Execute`), Revit runs on the main UI thread and blocks standard UI operations for the duration of the call. The active document is effectively stable — the user cannot close it while the command is executing. The guard being removed is a low practical risk in this context, with two specific exceptions: your own command code calls `UIDocument.SaveAndClose()` on a *non-active* document (the active document cannot be closed via that API and will throw if a transaction is open); or the cached reference escapes the command scope into a modeless window or an `ExternalEvent` handler invoked later.
+  - In a **document lifecycle event handler** (`DocumentClosing`, `DocumentClosed`), the document's state is abnormal by definition. `DocumentClosing` fires just before close — the document exists but cannot be modified. `DocumentClosed` fires after the document has already been destroyed, so a captured `Document` reference is already invalid. Caching document references in these handlers and using them anywhere after the handler returns is unsafe.
+  - In **any reference stored beyond the invocation** — used from a modeless dialog, a background task, or a subsequent `ExternalEvent` — the document may have been closed by the user between invocations. The risk is high.
+- `ActiveView` can be invalidated at any time if the view is closed or deleted. The risk is the highest of all five properties.
+
+**Problem 3 — scope lifetime (all properties).**
+The context is scoped: it is created at the start of the command, event invocation, or `RevitTask.Run` call and disposed at the end. A `Transient` or `Scoped` service lives within that window. However, if the service holding the cached reference is registered as a singleton, or if the reference leaks outside the scope via a callback, a static field, or any other mechanism, it will be read after the context has been disposed and after Revit may have invalidated the underlying object.
+
+**Summary**
+
+| Property | Problem 1: lazy evaluation bypassed | Problem 2: validity guard bypassed | Problem 3: scope lifetime |
+|---|---|---|---|
+| `Application` | No — captured at context construction | Yes — guard removed; low practical risk (invalidated only on Revit shutdown) | Yes |
+| `Document` | No — captured at context construction | Yes — guard removed; low risk during a synchronous command; high risk if reference escapes the invocation or is used in a document lifecycle event handler | Yes |
+| `UiApplication` | No — captured at context construction | Yes — guard removed; low practical risk (invalidated only on Revit shutdown) | Yes |
+| `UiDocument` | No — captured at context construction | Yes — guard removed; same risk profile as `Document` | Yes |
+| `ActiveView` | **Yes** — not captured; reflects the view at the moment of each access | Yes — view can be closed or deleted at any time | Yes |
+
+**The correct pattern** is the same for all properties: store the context, not the Revit API object, and read the property at the point of use.
+
+```csharp
+public class ViewProcessor
+{
+    private readonly IRevitUiContext _context;
+
+    public ViewProcessor(IRevitUiContext context)
+    {
+        _context = context; // store the context, not the view
+    }
+
+    public void Process()
+    {
+        var view = _context.ActiveView; // read lazily, guarded, at the moment of use
+        if (view is null)
+            return;
+
+        var name = view.Name;
+    }
+}
+```
+
+If you need a value beyond the scope of the invocation, extract plain data — an element ID, a string, an integer — not the Revit API object reference itself.
+
+---
+
 ### Storing a scoped context beyond the execution scope
 
 A scoped context is disposed at the end of the command execution, event invocation, or `RevitTask.Run` call that created it. Storing it in a field and reading it later will throw `ObjectDisposedException`.
