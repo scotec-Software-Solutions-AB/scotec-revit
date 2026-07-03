@@ -162,6 +162,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
             services.TryAddSingleton(Application.ActiveAddInId);
             services.TryAddSingleton(Application.ControlledApplication);
             services.AddGlobalRevitContext(Application);
+            services.AddRevitScopeFactory();
         });
     }
 }
