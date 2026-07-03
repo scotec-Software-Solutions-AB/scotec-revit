@@ -71,6 +71,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </remarks>
     void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
+        using var _ = RevitContextTracker.Activate();
         try
         {
             if (_function is not null)
@@ -283,7 +284,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
                                // Allow to add services
                                var services = new ServiceCollection();
                                configureServices?.Invoke(services);
-                               builder.Populate(services);
+                               builder.PopulateRevit(services);
                            });
     }
 

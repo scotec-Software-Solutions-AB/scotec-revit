@@ -56,6 +56,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     /// </remarks>
     bool IExternalCommandAvailability.IsCommandAvailable(UIApplication uiApplication, CategorySet selectedCategories)
     {
+        using var _ = RevitContextTracker.Activate();
         try
         {
             var context = new RevitUiContext(uiApplication);
@@ -70,8 +71,8 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
                                               
                                               // Allow derived classes to add services
                                               var services = new ServiceCollection();
-                                              ConfigureServices(services);
-                                              builder.Populate(services);
+                                                              ConfigureServices(services);
+                                                              builder.PopulateRevit(services);
                                           });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();

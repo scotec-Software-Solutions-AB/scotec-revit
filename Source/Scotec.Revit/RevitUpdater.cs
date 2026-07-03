@@ -97,6 +97,7 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     void IUpdater.Execute(UpdaterData data)
     {
+        using var _ = RevitContextTracker.Activate();
         var context = new RevitContext(data.GetDocument());
 
         using var scope = RevitAppBase.GetServiceProvider()
@@ -108,7 +109,7 @@ public abstract class RevitUpdater : IUpdater, IDisposable
 
                                           var services = new ServiceCollection();
                                           ConfigureServices(services);
-                                          builder.Populate(services);
+                                          builder.PopulateRevit(services);
                                       });
 
         var serviceProvider = scope.Resolve<IServiceProvider>();

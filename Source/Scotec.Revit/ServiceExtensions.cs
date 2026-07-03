@@ -103,3 +103,32 @@ public static class RevitTaskServiceExtensions
         return services;
     }
 }
+
+/// <summary>
+///     Extension methods for registering <see cref="Scotec.Revit.IRevitScopeFactory" /> into an
+///     <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
+/// </summary>
+public static class RevitScopeFactoryServiceExtensions
+{
+    /// <summary>
+    ///     Registers <see cref="Scotec.Revit.RevitScopeFactory" /> as <see cref="Scotec.Revit.IRevitScopeFactory" />
+    ///     in the service collection.
+    /// </summary>
+    /// <remarks>
+    ///     This registration is performed automatically by <see cref="Scotec.Revit.RevitApp" /> and
+    ///     <see cref="Scotec.Revit.RevitDbApp" />. It only needs to be called manually in test
+    ///     harnesses or host configurations that do not derive from those base classes.
+    /// </remarks>
+    /// <param name="services">The service collection to register into.</param>
+    /// <returns>The same <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection" /> for chaining.</returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when <paramref name="services" /> is <c>null</c>.
+    /// </exception>
+    public static IServiceCollection AddRevitScopeFactory(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<IRevitScopeFactory, RevitScopeFactory>();
+
+        return services;
+    }
+}

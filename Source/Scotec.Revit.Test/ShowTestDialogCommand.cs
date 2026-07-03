@@ -6,6 +6,7 @@ using System;
 using System.Windows;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Microsoft.Extensions.DependencyInjection;
 using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.Test;
@@ -28,8 +29,9 @@ public class ShowTestDialogCommand : RevitCommand
     }
 
     [RevitCommandExecute]
-    protected Result Run(IRevitUiContext context, TestRevitDialog dialog) 
+    protected Result Run(IRevitUiContext context, TestRevitDialog dialog, IServiceScopeFactory scopeFactory)
     {
+        using var scope = scopeFactory.CreateScope();
         dialog.Show();
         return Result.Succeeded;
     }

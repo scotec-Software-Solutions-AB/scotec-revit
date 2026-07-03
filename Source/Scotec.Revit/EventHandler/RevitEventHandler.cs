@@ -300,6 +300,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// <param name="args">The event args.</param>
     protected void HandleEvent(object? sender, TEventArgs args)
     {
+        using var _ = RevitContextTracker.Activate();
         EventArgs = args;
         var typedSender = sender as TSender;
 
@@ -325,7 +326,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                     // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
                     builder.RegisterInstance(uiContext).As<IRevitUiContext>().ExternallyOwned();
                 }
-                builder.Populate(services);
+                builder.PopulateRevit(services);
             });
             serviceProvider = scope.Resolve<IServiceProvider>();
         }
@@ -377,7 +378,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                     {
                         var extra = new ServiceCollection();
                         registration.ConfigureServices(extra);
-                        builder.Populate(extra);
+                        builder.PopulateRevit(extra);
                     });
                     resolvedProvider = childScope.Resolve<IServiceProvider>();
                 }
