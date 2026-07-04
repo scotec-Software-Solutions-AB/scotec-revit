@@ -205,14 +205,12 @@ a plain scope with no `IRevitContext`. This is intentional. The document being p
 identified by the event arguments passed to that specific handler, not by `ActiveUIDocument`. The
 framework has no way to reach across add-in A's scope and retrieve that document.
 
-Add-in B has two options.
+The general approach is the same in both cases: add-in A includes the document's path in the signal
+payload, and add-in B uses that path to resolve the correct `Document` object independently.
+`Document.PathName` is a stable, process-unique identifier for open documents and is safe to pass
+as part of any in-process signal.
 
-### Option 1: Pass Document Identity Through the Signal
-
-Add-in A includes the document's path in the signal payload before dispatching it. The `Document.PathName`
-property is a stable, process-unique identifier for open documents.
-
-**Add-in A — inside the handler:**
+**Add-in A — inside the handler, include the path in the signal payload:**
 
 ```csharp
 [RevitEventHandlerExecute]
@@ -228,96 +226,134 @@ private void OnDocumentChanged(IRevitContext context, DocumentChangedEventArgs a
 }
 ```
 
-**Add-in B — responding to the signal:**
+Add-in B then resolves the `Document` from the received path. Two approaches are possible,
+depending on the expected usage pattern.
+
+### Option 1: Query Revit's Open Document List
+
+Use `IGlobalRevitContext.Application.Documents` to find the document by path at the time the
+signal arrives. No additional state is required.
+
+```csharp
+public class CoordinationService
+{
+	private readonly IGlobalRevitContext _globalContext;
+
+	public CoordinationService(IGlobalRevitContext globalContext)
+	{
+		_globalContext = globalContext;
+	}
+
+	public void OnWorkRequested(WorkRequest request)
+	{
+		var document = _globalContext.Application.Documents
+			.Cast<Document>()
+			.FirstOrDefault(d => d.PathName == request.DocumentPath);
+
+		if (document is null)
+			return;
+
+		// Use document directly.
+	}
+}
+```
+
+This approach requires no additional infrastructure. It is appropriate when signals are infrequent
+or when add-in B does not otherwise need to track open documents.
+
+### Option 2: Maintain a Local Document Map
+
+For add-ins that receive frequent signals or already track document lifecycle events for other
+reasons, maintaining an in-process map avoids iterating the full document list on every signal.
+This is application-level code that the developer implements — no such registry exists in
+Scotec.Revit.
+
+**The map:**
+
+```csharp
+public class OpenDocumentMap
+{
+	private readonly ConcurrentDictionary<string, Document> _documents = new();
+
+	public void Add(Document document)
+		=> _documents[document.PathName] = document;
+
+	public void Remove(Document document)
+		=> _documents.TryRemove(document.PathName, out _);
+
+	public bool TryGet(string path, [NotNullWhen(true)] out Document? document)
+		=> _documents.TryGetValue(path, out document);
+}
+```
+
+**Lifecycle handlers that keep the map current:**
+
+```csharp
+public class DocumentOpenedTracker : RevitDocumentOpenedHandler
+{
+	private readonly OpenDocumentMap _map;
+
+	public DocumentOpenedTracker(ControlledApplication application, OpenDocumentMap map)
+		: base(application)
+	{
+		_map = map;
+	}
+
+	[RevitEventHandlerExecute]
+	private void OnOpened(IRevitContext context)
+		=> _map.Add(context.Document!);
+}
+
+public class DocumentClosingTracker : RevitDocumentClosingHandler
+{
+	private readonly OpenDocumentMap _map;
+
+	public DocumentClosingTracker(ControlledApplication application, OpenDocumentMap map)
+		: base(application)
+	{
+		_map = map;
+	}
+
+	[RevitEventHandlerExecute]
+	private void OnClosing(IRevitContext context)
+		=> _map.Remove(context.Document!);
+}
+```
+
+Register `OpenDocumentMap` and both handlers as singletons in `ConfigureServices`. The responding
+service then injects `OpenDocumentMap` directly:
 
 ```csharp
 public void OnWorkRequested(WorkRequest request)
 {
-	if (!_documentRegistry.TryGetDocument(request.DocumentPath, out var document))
+	if (!_map.TryGet(request.DocumentPath, out var document))
 		return;
 
 	// Use document directly.
 }
 ```
 
-### Option 2: Maintain a Document Registry
-
-Add-in B keeps a map of currently open documents, populated by its own document lifecycle
-handlers. When the signal arrives with a path, the correct `Document` can be retrieved without
-relying on `ActiveUIDocument` or `IRevitScopeFactory`.
-
-**Registry:**
-
-```csharp
-public class DocumentRegistry
-{
-	private readonly ConcurrentDictionary<string, Document> _documents = new();
-
-	public void Register(Document document)
-		=> _documents[document.PathName] = document;
-
-	public void Unregister(Document document)
-		=> _documents.TryRemove(document.PathName, out _);
-
-	public bool TryGetDocument(string path, [NotNullWhen(true)] out Document? document)
-		=> _documents.TryGetValue(path, out document);
-}
-```
-
-**Lifecycle handlers:**
-
-```csharp
-public class DocumentTracker : RevitDocumentOpenedHandler
-{
-	private readonly DocumentRegistry _registry;
-
-	public DocumentTracker(ControlledApplication application, DocumentRegistry registry)
-		: base(application)
-	{
-		_registry = registry;
-	}
-
-	[RevitEventHandlerExecute]
-	private void OnOpened(IRevitContext context)
-		=> _registry.Register(context.Document!);
-}
-
-public class DocumentUntracker : RevitDocumentClosingHandler
-{
-	private readonly DocumentRegistry _registry;
-
-	public DocumentUntracker(ControlledApplication application, DocumentRegistry registry)
-		: base(application)
-	{
-		_registry = registry;
-	}
-
-	[RevitEventHandlerExecute]
-	private void OnClosing(IRevitContext context)
-		=> _registry.Unregister(context.Document!);
-}
-```
-
-Register both handlers and `DocumentRegistry` as singletons in `ConfigureServices`.
-
 ---
 
 ## Constraints and Limitations
 
-- **All communication must be synchronous on the Revit main thread.** If the signal from add-in A
-  reaches add-in B on a background thread, Revit API access is a threading violation regardless of
-  the scope factory. `RevitTask` is the correct mechanism for background-to-Revit dispatch within
-  a single add-in.
+- **Revit API calls must be made on the Revit UI thread.** Communication between add-ins can
+  happen on any thread. However, any code that touches the Revit API must run on the Revit UI
+  thread. If a signal arrives on a background thread, the Revit API work must be marshalled onto
+  the Revit UI thread — for example via a `Dispatcher`. `IRevitScopeFactory` does not perform
+  any thread marshalling and must only be called from the Revit UI thread.
 
-- **Assembly isolation affects shared contract types.** When add-ins run in separate
-  `AssemblyLoadContext` instances — either through Revit 2026's built-in isolation or through
-  `Scotec.Revit.Isolation` — each context has its own copy of every assembly it loads. A type
-  defined in one context is not the same type as its counterpart loaded in another context, even
-  if the assembly and type names are identical. Any interface or class used as the communication
-  contract between add-in A and add-in B must therefore be loaded from a **shared context**, not
-  from each add-in's own isolated context. Without this, the cast from add-in A's object to
-  add-in B's interface will fail at runtime. See [Revit Add-in Isolation](RevitAddinIsolation.md)
-  for how to configure shared assembly contexts.
+- **Assembly isolation affects in-process communication contracts.** When add-ins run in separate
+  `AssemblyLoadContext` instances, each context has its own copy of every assembly it loads. A
+  type from one context is not the same type as its counterpart in another, so a direct in-process
+  call across isolated add-ins will fail with a cast exception if the contract type is not loaded
+  from a shared context. Loading contract assemblies into a shared context resolves this, but it
+  introduces a coupling between the add-ins and reduces their independence. The preferred approach
+  for truly independent add-ins is to communicate through an out-of-process or OS-level channel
+  — named pipes, shared memory, TCP/IP, or similar — which avoids type identity problems entirely
+  and does not require any shared assembly infrastructure. See
+  [Revit Add-in Isolation](RevitAddinIsolation.md) for shared context configuration when
+  in-process communication is required despite the coupling trade-off.
 
 - **The tracker only reflects activity in Scotec.Revit-based add-ins.** `RevitContextTracker`
   is maintained by Scotec.Revit entry points. If the triggering add-in does not use Scotec.Revit,
