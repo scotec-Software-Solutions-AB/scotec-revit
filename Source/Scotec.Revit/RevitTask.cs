@@ -274,18 +274,18 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </returns>
     private static ILifetimeScope CreateLifetimeScope(IRevitUiContext context, Action<IServiceCollection>? configureServices)
     {
-        return RevitAppBase.GetServiceProvider()
-                           .GetAutofacRoot()
-                           .BeginLifetimeScope(builder =>
-                           {
-                               builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
-                               // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
-                               builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
-                               // Allow to add services
-                               var services = new ServiceCollection();
-                               configureServices?.Invoke(services);
-                               builder.PopulateRevit(services);
-                           });
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+        return autofacRoot
+                   .BeginLifetimeScope(builder =>
+                   {
+                       builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                       // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                       builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
+                       // Allow to add services
+                       var services = new ServiceCollection();
+                       configureServices?.Invoke(services);
+                       builder.PopulateRevit(services, autofacRoot);
+                   });
     }
 
     /// <summary>

@@ -183,7 +183,6 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
             services.TryAddSingleton(Application);
             services.TryAddSingleton(Application.ActiveAddInId);
             services.AddGlobalRevitContext(Application);
-            services.AddRevitScopeFactory();
         });
     }
 }

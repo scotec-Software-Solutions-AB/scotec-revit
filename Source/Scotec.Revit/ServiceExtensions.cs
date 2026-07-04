@@ -115,9 +115,12 @@ public static class RevitScopeFactoryServiceExtensions
     ///     in the service collection.
     /// </summary>
     /// <remarks>
-    ///     This registration is performed automatically by <see cref="Scotec.Revit.RevitApp" /> and
-    ///     <see cref="Scotec.Revit.RevitDbApp" />. It only needs to be called manually in test
-    ///     harnesses or host configurations that do not derive from those base classes.
+    ///     Call this method in <c>OnConfigure</c> to opt in to Revit-aware scope creation. When
+    ///     registered, <see cref="Scotec.Revit.IRevitScopeFactory" /> (and the standard
+    ///     <see cref="Microsoft.Extensions.DependencyInjection.IServiceScopeFactory" />) will resolve
+    ///     to <see cref="Scotec.Revit.RevitScopeFactory" />, which automatically manages
+    ///     <see cref="Scotec.Revit.IRevitContext" /> registration based on the active entry point kind.
+    ///     Add-ins that do not require cross-add-in context sharing do not need to call this method.
     /// </remarks>
     /// <param name="services">The service collection to register into.</param>
     /// <returns>The same <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection" /> for chaining.</returns>

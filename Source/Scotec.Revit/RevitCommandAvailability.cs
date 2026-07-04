@@ -61,19 +61,19 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
         {
             var context = new RevitUiContext(uiApplication);
 
-            using var scope = RevitAppBase.GetServiceProvider()
-                                          .GetAutofacRoot()
-                                          .BeginLifetimeScope(builder =>
-                                          {
-                                              builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
-                                              // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
-                                              builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
-                                              
-                                              // Allow derived classes to add services
-                                              var services = new ServiceCollection();
-                                                              ConfigureServices(services);
-                                                              builder.PopulateRevit(services);
-                                          });
+            var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+            using var scope = autofacRoot
+                                  .BeginLifetimeScope(builder =>
+                                  {
+                                      builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                                      // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                                      builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
+
+                                      // Allow derived classes to add services
+                                      var services = new ServiceCollection();
+                                      ConfigureServices(services);
+                                      builder.PopulateRevit(services, autofacRoot);
+                                  });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
             return InvokeIsCommandAvailable(uiApplication, selectedCategories, serviceProvider);

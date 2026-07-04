@@ -100,17 +100,17 @@ public abstract class RevitUpdater : IUpdater, IDisposable
         using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Handler);
         var context = new RevitContext(data.GetDocument());
 
-        using var scope = RevitAppBase.GetServiceProvider()
-                                      .GetAutofacRoot()
-                                      .BeginLifetimeScope(builder =>
-                                      {
-                                          builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
-                                          builder.RegisterInstance(data).ExternallyOwned();
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+        using var scope = autofacRoot
+                              .BeginLifetimeScope(builder =>
+                              {
+                                  builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                                  builder.RegisterInstance(data).ExternallyOwned();
 
-                                          var services = new ServiceCollection();
-                                          ConfigureServices(services);
-                                          builder.PopulateRevit(services);
-                                      });
+                                  var services = new ServiceCollection();
+                                  ConfigureServices(services);
+                                  builder.PopulateRevit(services, autofacRoot);
+                              });
 
         var serviceProvider = scope.Resolve<IServiceProvider>();
         InvokeOnExecute(data, serviceProvider);

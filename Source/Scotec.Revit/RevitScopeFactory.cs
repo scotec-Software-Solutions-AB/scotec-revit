@@ -192,7 +192,7 @@ internal sealed class RevitScopeFactory : IRevitScopeFactory
             ? _root.BeginLifetimeScope()
             : _root.BeginLifetimeScope(builder => PopulateServices(builder, configure));
 
-    private static void PopulateServices(ContainerBuilder builder, Action<IServiceCollection>? configure)
+    private void PopulateServices(ContainerBuilder builder, Action<IServiceCollection>? configure)
     {
         if (configure is null)
         {
@@ -201,7 +201,7 @@ internal sealed class RevitScopeFactory : IRevitScopeFactory
 
         var services = new ServiceCollection();
         configure(services);
-        builder.PopulateRevit(services);
+        builder.PopulateRevit(services, _root);
     }
 
     /// <summary>

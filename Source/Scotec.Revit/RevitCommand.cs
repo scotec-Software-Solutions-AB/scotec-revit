@@ -531,7 +531,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             // Allow derived classes to add services
             var services = new ServiceCollection();
             ConfigureServices(services);
-            builder.PopulateRevit(services);
+            builder.PopulateRevit(services, autofacRoot);
         });
     }
 

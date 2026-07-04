@@ -14,8 +14,9 @@ namespace Scotec.Revit;
 internal static class ContainerBuilderExtensions
 {
     /// <summary>
-    ///     Populates the container builder from <paramref name="services" /> and immediately overrides the
-    ///     <see cref="IServiceScopeFactory" /> registration so that it resolves to
+    ///     Populates the container builder from <paramref name="services" /> and, when
+    ///     <see cref="IRevitScopeFactory" /> is registered in <paramref name="parentContext" />,
+    ///     overrides the <see cref="IServiceScopeFactory" /> registration so that it resolves to
     ///     <see cref="IRevitScopeFactory" /> rather than Autofac's built-in <c>AutofacServiceScopeFactory</c>.
     /// </summary>
     /// <remarks>
@@ -25,18 +26,31 @@ internal static class ContainerBuilderExtensions
     ///     after <c>Populate</c> ensures that <see cref="IServiceScopeFactory" /> always resolves to
     ///     <see cref="RevitScopeFactory" /> in that scope — making the Revit-aware factory transparent to
     ///     callers that inject the standard interface.
+    ///     When <paramref name="parentContext" /> is <see langword="null" /> or
+    ///     <see cref="IRevitScopeFactory" /> is not registered in it, the method behaves identically to
+    ///     a plain <c>Populate</c> call and no forwarding rule is installed.
     /// </remarks>
     /// <param name="builder">The <see cref="ContainerBuilder" /> to populate.</param>
     /// <param name="services">The <see cref="IServiceCollection" /> whose descriptors are added to the builder.</param>
-    internal static void PopulateRevit(this ContainerBuilder builder, IServiceCollection services)
+    /// <param name="parentContext">
+    ///     The Autofac component context of the parent scope, used to determine whether
+    ///     <see cref="IRevitScopeFactory" /> is registered. Pass <see langword="null" /> to skip the
+    ///     forwarding rule unconditionally.
+    /// </param>
+    internal static void PopulateRevit(this ContainerBuilder builder,
+                                       IServiceCollection services,
+                                       IComponentContext? parentContext = null)
     {
         builder.Populate(services);
 
-        // Override the IServiceScopeFactory that Populate installs with a forwarding rule to
-        // IRevitScopeFactory. Autofac uses last-registration-wins for default service resolution,
-        // so this registration takes precedence over AutofacServiceScopeFactory in this scope.
-        builder.Register(ctx => ctx.Resolve<IRevitScopeFactory>())
-               .As<IServiceScopeFactory>()
-               .InstancePerLifetimeScope();
+        // Only install the forwarding rule when IRevitScopeFactory is registered in the
+        // parent scope. If the add-in has not opted in to the scope factory, Populate's
+        // default AutofacServiceScopeFactory registration is left in place.
+        if (parentContext?.IsRegistered<IRevitScopeFactory>() == true)
+        {
+            builder.Register(ctx => ctx.Resolve<IRevitScopeFactory>())
+                   .As<IServiceScopeFactory>()
+                   .InstancePerLifetimeScope();
+        }
     }
 }

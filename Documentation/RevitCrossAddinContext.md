@@ -130,15 +130,30 @@ if (RevitContextTracker.IsCommandActive)
 call `CreateScope()` when a scope is needed. The returned `IServiceScope` is owned by the caller
 and must be disposed when the operation is complete.
 
-`IRevitScopeFactory` inherits `IServiceScopeFactory`. The framework also installs a forwarding
-rule so that resolving `IServiceScopeFactory` from the container returns `RevitScopeFactory` — not
-Autofac's built-in `AutofacServiceScopeFactory`. This means existing code that injects
+`IRevitScopeFactory` inherits `IServiceScopeFactory`. When `IRevitScopeFactory` is registered,
+the framework also installs a forwarding rule so that resolving `IServiceScopeFactory` from the
+container returns `RevitScopeFactory` as well. This means existing code that injects
 `IServiceScopeFactory` automatically receives the Revit-aware factory with no changes required.
 Inject `IRevitScopeFactory` specifically only when the `CreateScope(Action<IServiceCollection>?)`
 overload — which allows additional services to be registered into the new scope — is needed.
 
-`IRevitScopeFactory` is registered automatically by `RevitApp` and `RevitDbApp`. No manual
-registration is required.
+`IRevitScopeFactory` is **not** registered automatically. To opt in, call `AddRevitScopeFactory()`
+in the `OnConfigure` override of the add-in application class:
+
+```csharp
+protected override void OnConfigure(IHostBuilder builder)
+{
+    base.OnConfigure(builder);
+
+    builder.ConfigureServices(services =>
+    {
+        services.AddRevitScopeFactory();
+        // other service registrations
+    });
+}
+```
+
+Add-ins that do not need cross-add-in context sharing do not need to call this method.
 
 ```csharp
 public class CoordinationService
