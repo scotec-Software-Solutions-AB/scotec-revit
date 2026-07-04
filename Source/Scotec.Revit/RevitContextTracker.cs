@@ -32,29 +32,60 @@ namespace Scotec.Revit;
 ///     </para>
 ///     <para>
 ///         Each entry point increments the counter on entry and decrements it on exit.
-///         This correctly handles the one nesting scenario permitted by the Revit API: a DMU
-///         updater (<see cref="Autodesk.Revit.DB.IUpdater.Execute" />) is called
-///         synchronously during a transaction commit, so it can execute while a command or
-///         event handler is already active on the call stack:
+///         This correctly handles all nesting scenarios permitted by the Revit API, where
+///         a second Revit-controlled callback is invoked synchronously while an outer entry
+///         point is still executing. Known nesting cases include:
+///         <list type="bullet">
+///             <item>
+///                 A DMU updater (<see cref="Autodesk.Revit.DB.IUpdater.Execute" />) is called
+///                 synchronously during <c>transaction.Commit()</c>, so it executes while the
+///                 enclosing command or event handler is still on the call stack.
+///             </item>
+///             <item>
+///                 <c>Application.DocumentChanged</c> fires synchronously after every successful
+///                 <c>transaction.Commit()</c>, so a <see cref="RevitEventHandler{TSender,TEventArgs,TContext}" />
+///                 subscribed to that event executes while the enclosing command is still active.
+///             </item>
+///             <item>
+///                 Other post-transaction events such as <c>DocumentSaving</c>, <c>DocumentSaved</c>,
+///                 <c>DocumentSynchronizingWithCentral</c>, <c>DocumentSynchronizedWithCentral</c>,
+///                 and <c>FailuresProcessing</c> follow the same pattern.
+///             </item>
+///         </list>
 ///     </para>
 ///     <code>
-///         IExternalCommand.Execute   counter: 0 → 1
+///         IExternalCommand.Execute        counter: 0 → 1
 ///           transaction.Commit()
-///             IUpdater.Execute       counter: 1 → 2
-///             IUpdater returns       counter: 2 → 1
+///             IUpdater.Execute            counter: 1 → 2
+///             IUpdater returns            counter: 2 → 1
+///             DocumentChanged fires
+///               HandleEvent              counter: 1 → 2
+///               HandleEvent returns      counter: 2 → 1
 ///           transaction.Commit() returns
-///         IExternalCommand returns   counter: 1 → 0
+///         IExternalCommand.Execute returns  counter: 1 → 0
 ///     </code>
+///     <para>
+///         The diagram above shows a minimal two-level nesting. In practice the depth
+///         is unbounded: a <c>DocumentChanged</c> handler may itself commit a new
+///         transaction, which fires <c>DocumentChanged</c> again, incrementing the
+///         counter further. The counter design handles arbitrary nesting depth correctly.
+///     </para>
 ///     <para>
 ///         Because the counter is stored in the environment variable, increments and
 ///         decrements by different add-ins in the same process are visible to all of them.
-///         A value of <c>2</c> therefore correctly signals "a command and a nested updater
-///         are both active" without any add-in needing to know about the others.
+///     </para>
+///     <para>
+///         A second environment variable, <see cref="CommandVariableName" />, tracks whether
+///         the currently active entry point is a <em>document-stable</em> command or external
+///         event (kind <see cref="RevitEntryPointKind.Command" />). Event handlers and DMU
+///         updaters never modify this variable. It is used by <see cref="RevitScopeFactory" />
+///         to decide whether constructing a fresh <see cref="IRevitContext" /> from global
+///         state is safe.
 ///     </para>
 ///     <para>
 ///         <see cref="Activate" /> is reserved for the Scotec.Revit framework's own
-///         entry-point implementations. Consumer code should use <see cref="IsActive" />
-///         or read <see cref="VariableName" /> directly.
+///         entry-point implementations. Consumer code should use <see cref="IsActive" />,
+///         <see cref="IsCommandActive" />, or read the environment variables directly.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -72,6 +103,23 @@ public static class RevitContextTracker
     public const string VariableName = "Scotec.Revit.Context.Active";
 
     /// <summary>
+    ///     The name of the environment variable that indicates whether the currently
+    ///     active entry point is a document-stable command
+    ///     (kind <see cref="RevitEntryPointKind.Command" />).
+    /// </summary>
+    /// <remarks>
+    ///     The value is the string <c>"true"</c> when a command entry point is active,
+    ///     or absent / any other value when no command is active.
+    ///     Unlike <see cref="VariableName" />, this variable is not a counter: it is set
+    ///     to <c>"true"</c> on the first command entry and cleared when that command exits,
+    ///     regardless of nesting. Nested <see cref="RevitEntryPointKind.Handler" /> entry
+    ///     points do not modify this variable.
+    ///     The variable is process-wide and shared by all Scotec.Revit add-ins in the
+    ///     same Revit process.
+    /// </remarks>
+    public const string CommandVariableName = "Scotec.Revit.Context.Command";
+
+    /// <summary>
     ///     Gets a value indicating whether execution is currently inside at least one
     ///     Revit-controlled entry point.
     /// </summary>
@@ -81,6 +129,21 @@ public static class RevitContextTracker
     ///     A missing, <see langword="null" />, or non-parseable value is treated as <c>0</c>.
     /// </remarks>
     public static bool IsActive => ReadDepth() > 0;
+
+    /// <summary>
+    ///     Gets a value indicating whether a document-stable command entry point
+    ///     (<see cref="RevitEntryPointKind.Command" />) is currently active somewhere in
+    ///     the process.
+    /// </summary>
+    /// <remarks>
+    ///     Returns <see langword="true" /> when <see cref="CommandVariableName" /> is set
+    ///     to <c>"true"</c>. Only entry points activated with
+    ///     <see cref="RevitEntryPointKind.Command" /> modify this variable.
+    ///     <see cref="RevitEntryPointKind.Handler" /> entry points (event handlers and DMU
+    ///     updaters) do not modify it, so this property can be <see langword="false" /> while
+    ///     <see cref="IsActive" /> is <see langword="true" />.
+    /// </remarks>
+    public static bool IsCommandActive => ReadCommandActive();
 
     /// <summary>
     ///     Gets a value indicating whether <em>this</em> add-in's own entry-point
@@ -96,29 +159,65 @@ public static class RevitContextTracker
     /// </remarks>
     internal static bool ThisAddInIsActive => _ownDepth > 0;
 
+    /// <summary>
+    ///     Gets a value indicating whether <em>this</em> add-in's own entry-point
+    ///     infrastructure has an active document-stable command entry point
+    ///     (<see cref="RevitEntryPointKind.Command" />).
+    /// </summary>
+    /// <remarks>
+    ///     Backed by an in-process volatile field that is only written by
+    ///     <see cref="Activate" /> calls with <see cref="RevitEntryPointKind.Command" />
+    ///     in this assembly. Used by <see cref="RevitScopeFactory" /> together with
+    ///     <see cref="ThisAddInIsActive" /> to narrow the pre-scope window guard to
+    ///     command-kind entry points only.
+    /// </remarks>
+    internal static bool ThisAddInCommandIsActive => _ownCommandIsActive;
+
     // Per-add-in in-process counter. Each assembly has its own static copy.
-    // Revit prevents re-entrance within a single add-in, so the value is
-    // always 0 or 1 — except for the command → DMU updater nesting case where
-    // it may briefly reach 2 within the same add-in.
+    // The depth is unbounded: a DocumentChanged handler may commit a new transaction,
+    // which fires DocumentChanged again, incrementing the counter further. Updaters
+    // registered by this same add-in contribute in the same way.
     private static int _ownDepth;
+
+    // Per-add-in in-process flag, set when at least one Command-kind entry point from
+    // this assembly is active. Volatile ensures visibility without a lock; only one
+    // thread can be executing a Revit entry point at a time.
+    private static volatile bool _ownCommandIsActive;
 
     /// <summary>
     ///     Increments the active-context depth counter and returns a handle that
     ///     decrements the counter when disposed.
     /// </summary>
+    /// <param name="kind">
+    ///     The kind of entry point being activated. Pass
+    ///     <see cref="RevitEntryPointKind.Command" /> for
+    ///     <see cref="Autodesk.Revit.UI.IExternalCommand" />,
+    ///     <see cref="Autodesk.Revit.UI.IExternalEventHandler" />, and
+    ///     <see cref="Autodesk.Revit.UI.IExternalCommandAvailability" /> entry points.
+    ///     Pass <see cref="RevitEntryPointKind.Handler" /> for Revit application or document
+    ///     event handlers and DMU updaters.
+    /// </param>
     /// <returns>
     ///     An <see cref="IDisposable" /> handle. Disposing it decrements
-    ///     <see cref="VariableName" />. Disposing more than once is safe.
+    ///     <see cref="VariableName" /> and clears <see cref="CommandVariableName" /> if
+    ///     applicable. Disposing more than once is safe.
     /// </returns>
     /// <remarks>
     ///     This method is for exclusive use by the Scotec.Revit framework entry-point
     ///     implementations. Consumer code must not call it.
     /// </remarks>
-    internal static IDisposable Activate()
+    internal static IDisposable Activate(RevitEntryPointKind kind)
     {
         Interlocked.Increment(ref _ownDepth);
         WriteDepth(ReadDepth() + 1);
-        return new Deactivator();
+
+        if (kind == RevitEntryPointKind.Command)
+        {
+            _ownCommandIsActive = true;
+            WriteCommandActive(true);
+        }
+
+        return new Deactivator(kind);
     }
 
     // ── Env-var encoding helpers ─────────────────────────────────────────────
@@ -142,15 +241,46 @@ public static class RevitContextTracker
         Environment.SetEnvironmentVariable(VariableName, depth.ToString(), EnvironmentVariableTarget.Process);
     }
 
+    /// <summary>
+    ///     Returns <see langword="true" /> when <see cref="CommandVariableName" /> is set to
+    ///     <c>"true"</c>; otherwise <see langword="false" />.
+    /// </summary>
+    private static bool ReadCommandActive()
+    {
+        var raw = Environment.GetEnvironmentVariable(CommandVariableName, EnvironmentVariableTarget.Process);
+        return string.Equals(raw, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    ///     Sets <see cref="CommandVariableName" /> to <c>"true"</c> when
+    ///     <paramref name="active" /> is <see langword="true" />, or clears it otherwise.
+    /// </summary>
+    private static void WriteCommandActive(bool active)
+    {
+        Environment.SetEnvironmentVariable(
+            CommandVariableName,
+            active ? "true" : null,
+            EnvironmentVariableTarget.Process);
+    }
+
     // ── Deactivator ──────────────────────────────────────────────────────────
 
     /// <summary>
-    ///     Decrements the depth counter in <see cref="VariableName" /> when disposed.
+    ///     Decrements the depth counter in <see cref="VariableName" /> when disposed,
+    ///     and clears <see cref="CommandVariableName" /> when the entry point kind is
+    ///     <see cref="RevitEntryPointKind.Command" />.
     /// </summary>
     private sealed class Deactivator : IDisposable
     {
+        private readonly RevitEntryPointKind _kind;
+
         // int field lets Interlocked.Exchange guard against double-dispose without a lock.
         private int _disposed;
+
+        internal Deactivator(RevitEntryPointKind kind)
+        {
+            _kind = kind;
+        }
 
         public void Dispose()
         {
@@ -163,9 +293,20 @@ public static class RevitContextTracker
             // Decrement the per-add-in counter unconditionally — this cannot throw.
             Interlocked.Decrement(ref _ownDepth);
 
+            // Clear the per-add-in command flag when this was a Command-kind entry point.
+            if (_kind == RevitEntryPointKind.Command)
+            {
+                _ownCommandIsActive = false;
+            }
+
             try
             {
                 WriteDepth(Math.Max(0, ReadDepth() - 1));
+
+                if (_kind == RevitEntryPointKind.Command)
+                {
+                    WriteCommandActive(false);
+                }
             }
             catch
             {

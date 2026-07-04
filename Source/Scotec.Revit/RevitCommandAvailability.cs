@@ -56,7 +56,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     /// </remarks>
     bool IExternalCommandAvailability.IsCommandAvailable(UIApplication uiApplication, CategorySet selectedCategories)
     {
-        using var _ = RevitContextTracker.Activate();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
         try
         {
             var context = new RevitUiContext(uiApplication);

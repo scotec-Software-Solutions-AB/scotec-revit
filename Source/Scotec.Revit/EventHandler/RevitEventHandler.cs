@@ -300,7 +300,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// <param name="args">The event args.</param>
     protected void HandleEvent(object? sender, TEventArgs args)
     {
-        using var _ = RevitContextTracker.Activate();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Handler);
         EventArgs = args;
         var typedSender = sender as TSender;
 

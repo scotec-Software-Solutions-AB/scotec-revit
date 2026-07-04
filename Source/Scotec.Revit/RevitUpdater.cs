@@ -97,7 +97,7 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     void IUpdater.Execute(UpdaterData data)
     {
-        using var _ = RevitContextTracker.Activate();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Handler);
         var context = new RevitContext(data.GetDocument());
 
         using var scope = RevitAppBase.GetServiceProvider()

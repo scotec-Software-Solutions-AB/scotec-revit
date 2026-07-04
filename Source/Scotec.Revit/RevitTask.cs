@@ -71,7 +71,7 @@ public sealed class RevitTask : IExternalEventHandler, IDisposable
     /// </remarks>
     void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
-        using var _ = RevitContextTracker.Activate();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
         try
         {
             if (_function is not null)

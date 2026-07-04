@@ -6,7 +6,6 @@ using System;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using Scotec.Revit.EventHandler;
 
 namespace Scotec.Revit;
 
@@ -31,23 +30,41 @@ namespace Scotec.Revit;
 ///         </item>
 ///         <item>
 ///             <strong><see cref="RevitContextTracker.IsActive" /> is <see langword="true" /></strong>,
-///             <see cref="IRevitContext" /> is <em>not</em> yet resolvable, but
-///             <see cref="RevitContextTracker.ThisAddInIsActive" /> is <see langword="true" /> —
-///             this add-in's own entry point has activated the context tracker but has not yet
-///             registered <see cref="IRevitContext" /> in a DI scope (this is the brief window
-///             between <c>RevitContextTracker.Activate()</c> and scope construction in
-///             <see cref="RevitCommand" />, <see cref="RevitEventHandler{TSender,TEventArgs,TContext}" />,
-///             etc.). A plain child scope is created; the entry point will register the context
-///             in its own scope immediately after.
+///             <see cref="IRevitContext" /> is <em>not</em> yet resolvable, and
+///             <see cref="RevitContextTracker.ThisAddInCommandIsActive" /> is
+///             <see langword="true" /> — this add-in's own <see cref="RevitEntryPointKind.Command" />
+///             entry point has activated the context tracker but has not yet registered
+///             <see cref="IRevitContext" /> in a DI scope (the brief window between
+///             <c>RevitContextTracker.Activate(Command)</c> and scope construction in
+///             <see cref="RevitCommand" />, <see cref="RevitTask" />, or
+///             <see cref="RevitCommandAvailability" />). A plain child scope is created; the
+///             entry point will register the context in its own scope immediately after.
+///             Handler-kind entry points (RevitEventHandler, RevitUpdater) do not set
+///             <see cref="RevitContextTracker.ThisAddInCommandIsActive" />, so they fall
+///             through to Branch 4b.
 ///         </item>
 ///         <item>
-///             <strong><see cref="RevitContextTracker.IsActive" /> is <see langword="true" /></strong>,
-///             <see cref="IRevitContext" /> is <em>not</em> resolvable, and
-///             <see cref="RevitContextTracker.ThisAddInIsActive" /> is <see langword="false" /></strong>
-///             — the active entry point belongs to a different add-in. A fresh
-///             <see cref="IRevitContext" /> / <see cref="IRevitUiContext" /> is constructed from the
-///             application-lifetime <see cref="IGlobalRevitUiContext" /> or
-///             <see cref="IGlobalRevitContext" /> and registered in the new child scope.
+///             <strong>Branch 4a</strong> — <see cref="RevitContextTracker.IsActive" /> is
+///             <see langword="true" />, <see cref="IRevitContext" /> is absent,
+///             <see cref="RevitContextTracker.ThisAddInCommandIsActive" /> is
+///             <see langword="false" />, and
+///             <see cref="RevitContextTracker.IsCommandActive" /> is <see langword="true" />
+///             — the active entry point is a document-stable
+///             <see cref="RevitEntryPointKind.Command" /> belonging to a different add-in.
+///             A fresh <see cref="IRevitContext" /> / <see cref="IRevitUiContext" /> is
+///             constructed from the application-lifetime <see cref="IGlobalRevitUiContext" />
+///             or <see cref="IGlobalRevitContext" /> and registered in the new child scope.
+///         </item>
+///         <item>
+///             <strong>Branch 4b</strong> — <see cref="RevitContextTracker.IsActive" /> is
+///             <see langword="true" />, <see cref="IRevitContext" /> is absent,
+///             <see cref="RevitContextTracker.ThisAddInCommandIsActive" /> is
+///             <see langword="false" />, and
+///             <see cref="RevitContextTracker.IsCommandActive" /> is <see langword="false" />
+///             — the active entry point is a <see cref="RevitEntryPointKind.Handler" />
+///             (event handler or DMU updater) belonging to a different add-in. The active
+///             document cannot be assumed to be <c>ActiveUIDocument</c>, so a plain child
+///             scope is returned with no context objects.
 ///         </item>
 ///     </list>
 /// </remarks>
@@ -97,50 +114,64 @@ internal sealed class RevitScopeFactory : IRevitScopeFactory
             return new RevitServiceScope(OpenScope(configure));
         }
 
-        // ── Branch 3: this add-in's entry point is active but scope not yet built
-        // ThisAddInIsActive is true, meaning Activate() was called by this add-in's
-        // own entry point infrastructure (RevitCommand, RevitEventHandler, etc.) but
-        // its DI scope — and therefore IRevitContext — does not exist yet. This is
-        // the brief window between RevitContextTracker.Activate() and
-        // CreateLifetimeScope() inside the entry point method. A plain child scope is
-        // returned; the entry point will register IRevitContext in its own scope
-        // immediately afterwards. Attempting to create a fresh context here would
-        // duplicate and conflict with that registration.
-        if (RevitContextTracker.ThisAddInIsActive)
+        // ── Branch 3: this add-in's Command entry point is active but scope not yet built ─
+        // ThisAddInCommandIsActive is true, meaning Activate(Command) was called by this
+        // add-in's own entry point infrastructure (RevitCommand, RevitTask,
+        // RevitCommandAvailability) but its DI scope — and therefore IRevitContext — does
+        // not exist yet. This is the brief window between RevitContextTracker.Activate()
+        // and CreateLifetimeScope() inside the entry point method. A plain child scope is
+        // returned; the entry point will register IRevitContext in its own scope immediately
+        // afterwards. Attempting to create a fresh context here would duplicate and conflict
+        // with that registration.
+        // Handler-kind entry points (RevitEventHandler, RevitUpdater) do not set
+        // ThisAddInCommandIsActive, so they fall through to Branch 4b below where a plain
+        // scope is returned because the document identity cannot be assumed.
+        if (RevitContextTracker.ThisAddInCommandIsActive)
         {
             return new RevitServiceScope(OpenScope(configure));
         }
 
-        // ── Branch 4: active context belongs to another add-in ────────────────
-        // env var >= 1, IRevitContext is absent, and this add-in has no active entry
-        // point of its own. The active entry point belongs to a different add-in.
-        // Construct a fresh context from the application-lifetime global and
-        // register it in the new child scope.
-
-        // Branch 4 — UI add-in path.
-        var uiGlobalContext = _serviceProvider.GetService<IGlobalRevitUiContext>();
-        if (uiGlobalContext is not null)
+        // ── Branch 4a: Command-kind entry point active in another add-in ─────────────────
+        // env var >= 1, IRevitContext is absent, this add-in has no active entry point, and
+        // IsCommandActive is true. The active entry point is a document-stable command or
+        // external event belonging to a different add-in. ActiveUIDocument is stable and
+        // consistent with the Revit API threading model, so it is safe to construct a fresh
+        // context from the application-lifetime global and register it in the new child scope.
+        if (RevitContextTracker.IsCommandActive)
         {
-            var context = new RevitUiContext(uiGlobalContext.UiApplication);
-            var lifetimeScope = _root.BeginLifetimeScope(builder =>
+            // Branch 4a — UI add-in path.
+            var uiGlobalContext = _serviceProvider.GetService<IGlobalRevitUiContext>();
+            if (uiGlobalContext is not null)
             {
-                builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
-                // Same instance — ExternallyOwned prevents a second Dispose call.
-                builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
+                var context = new RevitUiContext(uiGlobalContext.UiApplication);
+                var lifetimeScope = _root.BeginLifetimeScope(builder =>
+                {
+                    builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                    // Same instance — ExternallyOwned prevents a second Dispose call.
+                    builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
+                    PopulateServices(builder, configure);
+                });
+                return new RevitServiceScope(lifetimeScope);
+            }
+
+            // Branch 4a — DB add-in path.
+            var globalContext = _serviceProvider.GetRequiredService<IGlobalRevitContext>();
+            var dbContext = new RevitContext(globalContext.Application);
+            var dbLifetimeScope = _root.BeginLifetimeScope(builder =>
+            {
+                builder.RegisterInstance(dbContext).As<IRevitContext>().OwnedByLifetimeScope();
                 PopulateServices(builder, configure);
             });
-            return new RevitServiceScope(lifetimeScope);
+            return new RevitServiceScope(dbLifetimeScope);
         }
 
-        // Branch 4 — DB add-in path.
-        var globalContext = _serviceProvider.GetRequiredService<IGlobalRevitContext>();
-        var dbContext = new RevitContext(globalContext.Application);
-        var dbLifetimeScope = _root.BeginLifetimeScope(builder =>
-        {
-            builder.RegisterInstance(dbContext).As<IRevitContext>().OwnedByLifetimeScope();
-            PopulateServices(builder, configure);
-        });
-        return new RevitServiceScope(dbLifetimeScope);
+        // ── Branch 4b: Handler-kind entry point active in another add-in ──────────────────
+        // env var >= 1, IRevitContext is absent, this add-in has no active entry point, and
+        // IsCommandActive is false. The active entry point is a Revit event handler or DMU
+        // updater belonging to a different add-in. The active document is not necessarily
+        // ActiveUIDocument, so constructing a context from global state could silently
+        // capture the wrong document. Return a plain child scope with no context objects.
+        return new RevitServiceScope(OpenScope(configure));
     }
 
     /// <summary>

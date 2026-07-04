@@ -292,7 +292,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// </exception>
     Result IExternalCommand.Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
-        using var _ = RevitContextTracker.Activate();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
         var context = new RevitUiContext(commandData.Application);
         var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
 
