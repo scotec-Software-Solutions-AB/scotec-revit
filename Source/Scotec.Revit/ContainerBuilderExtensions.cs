@@ -29,6 +29,9 @@ internal static class ContainerBuilderExtensions
     ///     When <paramref name="parentContext" /> is <see langword="null" /> or
     ///     <see cref="IRevitScopeFactory" /> is not registered in it, the method behaves identically to
     ///     a plain <c>Populate</c> call and no forwarding rule is installed.
+    ///     The root container receives the same forwarding rule via
+    ///     <see cref="RegisterRevitScopeFactoryForwarding" /> called from <c>RevitHostBuilder</c>
+    ///     when the add-in has opted in to <see cref="IRevitScopeFactory" />.
     /// </remarks>
     /// <param name="builder">The <see cref="ContainerBuilder" /> to populate.</param>
     /// <param name="services">The <see cref="IServiceCollection" /> whose descriptors are added to the builder.</param>
@@ -48,9 +51,27 @@ internal static class ContainerBuilderExtensions
         // default AutofacServiceScopeFactory registration is left in place.
         if (parentContext?.IsRegistered<IRevitScopeFactory>() == true)
         {
-            builder.Register(ctx => ctx.Resolve<IRevitScopeFactory>())
-                   .As<IServiceScopeFactory>()
-                   .InstancePerLifetimeScope();
+            builder.RegisterRevitScopeFactoryForwarding();
         }
+    }
+
+    /// <summary>
+    ///     Registers the <see cref="IServiceScopeFactory" /> → <see cref="IRevitScopeFactory" /> forwarding
+    ///     rule on <paramref name="builder" />.
+    /// </summary>
+    /// <remarks>
+    ///     Autofac resolves the <em>last</em> registration for a given service type, so this rule — registered
+    ///     after <c>Populate</c> has already added <c>AutofacServiceScopeFactory</c> — ensures that
+    ///     <see cref="IServiceScopeFactory" /> always resolves to <see cref="IRevitScopeFactory" /> in the
+    ///     target scope.
+    ///     Called from <see cref="PopulateRevit" /> for child scopes and from <c>RevitHostBuilder</c> for
+    ///     the root container.
+    /// </remarks>
+    /// <param name="builder">The <see cref="ContainerBuilder" /> on which to register the rule.</param>
+    internal static void RegisterRevitScopeFactoryForwarding(this ContainerBuilder builder)
+    {
+        builder.Register(ctx => ctx.Resolve<IRevitScopeFactory>())
+               .As<IServiceScopeFactory>()
+               .InstancePerLifetimeScope();
     }
 }
