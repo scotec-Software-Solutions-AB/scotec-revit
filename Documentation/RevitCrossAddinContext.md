@@ -1,47 +1,55 @@
 # Cross-Add-In Revit Context
 
-This document describes the general problem of in-process communication between Revit add-ins
-loaded in the same Revit instance, and the specific challenges this creates when one of those
-add-ins needs access to a Revit document context. It then explains how `RevitContextTracker` and
-`IRevitScopeFactory` — provided by Scotec.Revit — solve this for add-ins built on that framework.
+This document describes the problem that arises when a Revit add-in built on Scotec.Revit needs
+to perform Revit API work in response to a signal from another add-in running in the same Revit
+instance. It explains why obtaining the correct document context is not straightforward in this
+situation, and how `RevitContextTracker` and `IRevitScopeFactory` — provided by Scotec.Revit —
+solve it.
 
 ---
 
 ## The Scenario
 
-Revit loads all add-ins in the same process and executes them on the same main thread. This makes
-in-process communication between add-ins both possible and common: one add-in (the *triggering*
-add-in) can call into another add-in (the *responding* add-in) synchronously while its own entry
-point is still on the call stack. Shared interfaces, C# events, and callbacks are all typical
-mechanisms.
+Revit loads all add-ins in the same process and executes them on the same main thread. Nowadays,
+each add-in runs in its own `AssemblyLoadContext`. Because each context maintains independent type
+identities, a type from add-in A's context and the same type from add-in B's context are different
+types at runtime — a cast across contexts fails. Direct in-process communication through shared
+interfaces, C# events, or callbacks is therefore **not the default approach** for isolated add-ins.
 
-This is a general Revit add-in pattern and is not specific to Scotec.Revit. The triggering add-in
-may or may not use Scotec.Revit; the framework it uses is irrelevant to the communication itself.
+The current typical approach for independent add-ins is to communicate through an out-of-process
+or OS-level channel — named pipes, shared memory, TCP/IP, or similar. Add-in B receives the
+signal on a background thread and marshals any Revit API work to the Revit UI thread.
 
-The problem arises for the **responding** add-in when it is built on Scotec.Revit and needs access
-to a Revit document context to do its work. For the Revit API to be used legally, both add-ins must
-be executing on the Revit main thread — the synchronous call guarantees this. What is not guaranteed
-is which document is the correct one to work with.
+Direct in-process communication is still possible when add-ins explicitly share an assembly
+context — an intentional architectural choice that accepts the coupling trade-off described in
+[Constraints and Limitations](#constraints-and-limitations). In that case, shared interfaces,
+C# events, and callbacks can cross the add-in boundary as before.
 
-**Example — a command in add-in A calls a shared coordination service:**
+In both cases, the same problem arises for the **responding** add-in (add-in B) when it is built
+on Scotec.Revit: it needs a Revit document context but has no active Scotec.Revit entry point of
+its own through which that context would ordinarily be created and registered.
+
+**Example — out-of-process channel: add-in A sends a request while its command is executing,
+add-in B handles it on the Revit UI thread:**
 
 ```
 Add-in A: IExternalCommand.Execute
-  → calls a shared coordination interface
-	Add-in B (Scotec.Revit): responds — needs IRevitContext
+  → sends request over named pipe / TCP / shared memory
+	Add-in B (Scotec.Revit): handles request on Revit UI thread — needs IRevitContext
 ```
 
-**Example — an event handler in add-in A raises a C# event:**
+**Example — shared-context in-process call: add-in A calls into add-in B directly through a
+shared contract assembly:**
 
 ```
-Add-in A: DocumentChanged event handler
-  → raises a C# event
-	Add-in B (Scotec.Revit): subscriber executes — needs IRevitContext
+Add-in A: IExternalCommand.Execute
+  → calls shared contract interface (loaded from shared AssemblyLoadContext)
+	Add-in B (Scotec.Revit): executes — needs IRevitContext
 ```
 
-In both cases, add-in B executes synchronously on the Revit main thread. It does not have an active
-`RevitCommand`, `RevitEventHandler`, or `RevitTask` of its own. The standard per-invocation DI scope
-created by those entry points does not exist for add-in B.
+In both cases, add-in B executes on the Revit main thread without an active `RevitCommand`,
+`RevitEventHandler`, or `RevitTask` of its own. The standard per-invocation DI scope created
+by those entry points does not exist for add-in B.
 
 ---
 
@@ -220,12 +228,18 @@ a plain scope with no `IRevitContext`. This is intentional. The document being p
 identified by the event arguments passed to that specific handler, not by `ActiveUIDocument`. The
 framework has no way to reach across add-in A's scope and retrieve that document.
 
-The general approach is the same in both cases: add-in A includes the document's path in the signal
+In either case, the approach is the same: add-in A includes the document's path in the signal
 payload, and add-in B uses that path to resolve the correct `Document` object independently.
-`Document.PathName` is a stable, process-unique identifier for open documents and is safe to pass
-as part of any in-process signal.
+`Document.PathName` is a stable, process-unique identifier for open documents and is safe to
+pass as part of any signal.
 
 **Add-in A — inside the handler, include the path in the signal payload:**
+
+> This example assumes add-in A is also built on Scotec.Revit. Branch 4b only applies when
+> `IsActive` is `true`, which requires at least one Scotec.Revit-based add-in to have an active
+> Handler-kind entry point. If add-in A does not use Scotec.Revit, `IsActive` will be `false`
+> and Branch 1 applies instead — the payload pattern below is still the correct solution in
+> both cases.
 
 ```csharp
 [RevitEventHandlerExecute]
@@ -358,22 +372,18 @@ public void OnWorkRequested(WorkRequest request)
   the Revit UI thread — for example via a `Dispatcher`. `IRevitScopeFactory` does not perform
   any thread marshalling and must only be called from the Revit UI thread.
 
-- **Assembly isolation affects in-process communication contracts.** When add-ins run in separate
-  `AssemblyLoadContext` instances, each context has its own copy of every assembly it loads. A
-  type from one context is not the same type as its counterpart in another, so a direct in-process
-  call across isolated add-ins will fail with a cast exception if the contract type is not loaded
-  from a shared context. Loading contract assemblies into a shared context resolves this, but it
-  introduces a coupling between the add-ins and reduces their independence. The preferred approach
-  for truly independent add-ins is to communicate through an out-of-process or OS-level channel
-  — named pipes, shared memory, TCP/IP, or similar — which avoids type identity problems entirely
-  and does not require any shared assembly infrastructure. See
-  [Revit Add-in Isolation](RevitAddinIsolation.md) for shared context configuration when
-  in-process communication is required despite the coupling trade-off.
+- **Assembly isolation is the default for modern Revit add-ins.** Each add-in runs in its own
+  `AssemblyLoadContext`, which means direct in-process communication through shared interfaces,
+  C# events, or callbacks requires explicit shared-context configuration — see
+  [Revit Add-in Isolation](RevitAddinIsolation.md). This coupling reduces the independence of
+  the add-ins involved. For truly independent add-ins, out-of-process channels (named pipes,
+  shared memory, TCP/IP) are the preferred approach: they have no type identity constraints and
+  require no shared assembly infrastructure.
 
 - **The tracker only reflects activity in Scotec.Revit-based add-ins.** `RevitContextTracker`
   is maintained by Scotec.Revit entry points. If the triggering add-in does not use Scotec.Revit,
   its entry points are invisible to the tracker — `IsActive` and `IsCommandActive` will both be
-  `false` even while that add-in is inside `IExternalCommand.Execute`. Branch 4b will apply and
+  `false` even while that add-in is inside `IExternalCommand.Execute`. Branch 1 will apply and
   no context will be auto-created. In that case, passing document identity through the signal
   payload (see above) is the only option.
 
