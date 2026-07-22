@@ -11,6 +11,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Scotec.Revit;
 
@@ -309,36 +310,55 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             serviceProvider = autofacRoot.Resolve<IServiceProvider>();
         }
 
+        var logger = serviceProvider.GetService<ILogger<RevitCommand>>();
+        var commandType = GetType().FullName;
+        var documentPath = context.Document?.PathName;
+
+        logger?.LogDebug(
+            "Command {CommandType}: starting execution. Document: '{DocumentPath}'. Transaction mode: {TransactionMode}.",
+            commandType, documentPath ?? "<none>", GetTransactionMode());
+
         try
         {
             var transactionMode = GetTransactionMode();
 
             // Call BeforeExecute before any transaction is opened.
-            InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider);
+            InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider, logger, commandType);
 
             Result result;
 
             // Skip transaction management if no document is open or transaction is not required.
             if (transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
             {
-                result = InvokeOnExecute(commandData, elements, serviceProvider);
+                result = InvokeOnExecute(commandData, elements, serviceProvider, logger, commandType);
             }
             else
             {
                 result = transactionMode switch
                 {
                     RevitTransactionMode.Transaction or RevitTransactionMode.TransactionWithRollback
-                        => ExecuteTransaction(commandData, elements, context.Document, serviceProvider, transactionMode),
+                        => ExecuteTransaction(commandData, elements, context.Document, serviceProvider, transactionMode, logger, commandType),
                     RevitTransactionMode.TransactionGroup or RevitTransactionMode.TransactionGroupWithRollback
-                        => ExecuteTransactionGroup(commandData, elements, context.Document, serviceProvider, transactionMode),
+                        => ExecuteTransactionGroup(commandData, elements, context.Document, serviceProvider, transactionMode, logger, commandType),
                     _ => Result.Failed
                 };
             }
 
             // Call AfterExecute after the transaction has been closed.
-            InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider);
+            InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider, logger, commandType);
+
+            logger?.LogInformation(
+                "Command {CommandType}: execution completed with result {Result}. Document: '{DocumentPath}'.",
+                commandType, result, documentPath ?? "<none>");
 
             return result;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex,
+                "Command {CommandType}: unhandled exception during execution. Document: '{DocumentPath}'.",
+                commandType, documentPath ?? "<none>");
+            throw;
         }
         finally
         {
@@ -536,14 +556,15 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     private Result ExecuteTransactionGroup(ExternalCommandData commandData, ElementSet elements, Document document, IServiceProvider serviceProvider,
-                                           RevitTransactionMode transactionMode)
+                                           RevitTransactionMode transactionMode,
+                                           ILogger? logger = null, string? commandType = null)
     {
         using var transactionGroup = new TransactionGroup(document);
 
         try
         {
             transactionGroup.Start(TransactionName);
-            var result = InvokeOnExecute(commandData, elements, serviceProvider);
+            var result = InvokeOnExecute(commandData, elements, serviceProvider, logger, commandType);
 
             // Do not commit on error or in rollback mode.
             if (result == Result.Succeeded && transactionMode == RevitTransactionMode.TransactionGroup)
@@ -563,7 +584,8 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     }
 
     private Result ExecuteTransaction(ExternalCommandData commandData, ElementSet elements, Document document, IServiceProvider serviceProvider,
-                                      RevitTransactionMode transactionMode)
+                                      RevitTransactionMode transactionMode,
+                                      ILogger? logger = null, string? commandType = null)
     {
         using var transaction = new Transaction(document);
         try
@@ -574,7 +596,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             failureHandlingOptions.SetFailuresPreprocessor(this);
             transaction.SetFailureHandlingOptions(failureHandlingOptions);
 
-            var result = InvokeOnExecute(commandData, elements, serviceProvider);
+            var result = InvokeOnExecute(commandData, elements, serviceProvider, logger, commandType);
 
             // Do not commit on error or in rollback mode.
             if (result == Result.Succeeded && transactionMode == RevitTransactionMode.Transaction)
@@ -627,7 +649,9 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
-    private void InvokeOptionalMethod<TAttribute>(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
+    private void InvokeOptionalMethod<TAttribute>(ExternalCommandData commandData, ElementSet elements,
+                                                   IServiceProvider serviceProvider,
+                                                   ILogger? logger, string? commandType)
         where TAttribute : Attribute
     {
         var method = RevitReflectionHelper.FindSingleAttributedMethod<TAttribute>(GetType(), typeof(RevitCommand), typeof(void));
@@ -635,6 +659,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
         {
             return;
         }
+
+        logger?.LogDebug(
+            "Command {CommandType}: invoking [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
+            commandType, typeof(TAttribute).Name, method.DeclaringType?.Name, method.Name);
 
         RevitReflectionHelper.Invoke(this, method, serviceProvider,
             new Dictionary<Type, object>
@@ -656,13 +684,18 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
-    private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements, IServiceProvider serviceProvider)
+    private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements,
+                                    IServiceProvider serviceProvider,
+                                    ILogger? logger, string? commandType)
     {
-
         // Prefer a method explicitly marked with [RevitCommandExecute].
         var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitCommandExecuteAttribute>(GetType(), typeof(RevitCommand), typeof(Result));
         if (attributedExecute is not null)
         {
+            logger?.LogDebug(
+                "Command {CommandType}: dispatching via [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
+                commandType, nameof(RevitCommandExecuteAttribute), attributedExecute.DeclaringType?.Name, attributedExecute.Name);
+
             return (Result)RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
                 new Dictionary<Type, object>
                 {
@@ -681,10 +714,20 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
         if (elementSetOverride is not null)
         {
+            logger?.LogDebug(
+                "Command {CommandType}: dispatching via standard override '{DeclaringType}.{Method}'.",
+                commandType, elementSetOverride.DeclaringType?.Name, elementSetOverride.Name);
+
             return OnExecute(commandData, elements);
         }
 
         // Fall back to the obsolete overload for backward compatibility.
+        logger?.LogWarning(
+            "Command {CommandType}: no [{AttributeName}]-attributed method or standard OnExecute override found. "
+            + "Falling back to the obsolete OnExecute(ExternalCommandData, IServiceProvider) overload. "
+            + "Migrate to a [{AttributeName}]-attributed method or override OnExecute(ExternalCommandData, ElementSet) instead.",
+            commandType, nameof(RevitCommandExecuteAttribute));
+
 #pragma warning disable CS0618
         return OnExecute(commandData, serviceProvider);
 #pragma warning restore CS0618

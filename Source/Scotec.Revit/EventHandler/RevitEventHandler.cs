@@ -7,6 +7,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -308,36 +309,65 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         IServiceProvider serviceProvider;
 
         var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+        var rootLogger = RevitAppBase.GetServiceProvider().GetService<ILogger<RevitEventHandler<TSender, TEventArgs, TContext>>>();
+        var handlerType = GetType().FullName;
 
         if (UseNewScope)
         {
-            var context = CreateContext(typedSender, args);
-            scope = autofacRoot.BeginLifetimeScope(builder =>
+            try
             {
-                IServiceCollection services = new ServiceCollection();
-                services.AddScoped<TEventArgs>(_ => args);
-                RegisterEventContext(services, typedSender, args);
-                ConfigureServices(services);
-                // IRevitContext is always registered.
-                // IRevitUiContext is additionally registered when the context is a UI context.
-                builder.RegisterInstance(context!).As<IRevitContext>().OwnedByLifetimeScope();
-                if (context is IRevitUiContext uiContext)
+                var context = CreateContext(typedSender, args);
+                scope = autofacRoot.BeginLifetimeScope(builder =>
                 {
-                    // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
-                    builder.RegisterInstance(uiContext).As<IRevitUiContext>().ExternallyOwned();
-                }
-                builder.PopulateRevit(services);
-            });
-            serviceProvider = scope.Resolve<IServiceProvider>();
+                    IServiceCollection services = new ServiceCollection();
+                    services.AddScoped<TEventArgs>(_ => args);
+                    RegisterEventContext(services, typedSender, args);
+                    ConfigureServices(services);
+                    // IRevitContext is always registered.
+                    // IRevitUiContext is additionally registered when the context is a UI context.
+                    builder.RegisterInstance(context!).As<IRevitContext>().OwnedByLifetimeScope();
+                    if (context is IRevitUiContext uiContext)
+                    {
+                        // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                        builder.RegisterInstance(uiContext).As<IRevitUiContext>().ExternallyOwned();
+                    }
+                    builder.PopulateRevit(services);
+                });
+                serviceProvider = scope.Resolve<IServiceProvider>();
+            }
+            catch (Exception ex)
+            {
+                rootLogger?.LogError(ex,
+                    "EventHandler {HandlerType}: failed to create lifetime scope for {EventArgsType}.",
+                    handlerType, typeof(TEventArgs).Name);
+                throw;
+            }
         }
         else
         {
             serviceProvider = autofacRoot.Resolve<IServiceProvider>();
         }
 
+        var logger = serviceProvider.GetService<ILogger<RevitEventHandler<TSender, TEventArgs, TContext>>>();
+
+        logger?.LogDebug(
+            "EventHandler {HandlerType}: handling {EventArgsType}.",
+            handlerType, typeof(TEventArgs).Name);
+
         try
         {
-            InvokeOnExecute(typedSender, args, serviceProvider);
+            InvokeOnExecute(typedSender, args, serviceProvider, logger, handlerType);
+
+            logger?.LogInformation(
+                "EventHandler {HandlerType}: {EventArgsType} handled successfully.",
+                handlerType, typeof(TEventArgs).Name);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex,
+                "EventHandler {HandlerType}: unhandled exception while handling {EventArgsType}.",
+                handlerType, typeof(TEventArgs).Name);
+            throw;
         }
         finally
         {
@@ -359,7 +389,8 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         }
     }
 
-    private void InvokeOnExecute(TSender? sender, TEventArgs args, IServiceProvider serviceProvider)
+    private void InvokeOnExecute(TSender? sender, TEventArgs args, IServiceProvider serviceProvider,
+                                  ILogger? logger, string? handlerType)
     {
         // Delegate-subscription path: runs instead of the attribute/OnExecute path when registrations exist.
         if (_delegateRegistrations.Count > 0)
@@ -389,6 +420,10 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
                 try
                 {
+                    logger?.LogDebug(
+                        "EventHandler {HandlerType}: dispatching {EventArgsType} to registered delegate '{DelegateName}'.",
+                        handlerType, typeof(TEventArgs).Name, registration.Action.Method.Name);
+
                     var delegateArgs = RevitReflectionHelper.ResolveParameters(
                         registration.Action.Method, resolvedProvider);
                     registration.Action.DynamicInvoke(delegateArgs);
@@ -402,12 +437,17 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
             return;
         }
 
-        // Legacy attribute/OnExecute path.
+        // Attribute/OnExecute path.
         var method = RevitReflectionHelper.FindSingleAttributedMethod<RevitEventHandlerExecuteAttribute>(
             GetType(), typeof(RevitEventHandler<TSender, TEventArgs, TContext>), typeof(void));
 
         if (method is not null)
         {
+            logger?.LogDebug(
+                "EventHandler {HandlerType}: dispatching {EventArgsType} via [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
+                handlerType, typeof(TEventArgs).Name, nameof(RevitEventHandlerExecuteAttribute),
+                method.DeclaringType?.Name, method.Name);
+
             RevitReflectionHelper.Invoke(this, method, serviceProvider,
                 new Dictionary<Type, object>
                 {
@@ -417,6 +457,11 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
             return;
         }
+
+        // Virtual OnExecute fallback.
+        logger?.LogDebug(
+            "EventHandler {HandlerType}: no delegates or [{AttributeName}]-attributed method found for {EventArgsType}. Dispatching via virtual OnExecute.",
+            handlerType, nameof(RevitEventHandlerExecuteAttribute), typeof(TEventArgs).Name);
 
         OnExecute(sender, args);
     }
