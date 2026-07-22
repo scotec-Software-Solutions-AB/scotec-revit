@@ -12,6 +12,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
 
@@ -224,21 +226,15 @@ public abstract class RevitAppBase
     {
         AddInId = addInId.GetGUID();
 
-        try
-        {
-            var builder = CreateRevitHostBuilder();
-            OnConfigure(builder);
+        var builder = CreateRevitHostBuilder();
+        OnConfigure(builder);
 
-            Host = builder.Build();
-            Host.Start();
+        Host = builder.Build();
 
-            ServiceProvider = Host.Services;
-            return InvokeOnStartup(Host.Services);
-        }
-        catch (Exception)
-        {
-            return false;
-        }
+        Host.Start();
+
+        ServiceProvider = Host.Services;
+        return InvokeOnStartup(Host.Services);
     }
 
     /// <summary>
@@ -338,39 +334,90 @@ public abstract class RevitAppBase
     /// </summary>
     private bool InvokeLifecycleMethod(string methodName, IServiceProvider services)
     {
-        var entryPointAttribute = methodName == "OnStartup"
-            ? typeof(RevitApplicationStartupAttribute)
-            : typeof(RevitApplicationShutdownAttribute);
+        var logger = services.GetService<ILogger<RevitAppBase>>();
+        var addInType = GetType().FullName;
 
-        // Priority 1: method explicitly marked with [RevitStartup] / [RevitShutdown].
-        var attributedMethod = RevitReflectionHelper.FindMethod(
-            GetType(), typeof(RevitAppBase), methodName, typeof(bool),
-            m => m.IsDefined(entryPointAttribute, false));
+        logger?.LogDebug("Add-in {AddInType}: invoking lifecycle method '{MethodName}'.", addInType, methodName);
 
-        if (attributedMethod is not null)
+        try
         {
-            return (bool)RevitReflectionHelper.Invoke(this, attributedMethod, services)!;
-        }
+            var entryPointAttribute = methodName == "OnStartup"
+                ? typeof(RevitApplicationStartupAttribute)
+                : typeof(RevitApplicationShutdownAttribute);
 
-        // Priority 2a: class-specific standard overload (e.g. OnStartup(UIControlledApplication in RevitApp or
-        // OnStartup(ControlledApplication) in RevitDbApp).
-        // Only invoked when the method is overridden below RevitApp / RevitDbApp, not when it is still
-        // the default implementation provided by those framework base classes.
-        var appSpecificMethod = RevitReflectionHelper.FindMethod(
-            GetType(), LifecycleStopType, methodName, typeof(bool),
-            m => m.GetParameters()
-                  .Select(p => p.ParameterType)
-                  .SequenceEqual(StandardLifecycleApplicationSignature));
+            // Priority 1: method explicitly marked with [RevitStartup] / [RevitShutdown].
+            var attributedMethod = RevitReflectionHelper.FindMethod(
+                GetType(), typeof(RevitAppBase), methodName, typeof(bool),
+                m => m.IsDefined(entryPointAttribute, false));
 
-        if (appSpecificMethod is not null)
-        {
-            return (bool)RevitReflectionHelper.Invoke(this, appSpecificMethod, services)!;
-        }
+            if (attributedMethod is not null)
+            {
+                logger?.LogDebug(
+                    "Add-in {AddInType}: dispatching '{MethodName}' via [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
+                    addInType, methodName, entryPointAttribute.Name,
+                    attributedMethod.DeclaringType?.Name, attributedMethod.Name);
 
-        // Priority 3: obsolete parameter-less fallback.
+                var result = (bool)RevitReflectionHelper.Invoke(this, attributedMethod, services)!;
+
+                logger?.LogInformation(
+                    "Add-in {AddInType}: lifecycle method '{MethodName}' completed via [{AttributeName}]-attributed method '{DeclaringType}.{Method}' with result {Result}.",
+                    addInType, methodName, entryPointAttribute.Name,
+                    attributedMethod.DeclaringType?.Name, attributedMethod.Name, result);
+
+                return result;
+            }
+
+            // Priority 2: class-specific standard overload (e.g. OnStartup(UIControlledApplication) in RevitApp or
+            // OnStartup(ControlledApplication) in RevitDbApp).
+            // Only invoked when the method is overridden below RevitApp / RevitDbApp, not when it is still
+            // the default implementation provided by those framework base classes.
+            var appSpecificMethod = RevitReflectionHelper.FindMethod(
+                GetType(), LifecycleStopType, methodName, typeof(bool),
+                m => m.GetParameters()
+                      .Select(p => p.ParameterType)
+                      .SequenceEqual(StandardLifecycleApplicationSignature));
+
+            if (appSpecificMethod is not null)
+            {
+                logger?.LogDebug(
+                    "Add-in {AddInType}: dispatching '{MethodName}' via standard override '{DeclaringType}.{Method}'.",
+                    addInType, methodName,
+                    appSpecificMethod.DeclaringType?.Name, appSpecificMethod.Name);
+
+                var result = (bool)RevitReflectionHelper.Invoke(this, appSpecificMethod, services)!;
+
+                logger?.LogInformation(
+                    "Add-in {AddInType}: lifecycle method '{MethodName}' completed via standard override '{DeclaringType}.{Method}' with result {Result}.",
+                    addInType, methodName,
+                    appSpecificMethod.DeclaringType?.Name, appSpecificMethod.Name, result);
+
+                return result;
+            }
+
+            // Priority 3: obsolete parameter-less fallback.
+            logger?.LogWarning(
+                "Add-in {AddInType}: no attributed or standard override found for '{MethodName}'. " +
+                "Falling back to the obsolete parameter-less {MethodName}() overload. " +
+                "Override {MethodName}(ControlledApplication) or declare a method with [Revit{Operation}] instead.",
+                addInType, methodName, methodName, methodName == "OnStartup" ? "Startup" : "Shutdown");
+
 #pragma warning disable CS0618
-        return methodName == "OnStartup" ? OnStartup() : OnShutdown();
+            var fallbackResult = methodName == "OnStartup" ? OnStartup() : OnShutdown();
 #pragma warning restore CS0618
+
+            logger?.LogInformation(
+                "Add-in {AddInType}: lifecycle method '{MethodName}' completed via obsolete fallback with result {Result}.",
+                addInType, methodName, fallbackResult);
+
+            return fallbackResult;
+        }
+        catch (Exception e)
+        {
+            logger?.LogError(e,
+                "Add-in {AddInType}: lifecycle method '{MethodName}' failed with an unhandled exception.",
+                addInType, methodName);
+            throw;
+        }
     }
 
     /// <summary>
