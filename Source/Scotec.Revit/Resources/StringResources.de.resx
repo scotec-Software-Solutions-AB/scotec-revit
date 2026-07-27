@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+	<xsd:element name="root" msdata:IsDataSet="true">
+	  <xsd:complexType>
+		<xsd:choice maxOccurs="unbounded">
+		  <xsd:element name="metadata">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" use="required" type="xsd:string" />
+			  <xsd:attribute name="type" type="xsd:string" />
+			  <xsd:attribute name="mimetype" type="xsd:string" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="assembly">
+			<xsd:complexType>
+			  <xsd:attribute name="alias" type="xsd:string" />
+			  <xsd:attribute name="name" type="xsd:string" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="data">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="resheader">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" />
+			</xsd:complexType>
+		  </xsd:element>
+		</xsd:choice>
+	  </xsd:complexType>
+	</xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+	<value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+	<value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- OnFamilyFound-Dialog -->
+  <data name="FamilyFound_Title" xml:space="preserve">
+	<value>Familie existiert bereits</value>
+  </data>
+  <data name="FamilyFound_MainInstruction" xml:space="preserve">
+	<value>Die Familie ist bereits im Projekt vorhanden.</value>
+  </data>
+  <data name="FamilyFound_MainContent_InUse" xml:space="preserve">
+	<value>Diese Familie wird aktuell verwendet. Wählen Sie, wie Sie fortfahren möchten.</value>
+  </data>
+  <data name="FamilyFound_MainContent" xml:space="preserve">
+	<value>Wählen Sie, wie Sie fortfahren möchten.</value>
+  </data>
+  <data name="FamilyFound_Overwrite_Header" xml:space="preserve">
+	<value>Vorhandene Version überschreiben</value>
+  </data>
+  <data name="FamilyFound_Overwrite_Description" xml:space="preserve">
+	<value>Lädt die Familiendefinition (Geometrie) neu, behält aber die bereits im Projekt festgelegten Typparameterwerte bei.</value>
+  </data>
+  <data name="FamilyFound_OverwriteWithParams_Header" xml:space="preserve">
+	<value>Vorhandene Version und ihre Parameterwerte überschreiben</value>
+  </data>
+  <data name="FamilyFound_OverwriteWithParams_Description" xml:space="preserve">
+	<value>Lädt die Familiendefinition neu und überschreibt die Typparameterwerte im Projekt mit den Werten der geladenen Familie.</value>
+  </data>
+
+  <!-- OnSharedFamilyFound-Dialog -->
+  <data name="SharedFamilyFound_Title" xml:space="preserve">
+	<value>Geteilte Familie existiert bereits</value>
+  </data>
+  <!-- {0} wird zur Laufzeit durch den Familiennamen ersetzt -->
+  <data name="SharedFamilyFound_MainInstruction" xml:space="preserve">
+	<value>Eine geteilte Familie ist bereits im Projekt vorhanden: {0}</value>
+  </data>
+  <data name="SharedFamilyFound_MainContent_InUse" xml:space="preserve">
+	<value>Diese geteilte Familie wird aktuell verwendet. Wählen Sie, welche Version beibehalten werden soll.</value>
+  </data>
+  <data name="SharedFamilyFound_MainContent" xml:space="preserve">
+	<value>Wählen Sie, welche Version beibehalten werden soll.</value>
+  </data>
+  <data name="SharedFamilyFound_FromManager_Header" xml:space="preserve">
+	<value>Familie aus dem Familien-Manager verwenden</value>
+  </data>
+  <data name="SharedFamilyFound_FromManager_Description" xml:space="preserve">
+	<value>Lädt die geteilte Familie aus der Quelle des Familien-Managers neu, behält aber die aktuellen Typparameterwerte im Projekt bei.</value>
+  </data>
+  <data name="SharedFamilyFound_FromManagerWithParams_Header" xml:space="preserve">
+	<value>Familie aus dem Familien-Manager verwenden und Parameterwerte überschreiben</value>
+  </data>
+  <data name="SharedFamilyFound_FromManagerWithParams_Description" xml:space="preserve">
+	<value>Lädt die geteilte Familie aus der Quelle des Familien-Managers neu und überschreibt die Typparameterwerte im Projekt mit den Werten der neu geladenen Familie.</value>
+  </data>
+  <data name="SharedFamilyFound_FromProject_Header" xml:space="preserve">
+	<value>Familie aus dem Projekt verwenden</value>
+  </data>
+  <data name="SharedFamilyFound_FromProject_Description" xml:space="preserve">
+	<value>Behält die bereits im Projekt geladene geteilte Familie bei.</value>
+  </data>
+</root>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
@@ -54,8 +54,15 @@
 
 	<ItemGroup>
 		<None Include="RevitFamily\RevitBasicFileInfo.md" />
-
-
 	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resources\StringResources.resx" />
+		<EmbeddedResource Update="Resources\StringResources.de.resx">
+			<DependentUpon>StringResources.resx</DependentUpon>
+		</EmbeddedResource>
+	</ItemGroup>
+
+
 
 </Project>
