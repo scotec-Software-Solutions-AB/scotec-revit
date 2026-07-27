@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+	<xsd:element name="root" msdata:IsDataSet="true">
+	  <xsd:complexType>
+		<xsd:choice maxOccurs="unbounded">
+		  <xsd:element name="metadata">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" use="required" type="xsd:string" />
+			  <xsd:attribute name="type" type="xsd:string" />
+			  <xsd:attribute name="mimetype" type="xsd:string" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="assembly">
+			<xsd:complexType>
+			  <xsd:attribute name="alias" type="xsd:string" />
+			  <xsd:attribute name="name" type="xsd:string" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="data">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="resheader">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" />
+			</xsd:complexType>
+		  </xsd:element>
+		</xsd:choice>
+	  </xsd:complexType>
+	</xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+	<value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+	<value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- OnFamilyFound dialog -->
+  <data name="FamilyFound_Title" xml:space="preserve">
+	<value>Family Already Exists</value>
+  </data>
+  <data name="FamilyFound_MainInstruction" xml:space="preserve">
+	<value>The family already exists in the project.</value>
+  </data>
+  <data name="FamilyFound_MainContent_InUse" xml:space="preserve">
+	<value>This family is currently in use. Choose how you want to proceed.</value>
+  </data>
+  <data name="FamilyFound_MainContent" xml:space="preserve">
+	<value>Choose how you want to proceed.</value>
+  </data>
+  <data name="FamilyFound_Overwrite_Header" xml:space="preserve">
+	<value>Overwrite the existing version</value>
+  </data>
+  <data name="FamilyFound_Overwrite_Description" xml:space="preserve">
+	<value>Reloads the family definition (geometry), but keeps type parameter values already set in the project.</value>
+  </data>
+  <data name="FamilyFound_OverwriteWithParams_Header" xml:space="preserve">
+	<value>Overwrite the existing version and its parameter values</value>
+  </data>
+  <data name="FamilyFound_OverwriteWithParams_Description" xml:space="preserve">
+	<value>Reloads the family definition and overwrites the type parameter values in the project with values from the loaded family.</value>
+  </data>
+
+  <!-- OnSharedFamilyFound dialog -->
+  <data name="SharedFamilyFound_Title" xml:space="preserve">
+	<value>Shared Family Already Exists</value>
+  </data>
+  <!-- {0} is replaced with the family name at runtime -->
+  <data name="SharedFamilyFound_MainInstruction" xml:space="preserve">
+	<value>A shared family already exists in the project: {0}</value>
+  </data>
+  <data name="SharedFamilyFound_MainContent_InUse" xml:space="preserve">
+	<value>This shared family is currently in use. Choose which version to keep.</value>
+  </data>
+  <data name="SharedFamilyFound_MainContent" xml:space="preserve">
+	<value>Choose which version to keep.</value>
+  </data>
+  <data name="SharedFamilyFound_FromManager_Header" xml:space="preserve">
+	<value>Use the family from the family manager</value>
+  </data>
+  <data name="SharedFamilyFound_FromManager_Description" xml:space="preserve">
+	<value>Reloads the shared family from the family manager source, but keeps the current type parameter values in the project.</value>
+  </data>
+  <data name="SharedFamilyFound_FromManagerWithParams_Header" xml:space="preserve">
+	<value>Use the family from the family manager and overwrite parameter values</value>
+  </data>
+  <data name="SharedFamilyFound_FromManagerWithParams_Description" xml:space="preserve">
+	<value>Reloads the shared family from the family manager source and overwrites the type parameter values in the project with values from the reloaded family.</value>
+  </data>
+  <data name="SharedFamilyFound_FromProject_Header" xml:space="preserve">
+	<value>Use the family from the project</value>
+  </data>
+  <data name="SharedFamilyFound_FromProject_Description" xml:space="preserve">
+	<value>Keeps the existing shared family already loaded in the project.</value>
+  </data>
+</root>
