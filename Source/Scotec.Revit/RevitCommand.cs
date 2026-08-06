@@ -723,10 +723,10 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
 
         // Fall back to the obsolete overload for backward compatibility.
         logger?.LogWarning(
-            "Command {CommandType}: no [{AttributeName}]-attributed method or standard OnExecute override found. "
+            "Command {CommandType}: no [RevitCommandExecute]-attributed method or standard OnExecute override found. "
             + "Falling back to the obsolete OnExecute(ExternalCommandData, IServiceProvider) overload. "
-            + "Migrate to a [{AttributeName}]-attributed method or override OnExecute(ExternalCommandData, ElementSet) instead.",
-            commandType, nameof(RevitCommandExecuteAttribute));
+            + "Migrate to a [RevitCommandExecute]-attributed method or override OnExecute(ExternalCommandData, ElementSet) instead.",
+            commandType);
 
 #pragma warning disable CS0618
         return OnExecute(commandData, serviceProvider);
