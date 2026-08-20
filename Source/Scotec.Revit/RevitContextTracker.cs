@@ -100,7 +100,7 @@ public static class RevitContextTracker
     ///     The variable is process-wide and is shared by all Scotec.Revit add-ins loaded
     ///     in the same Revit process.
     /// </remarks>
-    public const string VariableName = "Scotec.Revit.Context.Active";
+    private const string VariableName = "Scotec.Revit.Context.Active";
 
     /// <summary>
     ///     The name of the environment variable that indicates whether the currently
@@ -117,7 +117,7 @@ public static class RevitContextTracker
     ///     The variable is process-wide and shared by all Scotec.Revit add-ins in the
     ///     same Revit process.
     /// </remarks>
-    public const string CommandVariableName = "Scotec.Revit.Context.Command";
+    private const string CommandVariableName = "Scotec.Revit.Context.Command";
 
     /// <summary>
     ///     Gets a value indicating whether execution is currently inside at least one
