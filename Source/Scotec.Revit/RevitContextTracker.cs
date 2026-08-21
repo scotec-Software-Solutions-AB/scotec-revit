@@ -43,7 +43,7 @@ namespace Scotec.Revit;
 ///             </item>
 ///             <item>
 ///                 <c>Application.DocumentChanged</c> fires synchronously after every successful
-///                 <c>transaction.Commit()</c>, so a <see cref="RevitEventHandler{TSender,TEventArgs,TContext}" />
+///                 <c>transaction.Commit()</c>, so a <see cref="Scotec.Revit.EventHandler.RevitEventHandler{TSender,TEventArgs,TContext}" />
 ///                 subscribed to that event executes while the enclosing command is still active.
 ///             </item>
 ///             <item>
@@ -157,7 +157,7 @@ public static class RevitContextTracker
     ///     distinguish "this add-in has an active entry point" from "a different add-in has
     ///     an active entry point".
     /// </remarks>
-    internal static bool ThisAddInIsActive => _ownDepth > 0;
+    internal static bool ThisAddInIsActive => s_ownDepth > 0;
 
     /// <summary>
     ///     Gets a value indicating whether <em>this</em> add-in's own entry-point
@@ -171,18 +171,18 @@ public static class RevitContextTracker
     ///     <see cref="ThisAddInIsActive" /> to narrow the pre-scope window guard to
     ///     command-kind entry points only.
     /// </remarks>
-    internal static bool ThisAddInCommandIsActive => _ownCommandIsActive;
+    internal static bool ThisAddInCommandIsActive => s_ownCommandIsActive;
 
     // Per-add-in in-process counter. Each assembly has its own static copy.
     // The depth is unbounded: a DocumentChanged handler may commit a new transaction,
     // which fires DocumentChanged again, incrementing the counter further. Updaters
     // registered by this same add-in contribute in the same way.
-    private static int _ownDepth;
+    private static int s_ownDepth;
 
     // Per-add-in in-process flag, set when at least one Command-kind entry point from
     // this assembly is active. Volatile ensures visibility without a lock; only one
     // thread can be executing a Revit entry point at a time.
-    private static volatile bool _ownCommandIsActive;
+    private static volatile bool s_ownCommandIsActive;
 
     /// <summary>
     ///     Increments the active-context depth counter and returns a handle that
@@ -208,12 +208,12 @@ public static class RevitContextTracker
     /// </remarks>
     internal static IDisposable Activate(RevitEntryPointKind kind)
     {
-        Interlocked.Increment(ref _ownDepth);
+        Interlocked.Increment(ref s_ownDepth);
         WriteDepth(ReadDepth() + 1);
 
         if (kind == RevitEntryPointKind.Command)
         {
-            _ownCommandIsActive = true;
+            s_ownCommandIsActive = true;
             WriteCommandActive(true);
         }
 
@@ -291,12 +291,12 @@ public static class RevitContextTracker
             }
 
             // Decrement the per-add-in counter unconditionally — this cannot throw.
-            Interlocked.Decrement(ref _ownDepth);
+            Interlocked.Decrement(ref s_ownDepth);
 
             // Clear the per-add-in command flag when this was a Command-kind entry point.
             if (_kind == RevitEntryPointKind.Command)
             {
-                _ownCommandIsActive = false;
+                s_ownCommandIsActive = false;
             }
 
             try
