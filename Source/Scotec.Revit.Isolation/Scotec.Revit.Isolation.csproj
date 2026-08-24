@@ -36,6 +36,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Remove="BuildTransitive\Scotec.Revit.Isolation.props" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="BuildTransitive\Scotec.Revit.Isolation.props" Pack="true" PackagePath="buildTransitive\Scotec.Revit.Isolation.props" />
 	</ItemGroup>
 
