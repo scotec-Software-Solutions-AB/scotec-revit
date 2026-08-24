@@ -72,7 +72,7 @@ public class RevitTestApp : RevitApp
         builder.ConfigureServices((context, services) =>
         {
             services.AddScoped<TestRevitDialog>();
-            services.AddRevitTask();
+            services.AddRevitTaskDispatcher();
         });
     }
 

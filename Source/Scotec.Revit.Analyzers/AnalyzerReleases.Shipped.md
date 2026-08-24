@@ -7,6 +7,6 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-SCOTEC001 | Usage | Error | RevitTaskRunAnalyzer
-SCOTEC002 | Usage | Warning | RevitTaskRunAnalyzer
+SCOTEC001 | Usage | Error | RevitTaskDispatcherRunAnalyzer
+SCOTEC002 | Usage | Warning | RevitTaskDispatcherRunAnalyzer
 

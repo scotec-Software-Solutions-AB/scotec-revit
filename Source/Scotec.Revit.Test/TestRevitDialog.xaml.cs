@@ -16,12 +16,12 @@ namespace Scotec.Revit.Test;
 public partial class TestRevitDialog
 {
     private readonly IGlobalRevitUiContext _globalContext;
-    private readonly RevitTask _revitTask;
+    private readonly RevitTaskDispatcher _revitTask;
     private readonly RevitSelectionChangedHandler _selectionChangedHandler;
 
     public TestRevitDialog(
         IGlobalRevitUiContext globalContext,
-        RevitTask revitTask,
+        RevitTaskDispatcher revitTask,
         UIControlledApplication application) : base(globalContext.UiApplication)
     {
         _globalContext = globalContext;

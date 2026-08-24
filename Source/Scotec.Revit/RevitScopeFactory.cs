@@ -36,7 +36,7 @@ namespace Scotec.Revit;
 ///             entry point has activated the context tracker but has not yet registered
 ///             <see cref="IRevitContext" /> in a DI scope (the brief window between
 ///             <c>RevitContextTracker.Activate(Command)</c> and scope construction in
-///             <see cref="RevitCommand" />, <see cref="RevitTask" />, or
+///             <see cref="RevitCommand" />, <see cref="RevitTaskDispatcher" />, or
 ///             <see cref="RevitCommandAvailability" />). A plain child scope is created; the
 ///             entry point will register the context in its own scope immediately after.
 ///             Handler-kind entry points (RevitEventHandler, RevitUpdater) do not set

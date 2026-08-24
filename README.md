@@ -8,7 +8,7 @@ A modern .NET library for building robust, testable, and maintainable Autodesk®
   Provides patterns and guidance for isolating Revit add-ins, improving reliability and testability.
 - **Revit Command Framework:**  
   Simplifies the implementation of Revit external commands with built-in transaction management, dependency injection, and failure handling.
-- **RevitTask (External Event Integration):**  
+- **RevitTaskDispatcher (External Event Integration):**  
   Enables safe, asynchronous, and context-correct execution of Revit API operations from any thread or UI, using the `IExternalEventHandler` mechanism. This allows you to bridge between external UI frameworks (like WPF/WinForms) and the Revit API, ensuring all database operations are performed in the correct Revit context.
 - **RevitApp / RevitDbApp (Application Lifecycle):**  
   Base classes for `IExternalApplication` and `IExternalDBApplication` with full DI container setup via `Microsoft.Extensions.Hosting`, and `[RevitStartup]` / `[RevitShutdown]` attributes for lifecycle methods with automatic parameter injection.
@@ -49,16 +49,16 @@ A detailed guide to the `RevitCommand` base class, including:
 
 ---
 
-### 3. RevitTask
+### 3. RevitTaskDispatcher
 
-A comprehensive guide to the `RevitTask` class, including:
+A comprehensive guide to the `RevitTaskDispatcher` class, including:
 
 - How to safely execute operations in the Revit API context using `IExternalEventHandler`
 - Usage patterns for both result-returning and void tasks
 - Threading, context, and error handling
 - Example integration with WPF and async/await
 
-**See:** [RevitTask.md](Documentation/RevitTask.md)
+**See:** [RevitTaskDispatcher.md](Documentation/RevitTaskDispatcher.md)
 
 ---
 
@@ -91,9 +91,9 @@ A guide to the `RevitCommandAvailability` base class for controlling ribbon comm
 
 A reference guide to all context interfaces provided by the framework, including:
 
-- Scoped interfaces: `IRevitContext` and `IRevitUiContext` — per command execution, event invocation, or `RevitTask.Run` call
+- Scoped interfaces: `IRevitContext` and `IRevitUiContext` — per command execution, event invocation, or `RevitTaskDispatcher.Run` call
 - Singleton interfaces: `IGlobalRevitContext` and `IGlobalRevitUiContext` — available for the entire add-in lifetime
-- When and how each interface is registered across `RevitCommand`, `RevitEventHandler<>`, and `RevitTask`
+- When and how each interface is registered across `RevitCommand`, `RevitEventHandler<>`, and `RevitTaskDispatcher`
 - Common mistakes to avoid
 
 **See:** [RevitContext.md](Documentation/RevitContext.md)
@@ -158,7 +158,7 @@ A guide to the `RevitUpdater` base class for implementing Revit DMU (Dynamic Mod
    - [RevitContext.md](Documentation/RevitContext.md): Use scoped and singleton context interfaces to access Revit objects.
    - [RevitCrossAddinContext.md](Documentation/RevitCrossAddinContext.md): Handle cross-add-in context with `RevitContextTracker` and `IRevitScopeFactory`.
    - [RevitEventHandler.md](Documentation/RevitEventHandler.md): Handle Revit application events with automatic DI per invocation.
-   - [RevitTask.md](Documentation/RevitTask.md): Safely execute Revit API operations from any thread using `RevitTask`.
+   - [RevitTaskDispatcher.md](Documentation/RevitTaskDispatcher.md): Safely execute Revit API operations from any thread using `RevitTaskDispatcher`.
    - [RevitUpdater.md](Documentation/RevitUpdater.md): Implement DMU add-ins with automatic registration and DI.
 
 4. **Start developing your Revit add-in**

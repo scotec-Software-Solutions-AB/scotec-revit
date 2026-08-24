@@ -48,7 +48,7 @@ Add-in A: IExternalCommand.Execute
 ```
 
 In both cases, add-in B executes on the Revit main thread without an active `RevitCommand`,
-`RevitEventHandler`, or `RevitTask` of its own. The standard per-invocation DI scope created
+`RevitEventHandler`, or `RevitTaskDispatcher` of its own. The standard per-invocation DI scope created
 by those entry points does not exist for add-in B.
 
 ---

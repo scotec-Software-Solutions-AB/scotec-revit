@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace Scotec.Revit.Analyzers;
 
 /// <summary>
-///     Analyzes invocations of <c>RevitTask.Run</c> and <c>RevitTask.Run&lt;TResult&gt;</c> to verify that
+///     Analyzes invocations of <c>RevitTaskDispatcher.Run</c> and <c>RevitTaskDispatcher.Run&lt;TResult&gt;</c> to verify that
 ///     the delegate argument has a return type that matches the chosen overload.
 /// </summary>
 /// <remarks>
@@ -31,7 +31,7 @@ namespace Scotec.Revit.Analyzers;
 ///     </list>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class RevitTaskRunAnalyzer : DiagnosticAnalyzer
+public sealed class RevitTaskDispatcherRunAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>Diagnostic raised when a void delegate is passed to <c>Run&lt;TResult&gt;</c>.</summary>
     public static readonly DiagnosticDescriptor VoidDelegateOnGenericRun = new(
@@ -70,7 +70,7 @@ public sealed class RevitTaskRunAnalyzer : DiagnosticAnalyzer
         var invocation = (IInvocationOperation)context.Operation;
         var method = invocation.TargetMethod;
 
-        if (method.Name != "Run" || method.ContainingType.Name != "RevitTask")
+        if (method.Name != "Run" || method.ContainingType.Name != "RevitTaskDispatcherBase")
             return;
 
         // Only the Delegate overloads have a parameter named 'action' of type System.Delegate.

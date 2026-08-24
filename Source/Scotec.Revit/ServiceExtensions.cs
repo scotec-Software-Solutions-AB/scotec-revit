@@ -73,20 +73,21 @@ public static class RevitGlobalContextServiceExtensions
 }
 
 /// <summary>
-///     Extension methods for registering <see cref="Scotec.Revit.RevitTask" /> into an
+///     Extension methods for registering <see cref="Scotec.Revit.RevitTaskDispatcher" /> and the obsolete
+///     <see cref="Scotec.Revit.RevitTask" /> into an
 ///     <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection" />.
 /// </summary>
 public static class RevitTaskServiceExtensions
 {
     /// <summary>
-    ///     Registers a new <see cref="Scotec.Revit.RevitTask" /> instance as a singleton in the service collection.
+    ///     Registers a new <see cref="Scotec.Revit.RevitTaskDispatcher" /> instance as a singleton in the service collection.
     /// </summary>
     /// <remarks>
-    ///     <see cref="Scotec.Revit.RevitTask" /> wraps a Revit <c>ExternalEvent</c> and marshals work onto the Revit
+    ///     <see cref="Scotec.Revit.RevitTaskDispatcher" /> wraps a Revit <c>ExternalEvent</c> and marshals work onto the Revit
     ///     API thread. Because <c>ExternalEvent</c> must be created while Revit is idle and is tied to
     ///     the add-in lifetime, the instance is constructed eagerly and registered as a singleton.
     ///     <para>
-    ///         Dispose the registered <see cref="Scotec.Revit.RevitTask" /> during add-in shutdown to release the
+    ///         Dispose the registered <see cref="Scotec.Revit.RevitTaskDispatcher" /> during add-in shutdown to release the
     ///         underlying <c>ExternalEvent</c>.
     ///     </para>
     /// </remarks>
@@ -95,6 +96,18 @@ public static class RevitTaskServiceExtensions
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="services" /> is <c>null</c>.
     /// </exception>
+    public static IServiceCollection AddRevitTaskDispatcher(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton(new RevitTaskDispatcher());
+
+        return services;
+    }
+
+    /// <summary>
+    ///     Obsolete. Use <see cref="AddRevitTaskDispatcher" /> instead.
+    /// </summary>
+    [Obsolete("AddRevitTask has been renamed to AddRevitTaskDispatcher. This method will be removed in a future version.")]
     public static IServiceCollection AddRevitTask(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);

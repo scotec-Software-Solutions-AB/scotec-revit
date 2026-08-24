@@ -1,13 +1,13 @@
-ï»¿# RevitTask Usage Guide
+# RevitTaskDispatcher Usage Guide
 
-The `RevitTask` class provides a robust and convenient way to execute
+The `RevitTaskDispatcher` class provides a robust and convenient way to execute
 operations within the Autodesk Revit API context using the
 `IExternalEventHandler` mechanism. It is designed to help you safely
 schedule and run code that interacts with the Revit API, regardless of
 whether your calling code is on the Revit UI thread, a background
 thread, or from an external UI (such as WPF or WinForms).
 
-`RevitTask` supports two usage modes:
+`RevitTaskDispatcher` supports two usage modes:
 
 | Mode | When to use |
 |---|---|
@@ -41,9 +41,9 @@ execution into the correct API context.
 - Building modeless UI tools.
 
 
-## How RevitTask Supports Safe API Access
+## How RevitTaskDispatcher Supports Safe API Access
 
-`RevitTask` encapsulates the `IExternalEventHandler` pattern and provides a simple, awaitable API for running code in
+`RevitTaskDispatcher` encapsulates the `IExternalEventHandler` pattern and provides a simple, awaitable API for running code in
 the Revit context.
 
 ### Key Features
@@ -59,17 +59,17 @@ the Revit context.
 
 Direct mode requires no DI container. The callback receives an `IRevitUiContext` and all Revit API access goes through it.
 
-### Creating a RevitTask
+### Creating a RevitTaskDispatcher
 
 ```csharp
 using Scotec.Revit;
-var revitTask = new RevitTask("MyRevitOperation");
+var RevitTaskDispatcher = new RevitTaskDispatcher("MyRevitOperation");
 ```
 
 ### Running a Task with a Result
 
 ```csharp
-int elementCount = await revitTask.Run(context =>
+int elementCount = await RevitTaskDispatcher.Run(context =>
 {
     return context.Document.GetElementIds().Count;
 });
@@ -78,7 +78,7 @@ int elementCount = await revitTask.Run(context =>
 ### Running a Task without a Result
 
 ```csharp
-await revitTask.Run(context =>
+await RevitTaskDispatcher.Run(context =>
 {
     TaskDialog.Show("Revit", "Operation executed in Revit context!");
 });
@@ -87,13 +87,13 @@ await revitTask.Run(context =>
 ### Disposing
 
 ```csharp
-revitTask.Dispose();
+RevitTaskDispatcher.Dispose();
 ```
 
 
 ## DI-Based Usage
 
-When a `Scotec.Revit` add-in is running, `RevitTask` can create a scoped DI lifetime scope for each execution.
+When a `Scotec.Revit` add-in is running, `RevitTaskDispatcher` can create a scoped DI lifetime scope for each execution.
 Parameters of the delegate are resolved automatically from that scope. This mode requires the add-in to have a
 registered DI container (provided by `RevitApp` or `RevitDbApp`).
 
@@ -103,8 +103,8 @@ The following services are registered in the scope before your delegate is invok
 
 | Type | Notes |
 |------|-------|
-| `IRevitContext` | Always registered â€” provides `Application` and `Document` |
-| `IRevitUiContext` | Always registered â€” extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
+| `IRevitUiContext` | Always registered — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
 
 The `Document` and `UiDocument` properties may be `null` when no document is currently open.
 
@@ -119,7 +119,7 @@ Delegate action = (IRevitUiContext context, IMyService myService) =>
     return context.Document.Title;
 };
 
-string title = await revitTask.Run<string>(action);
+string title = await RevitTaskDispatcher.Run<string>(action);
 ```
 
 ### Running a DI-Based Task without a Result
@@ -130,7 +130,7 @@ Delegate action = (IRevitUiContext context, IMyService myService) =>
     myService.ProcessDocument(context.Document);
 };
 
-await revitTask.Run(action);
+await RevitTaskDispatcher.Run(action);
 ```
 
 ### Registering Additional Services
@@ -143,7 +143,7 @@ Delegate action = (IRevitUiContext context, ITransientHelper helper) =>
     helper.Execute(context.Document);
 };
 
-await revitTask.Run(action, services =>
+await RevitTaskDispatcher.Run(action, services =>
 {
     services.AddTransient<ITransientHelper, TransientHelper>();
 });
@@ -156,9 +156,9 @@ and `RevitApp`:
 
 | Convention | Example | Behaviour |
 |---|---|---|
-| Nullable annotation | `IMyService? service` | Optional â€” receives `null` if not registered |
-| Default value of `null` | `IMyService service = null` | Optional â€” receives `null` if not registered |
-| No annotation, no default | `IMyService service` | Required â€” throws if not registered |
+| Nullable annotation | `IMyService? service` | Optional — receives `null` if not registered |
+| Default value of `null` | `IMyService service = null` | Optional — receives `null` if not registered |
+| No annotation, no default | `IMyService service` | Required — throws if not registered |
 
 ```csharp
 Delegate action = (IRevitUiContext context, IMyService myService, IOptionalLogger? logger) =>
@@ -167,14 +167,14 @@ Delegate action = (IRevitUiContext context, IMyService myService, IOptionalLogge
     myService.ProcessDocument(context.Document);
 };
 
-await revitTask.Run(action);
+await RevitTaskDispatcher.Run(action);
 ```
 
 
 ## Threading and Context
 
 Revit is single-threaded with respect to its API. Even if your code runs on the main Windows UI thread, that does not
-automatically mean you are inside a valid Revit API context. `RevitTask` ensures your delegate is executed inside a
+automatically mean you are inside a valid Revit API context. `RevitTaskDispatcher` ensures your delegate is executed inside a
 proper `IExternalEventHandler.Execute` call.
 
 
@@ -185,7 +185,7 @@ Exceptions thrown inside your delegate are captured and propagated to the return
 ```csharp
 try
 {
-    await revitTask.Run(app =>
+    await RevitTaskDispatcher.Run(app =>
     {
         // Revit API code
     });
@@ -209,7 +209,7 @@ The Revit API does not require `ExternalEvent` to be a singleton. However:
 
 Recommended pattern:
 
-- Create one `RevitTask` per logical scope (e.g., per ViewModel, per tool window, or per add-in).
+- Create one `RevitTaskDispatcher` per logical scope (e.g., per ViewModel, per tool window, or per add-in).
 - Reuse it for multiple operations.
 - Dispose it when the scope ends.
 
@@ -241,7 +241,7 @@ Use **DI mode** when:
 
 ### When a Singleton Makes Sense
 
-Using a single shared `RevitTask` instance (application-wide singleton) can be beneficial when:
+Using a single shared `RevitTaskDispatcher` instance (application-wide singleton) can be beneficial when:
 
 - Your add-in has multiple modeless windows that need coordinated access to the Revit API.
 - You implement a centralized task queue or dispatcher service.
@@ -259,7 +259,7 @@ Scoped instances (e.g., per ViewModel or per tool window) are appropriate when:
 
 ### Avoid Per-Operation Instantiation
 
-Creating a new `RevitTask` for every single operation adds unnecessary object management and provides no architectural
+Creating a new `RevitTaskDispatcher` for every single operation adds unnecessary object management and provides no architectural
 benefit. Prefer reuse within a logical lifecycle boundary.
 
 
@@ -268,9 +268,9 @@ benefit. Prefer reuse within a logical lifecycle boundary.
 ```csharp
 public class MyViewModel : IDisposable
 {
-    private readonly RevitTask _revitTask = new RevitTask("WPF Integration");
+    private readonly RevitTaskDispatcher _revitTask = new RevitTaskDispatcher("WPF Integration");
 
-    // Direct mode â€” no DI container required
+    // Direct mode — no DI container required
     public async Task ShowInfoAsync()
     {
         await _revitTask.Run(context =>
@@ -279,7 +279,7 @@ public class MyViewModel : IDisposable
         });
     }
 
-    // DI mode â€” services injected automatically
+    // DI mode — services injected automatically
     public async Task ProcessDocumentAsync()
     {
         Delegate action = (IRevitUiContext context, IMyService myService) =>

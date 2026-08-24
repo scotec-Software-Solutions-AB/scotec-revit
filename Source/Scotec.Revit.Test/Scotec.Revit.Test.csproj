@@ -9,7 +9,7 @@
 		<GenerateDocumentationFile>False</GenerateDocumentationFile>
 		<!--<CompilerGeneratedFilesOutputPath>GeneratedFiles</CompilerGeneratedFilesOutputPath>-->
 	</PropertyGroup>
-
+	
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
 		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
 	</PropertyGroup>
@@ -40,7 +40,7 @@
 
 	<ItemGroup>
 	  <PackageReference Include="JetBrains.Annotations" />
-	  <PackageReference Include="Scotec.Revit.Isolation" />
+	  <PackageReference Include="Scotec.Revit.Isolation" Version="2025.4.0-dev.22" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -73,5 +73,16 @@
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>
+
+	<Target Name="CopyAddin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+
+		<PropertyGroup>
+			<InputFile>$(MSBuildProjectDirectory)\Scotec.Revit.Test.addin</InputFile>
+			<OutputFile>$(ALLUSERSPROFILE)\Autodesk\Revit\Addins\$(RevitYear)\Scotec.Revit.Test.addin</OutputFile>
+		</PropertyGroup>
+
+		<Message Text="Copying .addin file to Autodesk Revit directory: $(OutDir)" Importance="High" />
+		<WriteLinesToFile File="$(OutputFile)" Lines="$([System.IO.File]::ReadAllText($(InputFile)).Replace('#{assemblyPath}#','$(MSBuildProjectDirectory)\$(OutDir)$(AssemblyName).dll'))" Overwrite="true" Encoding="utf-8" />
+	</Target>
 
 </Project>

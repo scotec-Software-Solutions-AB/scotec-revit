@@ -1,4 +1,4 @@
-ï»¿<!--
+<!--
 SPDX-FileCopyrightText: Copyright (c) 2026 Olaf Meyer
 SPDX-FileCopyrightText: Copyright (c) 2026 scotec Software Solutions AB
 SPDX-License-Identifier: MIT
@@ -16,26 +16,26 @@ communication, while promoting clean architecture through dependency injection a
 
 ## Key Features
 
-- **RevitCommand** â€” Base class for `IExternalCommand` with built-in transaction management, a
+- **RevitCommand** — Base class for `IExternalCommand` with built-in transaction management, a
   per-execution DI scope, and structured failure handling. Supports transaction modes: `None`,
   `Transaction`, `TransactionGroup`, `TransactionWithRollback`, `TransactionGroupWithRollback`,
   and `ReadOnly`.
-- **RevitApp / RevitAppBase / RevitDbApp** â€” Base classes for `IExternalApplication` and
+- **RevitApp / RevitAppBase / RevitDbApp** — Base classes for `IExternalApplication` and
   `IExternalDBApplication` that wire up an `IHost` (Microsoft.Extensions.Hosting) for the add-in
   lifecycle, enabling full IoC container support via Autofac.
-- **RevitTask** â€” Enables safe execution of Revit API operations from any thread or async context
+- **RevitTaskDispatcher** — Enables safe execution of Revit API operations from any thread or async context
   using the `IExternalEventHandler` mechanism. Supports both result-returning and void tasks, with
   optional DI parameter resolution.
-- **RevitEventHandler** â€” Generic base class for subscribing to Revit application events with a
+- **RevitEventHandler** — Generic base class for subscribing to Revit application events with a
   per-invocation DI scope. Pre-built concrete handler bases are provided for all common document,
   application, and UI events.
-- **RevitCommandAvailability** â€” Base class for `IExternalCommandAvailability` with DI scope per
+- **RevitCommandAvailability** — Base class for `IExternalCommandAvailability` with DI scope per
   availability check, enabling ribbon button state to be driven by injected services.
-- **RevitHostBuilder** â€” Configures the hosted application and registers Revit-specific services.
-- **RevitUpdater** â€” Base support for `IUpdater` (dynamic model update) implementations.
-- **RevitSpatialContainmentResolver** â€” Resolves spatial containment (rooms, spaces, zones).
-- **RevitLinkGraphBuilder** â€” Builds a graph of Revit link relationships for traversal and analysis.
-- **RevitBasicFileInfo** â€” Reads Revit file metadata without opening the document.
+- **RevitHostBuilder** — Configures the hosted application and registers Revit-specific services.
+- **RevitUpdater** — Base support for `IUpdater` (dynamic model update) implementations.
+- **RevitSpatialContainmentResolver** — Resolves spatial containment (rooms, spaces, zones).
+- **RevitLinkGraphBuilder** — Builds a graph of Revit link relationships for traversal and analysis.
+- **RevitBasicFileInfo** — Reads Revit file metadata without opening the document.
 
 ## One Add-in per Assembly Load Context
 
@@ -66,9 +66,9 @@ Your project must target `net8.0-windows` or `net10.0-windows`.
 
 - [RevitCommand](https://github.com/scotec-Software-Solutions-AB/scotec-revit/blob/main/Documentation/RevitCommand.md)
 - [RevitEventHandler](https://github.com/scotec-Software-Solutions-AB/scotec-revit/blob/main/Documentation/RevitEventHandler.md)
-- [RevitTask](https://github.com/scotec-Software-Solutions-AB/scotec-revit/blob/main/Documentation/RevitTask.md)
+- [RevitTaskDispatcher](https://github.com/scotec-Software-Solutions-AB/scotec-revit/blob/main/Documentation/RevitTaskDispatcher.md)
 - [Revit Add-in Isolation](https://github.com/scotec-Software-Solutions-AB/scotec-revit/blob/main/Documentation/RevitAddinIsolation.md)
 
 ## License
 
-MIT License â€” https://licenses.nuget.org/MIT
+MIT License — https://licenses.nuget.org/MIT
