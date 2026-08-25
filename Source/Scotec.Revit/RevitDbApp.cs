@@ -102,35 +102,6 @@ public abstract class RevitDbApp : RevitAppBase, IExternalDBApplication
     }
 
     /// <summary>
-    ///     Configures the host builder for the Revit application.
-    /// </summary>
-    /// <param name="builder">
-    ///     The <see cref="IHostBuilder" /> instance used to configure services and application settings.
-    /// </param>
-    /// <remarks>
-    ///     This method is invoked during the initialization of the Revit application to configure
-    ///     dependency injection and service registration. It adds essential Revit-specific services,
-    ///     such as the <see cref="ControlledApplication" />, the active add-in ID, and the controlled application,
-    ///     to the service collection.
-    /// </remarks>
-    /// <example>
-    ///     Example usage:
-    ///     <code>
-    /// protected override void OnConfigure(IHostBuilder builder)
-    /// {
-    ///     base.OnConfigure(builder);
-    ///     builder.ConfigureServices(services =>
-    ///     {
-    ///         services.AddSingleton(Application);
-    ///         services.AddSingleton(Application.ActiveAddInId);
-    ///         services.AddSingleton(Application.ControlledApplication);
-    ///     });
-    /// }
-    /// </code>
-    /// </example>
-
-
-    /// <summary>
     ///     Handles the shutdown process for the Revit Database Application.
     /// </summary>
     /// <param name="application">

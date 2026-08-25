@@ -18,8 +18,8 @@ namespace Scotec.Revit.EventHandler;
 ///     Available when the application is registered as either <c>IExternalApplication</c> (via <see cref="RevitApp" />)
 ///     or <c>IExternalDBApplication</c> (via <see cref="RevitDbApp" />).
 ///     <para>
-///         The per-invocation DI scope registers <see cref="FailuresProcessingEventArgs" />.
-///         Use <see cref="FailuresProcessingEventArgs.GetFailuresAccessor" /> to inspect and resolve failures.
+///         The per-invocation DI scope registers <see cref="Autodesk.Revit.DB.Events.FailuresProcessingEventArgs" />.
+///         Use <see cref="Autodesk.Revit.DB.Events.FailuresProcessingEventArgs.GetFailuresAccessor" /> to inspect and resolve failures.
 ///     </para>
 /// </remarks>
 [PublicAPI]

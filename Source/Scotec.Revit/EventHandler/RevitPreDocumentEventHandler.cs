@@ -9,11 +9,21 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
+/// <summary>
+///     Base class for pre-document-event handlers with a strongly-typed sender, event args, and context.
+/// </summary>
+/// <typeparam name="TSender">The type of the event sender.</typeparam>
+/// <typeparam name="TEventArgs">The Revit pre-document-event-args type.</typeparam>
+/// <typeparam name="TContext">The Revit context type produced for each invocation.</typeparam>
 public abstract class RevitPreDocumentEventHandler<TSender, TEventArgs, TContext> : RevitPreEventHandler<TSender, TEventArgs, TContext>
     where TSender : class
     where TEventArgs : RevitAPIPreDocEventArgs
     where TContext : class, IRevitContext
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitPreDocumentEventHandler{TSender, TEventArgs, TContext}" />.
+    /// </summary>
+    /// <param name="addInId">The add-in GUID used to resolve the root DI container.</param>
     protected RevitPreDocumentEventHandler(Guid addInId) : base(addInId)
     {
     }
@@ -28,6 +38,10 @@ public abstract class RevitAppPreDocumentEventHandler<TEventArgs>
     : RevitPreDocumentEventHandler<Application, TEventArgs, IRevitContext>
     where TEventArgs : RevitAPIPreDocEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitAppPreDocumentEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit controlled application to register the event on.</param>
     protected RevitAppPreDocumentEventHandler(ControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;
@@ -56,6 +70,10 @@ public abstract class RevitUiPreDocumentEventHandler<TEventArgs>
     : RevitPreDocumentEventHandler<UIApplication, TEventArgs, IRevitUiContext>
     where TEventArgs : RevitAPIPreDocEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitUiPreDocumentEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit UI controlled application to register the event on.</param>
     protected RevitUiPreDocumentEventHandler(UIControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;

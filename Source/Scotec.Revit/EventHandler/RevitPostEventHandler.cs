@@ -9,11 +9,21 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
+/// <summary>
+///     Base class for post-event handlers with a strongly-typed sender, event args, and context.
+/// </summary>
+/// <typeparam name="TSender">The type of the event sender.</typeparam>
+/// <typeparam name="TEventArgs">The Revit post-event-args type.</typeparam>
+/// <typeparam name="TContext">The Revit context type produced for each invocation.</typeparam>
 public abstract class RevitPostEventHandler<TSender, TEventArgs, TContext> : RevitEventHandler<TSender, TEventArgs, TContext>
     where TSender : class
     where TEventArgs : RevitAPIPostEventArgs
     where TContext : class, IRevitContext
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitPostEventHandler{TSender, TEventArgs, TContext}" />.
+    /// </summary>
+    /// <param name="addInId">The add-in GUID used to resolve the root DI container.</param>
     protected RevitPostEventHandler(Guid addInId) : base(addInId)
     {
     }
@@ -28,6 +38,10 @@ public abstract class RevitAppPostEventHandler<TEventArgs>
     : RevitPostEventHandler<Application, TEventArgs, IRevitContext>
     where TEventArgs : RevitAPIPostEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitAppPostEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit controlled application to register the event on.</param>
     protected RevitAppPostEventHandler(ControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;
@@ -50,6 +64,10 @@ public abstract class RevitUiPostEventHandler<TEventArgs>
     : RevitPostEventHandler<UIApplication, TEventArgs, IRevitUiContext>
     where TEventArgs : RevitAPIPostEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitUiPostEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit UI controlled application to register the event on.</param>
     protected RevitUiPostEventHandler(UIControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;

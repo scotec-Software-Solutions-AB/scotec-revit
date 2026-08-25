@@ -8,12 +8,12 @@ namespace Scotec.Revit.EventHandler;
 
 /// <summary>
 ///     Provides a cancellation mechanism for Revit pre-event delegates registered via
-///     <see cref="RevitEventHandler{TSender,TEventArgs}.AddHandler" />.
+///     <see cref="RevitEventHandler{TSender,TEventArgs,TContext}.AddHandler(System.Delegate,System.Action{Microsoft.Extensions.DependencyInjection.IServiceCollection})" />.
 /// </summary>
 /// <remarks>
 ///     <para>
 ///         Resolve this type from the per-invocation DI scope inside a delegate registered on a
-///         <see cref="RevitPreEventHandler{TSender,TEventArgs}" /> to cancel the event.
+///         <see cref="RevitPreEventHandler{TSender,TEventArgs,TContext}" /> to cancel the event.
 ///         It is registered automatically for every invocation of a pre-event handler.
 ///     </para>
 ///     <para>

@@ -9,11 +9,21 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
+/// <summary>
+///     Base class for single-event handlers with a strongly-typed sender, event args, and context.
+/// </summary>
+/// <typeparam name="TSender">The type of the event sender.</typeparam>
+/// <typeparam name="TEventArgs">The Revit single-event-args type.</typeparam>
+/// <typeparam name="TContext">The Revit context type produced for each invocation.</typeparam>
 public abstract class RevitSingleEventHandler<TSender, TEventArgs, TContext> : RevitEventHandler<TSender, TEventArgs, TContext>
     where TSender : class
     where TEventArgs : RevitAPISingleEventArgs
     where TContext : class, IRevitContext
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitSingleEventHandler{TSender, TEventArgs, TContext}" />.
+    /// </summary>
+    /// <param name="addInId">The add-in GUID used to resolve the root DI container.</param>
     protected RevitSingleEventHandler(Guid addInId) : base(addInId)
     {
     }
@@ -28,6 +38,10 @@ public abstract class RevitAppSingleEventHandler<TEventArgs>
     : RevitSingleEventHandler<Application, TEventArgs, IRevitContext>
     where TEventArgs : RevitAPISingleEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitAppSingleEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit controlled application to register the event on.</param>
     protected RevitAppSingleEventHandler(ControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;
@@ -50,6 +64,10 @@ public abstract class RevitUiSingleEventHandler<TEventArgs>
     : RevitSingleEventHandler<UIApplication, TEventArgs, IRevitUiContext>
     where TEventArgs : RevitAPISingleEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitUiSingleEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit UI controlled application to register the event on.</param>
     protected RevitUiSingleEventHandler(UIControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;

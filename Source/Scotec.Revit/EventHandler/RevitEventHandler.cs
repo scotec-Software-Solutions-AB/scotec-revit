@@ -76,8 +76,8 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         Action<IServiceCollection>? ConfigureServices);
 
     /// <summary>
-    ///     Returned from <see cref="AddHandler(Delegate, Action{IServiceCollection}?)" /> and
-    ///     <see cref="AddHandler{TContext}(Action{TContext})" />.
+    ///     Returned from <see cref="AddHandler(System.Delegate, System.Action{Microsoft.Extensions.DependencyInjection.IServiceCollection})" /> and
+    ///     <see cref="AddHandler(System.Action{TContext})" />.
     ///     Disposing the handle removes the corresponding registration.
     /// </summary>
     private sealed class DelegateHandle : IDisposable
@@ -103,7 +103,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// </summary>
     /// <param name="addInId">
     ///     The add-in GUID used to look up the root Autofac container via
-    ///     <see cref="RevitAppBase.GetServiceProvider(System.Guid)" />.
+    ///     <see cref="RevitAppBase.GetServiceProvider()" />.
     ///     Pass <c>application.ActiveAddInId.GetGUID()</c> from the concrete constructor.
     /// </param>
     /// <remarks>

@@ -8,12 +8,12 @@ using System;
 namespace Scotec.Revit.EventHandler;
 
 /// <summary>
-///     Marks a method as the execute entry point for a <see cref="RevitEventHandler{TEventArgs}" />.
+///     Marks a method as the execute entry point for a <see cref="RevitEventHandler{TSender,TEventArgs,TContext}" />.
 /// </summary>
 /// <remarks>
 ///     Apply this attribute to a single method in a derived class. The framework discovers and invokes
 ///     it with parameters resolved from the per-invocation DI scope. If no method is marked, the framework
-///     falls back to <see cref="RevitEventHandler{TEventArgs}.OnExecute" />.
+///     falls back to <see cref="RevitEventHandler{TSender,TEventArgs,TContext}.OnExecute" />.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
 [MeansImplicitUse]

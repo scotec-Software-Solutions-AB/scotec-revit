@@ -17,7 +17,7 @@ namespace Scotec.Revit.EventHandler;
 ///     or <c>IExternalDBApplication</c> (via <see cref="RevitDbApp" />).
 ///     <para>
 ///         The <see cref="Document" /> has already been destroyed at this point. Only
-///         <see cref="DocumentClosedEventArgs.Status" /> is available from the event args.
+///         <c>DocumentClosedEventArgs.Status</c> is available from the event args.
 ///     </para>
 /// </remarks>
 [PublicAPI] 

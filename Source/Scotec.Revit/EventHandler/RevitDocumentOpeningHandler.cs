@@ -19,7 +19,7 @@ namespace Scotec.Revit.EventHandler;
 ///     or <c>IExternalDBApplication</c> (via <see cref="RevitDbApp" />).
 ///     <para>
 ///         No <see cref="Document" /> is available at this stage; the document has not yet been created.
-///         Use <see cref="DocumentOpeningEventArgs.PathName" /> to identify the file being opened.
+///         Use <see cref="Autodesk.Revit.DB.Events.DocumentOpeningEventArgs.PathName" /> to identify the file being opened.
 ///     </para>
 /// </remarks>
 [PublicAPI]

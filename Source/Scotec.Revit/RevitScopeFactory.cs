@@ -206,7 +206,7 @@ internal sealed class RevitScopeFactory : IRevitScopeFactory
 
     /// <summary>
     ///     Thin <see cref="IServiceScope" /> wrapper around an Autofac <see cref="ILifetimeScope" />.
-    ///     <see cref="ServiceProvider" /> is obtained via <see cref="Autofac.ILifetimeScope.Resolve{T}" />,
+    ///     <see cref="ServiceProvider" /> is obtained via <c>Resolve&lt;T&gt;()</c>,
     ///     which returns the Autofac-backed <see cref="IServiceProvider" /> already registered
     ///     for every child scope. Disposing this wrapper disposes the underlying lifetime scope.
     /// </summary>

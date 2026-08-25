@@ -9,11 +9,21 @@ using System;
 
 namespace Scotec.Revit.EventHandler;
 
+/// <summary>
+///     Base class for post-document-event handlers with a strongly-typed sender, event args, and context.
+/// </summary>
+/// <typeparam name="TSender">The type of the event sender.</typeparam>
+/// <typeparam name="TEventArgs">The Revit post-document-event-args type.</typeparam>
+/// <typeparam name="TContext">The Revit context type produced for each invocation.</typeparam>
 public abstract class RevitPostDocumentEventHandler<TSender, TEventArgs, TContext> : RevitPostEventHandler<TSender, TEventArgs, TContext>
     where TSender : class
     where TEventArgs : RevitAPIPostDocEventArgs
     where TContext : class, IRevitContext
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitPostDocumentEventHandler{TSender, TEventArgs, TContext}" />.
+    /// </summary>
+    /// <param name="addInId">The add-in GUID used to resolve the root DI container.</param>
     protected RevitPostDocumentEventHandler(Guid addInId) : base(addInId)
     {
     }
@@ -28,6 +38,10 @@ public abstract class RevitAppPostDocumentEventHandler<TEventArgs>
     : RevitPostDocumentEventHandler<Application, TEventArgs, IRevitContext>
     where TEventArgs : RevitAPIPostDocEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitAppPostDocumentEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit controlled application to register the event on.</param>
     protected RevitAppPostDocumentEventHandler(ControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;
@@ -49,13 +63,17 @@ public abstract class RevitAppPostDocumentEventHandler<TEventArgs>
 
 /// <summary>
 ///     Convenience base class for post-document-event handlers whose sender is
-///     <see cref="UIApplication" /> and whose context is <see cref="IRevitUiContext" />.
+///     <see cref="Autodesk.Revit.UI.UIApplication" /> and whose context is <see cref="IRevitUiContext" />.
 /// </summary>
 /// <typeparam name="TEventArgs">The Revit event-args type.</typeparam>
 public abstract class RevitUiPostDocumentEventHandler<TEventArgs>
     : RevitPostDocumentEventHandler<UIApplication, TEventArgs, IRevitUiContext>
     where TEventArgs : RevitAPIPostDocEventArgs
 {
+    /// <summary>
+    ///     Initializes a new instance of <see cref="RevitUiPostDocumentEventHandler{TEventArgs}" />.
+    /// </summary>
+    /// <param name="application">The Revit UI controlled application to register the event on.</param>
     protected RevitUiPostDocumentEventHandler(UIControlledApplication application) : base(application.ActiveAddInId.GetGUID())
     {
         Application = application;
