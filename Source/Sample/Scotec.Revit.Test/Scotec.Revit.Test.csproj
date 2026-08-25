@@ -84,15 +84,15 @@
 	  </None>
 	</ItemGroup>
 
-	<Target Name="CopyAddin" AfterTargets="Build" Condition="'$(Configuration)' != 'Release'">
+	<Target Name="CopyAddin" AfterTargets="Build" Condition="'$(Configuration)' != 'Release' AND '$(TargetPath)' != ''">
 
 		<PropertyGroup>
 			<InputFile>$(MSBuildProjectDirectory)\Scotec.Revit.Test.addin</InputFile>
 			<OutputFile>$(ALLUSERSPROFILE)\Autodesk\Revit\Addins\$(RevitYear)\Scotec.Revit.Test.addin</OutputFile>
 		</PropertyGroup>
 
-		<Message Text="Copying .addin file to Autodesk Revit directory: $(OutDir)" Importance="High" />
-		<WriteLinesToFile File="$(OutputFile)" Lines="$([System.IO.File]::ReadAllText($(InputFile)).Replace('#{assemblyPath}#','$(MSBuildProjectDirectory)\$(OutDir)$(AssemblyName).dll'))" Overwrite="true" Encoding="utf-8" />
+		<Message Text="Copying .addin file to Autodesk Revit directory: $(OutputFile)" Importance="High" />
+		<WriteLinesToFile File="$(OutputFile)" Lines="$([System.IO.File]::ReadAllText($(InputFile)).Replace('#{assemblyPath}#','$(TargetPath)'))" Overwrite="true" Encoding="utf-8" />
 	</Target>
 
 </Project>
