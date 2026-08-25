@@ -140,7 +140,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     ///     An <see cref="IDisposable" /> handle. Disposing the handle removes this specific registration.
     ///     Disposing the handler itself clears all registrations.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="action" /> is <c>null</c>.</exception>
+    /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="action" /> is <c>null</c>.</exception>
     [UsedImplicitly]
     public IDisposable AddHandler(Delegate action, Action<IServiceCollection>? configureServices = null)
     {
@@ -163,7 +163,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// <returns>
     ///     An <see cref="IDisposable" /> handle. Disposing the handle removes this specific registration.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="action" /> is <c>null</c>.</exception>
+    /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="action" /> is <c>null</c>.</exception>
     [UsedImplicitly]
     public IDisposable AddHandler(Action<TContext> action)
     {
@@ -195,7 +195,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// <summary>
     ///     Gets a value indicating whether the current event supports cancellation.
     /// </summary>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when accessed outside of an active event invocation.
     /// </exception>
     public bool IsCancellable => EventArgs?.Cancellable ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");
@@ -203,7 +203,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
     /// <summary>
     ///     Gets a value indicating whether the current event has already been cancelled.
     /// </summary>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when accessed outside of an active event invocation.
     /// </exception>
     public bool IsCancelled => EventArgs?.IsCancelled() ?? throw new InvalidOperationException("EventArgs not set. This property can only be accessed during event handling.");

@@ -52,7 +52,7 @@ public class GlobalRevitContext : IGlobalRevitContext
     }
 
     /// <inheritdoc />
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the underlying <see cref="Autodesk.Revit.ApplicationServices.Application" />
     ///     is no longer valid.
     /// </exception>

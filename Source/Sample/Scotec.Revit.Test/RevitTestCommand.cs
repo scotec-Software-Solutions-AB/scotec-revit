@@ -1,38 +1,40 @@
-// Copyright © 2023 - 2026 Olaf Meyer
+﻿// Copyright © 2023 - 2026 Olaf Meyer
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
 using System;
-using System.Windows;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Microsoft.Extensions.DependencyInjection;
 using Scotec.Revit.Isolation;
 
 namespace Scotec.Revit.Test;
 
+public class Test
+{
+
+}
+
+
 [RevitCommandIsolation(ContextName = "Scotec.Revit.Test")]
 [RevitTransactionMode(RevitTransactionMode.None)]
-public class ShowTestDialogCommand : RevitCommand
+public class RevitTestCommand : RevitCommand
 {
     protected override RevitTransactionMode TransactionMode { get; } = RevitTransactionMode.TransactionGroup;
-    protected override string CommandName => "ShowTestDialog";
+    protected override string TransactionName => "TestCommand";
 
     [RevitCommandBeforeExecute]
-    protected virtual void Initialize(ExternalCommandData commandData, object? data, ElementSet elements)
+    protected virtual void Initialize(ExternalCommandData commandData, Test? test, ElementSet elements)
     {
     }
 
     [RevitCommandAfterExecute]
-    protected virtual void Cleanup(ExternalCommandData commandData, ElementSet elements)
+    protected virtual void Cleanup(IGlobalRevitUiContext context, ExternalCommandData commandData, ElementSet elements)
     {
     }
 
     [RevitCommandExecute]
-    protected Result Run(IRevitUiContext context, TestRevitDialog dialog, IServiceScopeFactory scopeFactory)
+    protected Result Run(IRevitUiContext context)
     {
-        using var scope = scopeFactory.CreateScope();
-        dialog.Show();
         return Result.Succeeded;
     }
 }

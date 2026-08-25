@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\Directory.Packages.props" />
+  <ItemGroup>
+    <PackageVersion Include="Scotec.Revit" Version="1.0.0" />
+    <PackageVersion Include="Scotec.Revit.Isolation" Version="1.0.0" />
+    <PackageVersion Include="Scotec.Revit.Ui" Version="1.0.0" />
+    <PackageVersion Include="Scotec.Revit.Wpf" Version="1.0.0" />
+  </ItemGroup>
+</Project>

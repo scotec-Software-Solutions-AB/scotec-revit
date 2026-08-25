@@ -90,6 +90,10 @@ public sealed class RevitLoadContextGenerator : RevitIncrementalGenerator
     /// <param name="compilation">
     ///     The <see cref="Compilation" /> representing the current state of the code being compiled.
     /// </param>
+    /// <param name="generatorOptions">
+    ///     The <see cref="RevitGeneratorOptions" /> containing configuration values — such as the target Revit year —
+    ///     that control which load-context variants are emitted.
+    /// </param>
     /// <remarks>
     ///     This method generates a source file for the Revit add-in load context by loading a predefined template
     ///     and formatting it with the namespace of the current assembly. The generated source file is then added

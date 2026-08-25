@@ -24,7 +24,7 @@ public class GlobalRevitUiContext : GlobalRevitContext, IGlobalRevitUiContext
     ///     Initializes a new instance with the given Revit UI controlled application.
     /// </summary>
     /// <param name="uiControlledApplication">The Revit UI controlled application provided at add-in startup.</param>
-    /// <exception cref="ArgumentNullException">
+    /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="uiControlledApplication" /> is <c>null</c>.
     /// </exception>
     public GlobalRevitUiContext(UIControlledApplication uiControlledApplication)
@@ -33,7 +33,7 @@ public class GlobalRevitUiContext : GlobalRevitContext, IGlobalRevitUiContext
     }
 
     /// <inheritdoc />
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the underlying <see cref="Autodesk.Revit.UI.UIApplication" /> is no longer valid.
     /// </exception>
     public UIApplication UiApplication

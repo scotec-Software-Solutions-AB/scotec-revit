@@ -32,27 +32,27 @@ namespace Scotec.Revit;
 ///     <para>
 ///         All property accessors throw <see cref="ObjectDisposedException" /> after
 ///         <see cref="RevitContext.Dispose" /> has been called, and
-///         <see cref="InvalidOperationException" /> when the underlying Revit API object is
+///         <see cref="System.InvalidOperationException" /> when the underlying Revit API object is
 ///         no longer valid.
 ///     </para>
 /// </remarks>
 internal sealed class RevitUiContext : RevitContext, IRevitUiContext
 {
     /// <summary>
-    ///     Initializes a new instance from the given <see cref="UIApplication" />.
+    ///     Initializes a new instance from the given <see cref="Autodesk.Revit.UI.UIApplication" />.
     /// </summary>
     /// <param name="uiApplication">The active Revit UI application. Must not be <see langword="null" />.</param>
-    /// <exception cref="ArgumentNullException">
+    /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="uiApplication" /> is <see langword="null" />.
     /// </exception>
     /// <remarks>
     ///     <see cref="UiApplication" /> is stored directly so that it can be validated via
     ///     <c>IsValidObject</c> on every access. The Revit host controls the
-    ///     <see cref="UIApplication" /> lifetime independently of .NET; the only safe moment
+    ///     <see cref="Autodesk.Revit.UI.UIApplication" /> lifetime independently of .NET; the only safe moment
     ///     to capture the reference is during construction, which must occur inside a Revit
     ///     UI event callback or external command.
     ///     <para>
-    ///         When <see cref="UIApplication.ActiveUIDocument" /> is non-<see langword="null" />
+    ///         When <see cref="Autodesk.Revit.UI.UIApplication.ActiveUIDocument" /> is non-<see langword="null" />
     ///         at construction time, <see cref="UiDocument" /> and
     ///         <see cref="RevitContext.Document" /> are also stored. Otherwise both remain
     ///         <see langword="null" />.
@@ -79,11 +79,11 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     /// <exception cref="ObjectDisposedException">
     ///     Thrown when this context has been disposed.
     /// </exception>
-    /// <exception cref="InvalidOperationException">
-    ///     Thrown when the underlying <see cref="UIApplication" /> is no longer valid.
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown when the underlying <see cref="Autodesk.Revit.UI.UIApplication" /> is no longer valid.
     /// </exception>
     /// <remarks>
-    ///     The <see cref="UIApplication" /> object is stored directly as a property because
+    ///     The <see cref="Autodesk.Revit.UI.UIApplication" /> object is stored directly as a property because
     ///     the Revit host manages its lifetime independently of .NET. The reference is captured
     ///     once at construction time — inside the safe execution window of a Revit UI event or
     ///     command — and validated via <c>IsValidObject</c> on every access, ensuring consumers
@@ -108,12 +108,12 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     /// <exception cref="ObjectDisposedException">
     ///     Thrown when this context has been disposed.
     /// </exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the UI document reference is non-<see langword="null" /> and the
-    ///     underlying <see cref="UIDocument" /> is no longer valid.
+    ///     underlying <see cref="Autodesk.Revit.UI.UIDocument" /> is no longer valid.
     /// </exception>
     /// <remarks>
-    ///     The <see cref="UIDocument" /> object is stored directly as a property because the
+    ///     The <see cref="Autodesk.Revit.UI.UIDocument" /> object is stored directly as a property because the
     ///     Revit host controls document lifetime independently of .NET. The reference is
     ///     captured once at construction time — inside the safe execution window — and
     ///     validated via <c>IsValidObject</c> on every access, ensuring consumers receive
@@ -138,7 +138,7 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     /// <exception cref="ObjectDisposedException">
     ///     Thrown when this context has been disposed (propagated from <see cref="UiDocument" />).
     /// </exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the returned <see cref="View" /> is non-<see langword="null" /> and
     ///     <c>IsValidObject</c> returns <see langword="false" />, indicating the view has been
     ///     closed or invalidated by the Revit host.
@@ -148,7 +148,7 @@ internal sealed class RevitUiContext : RevitContext, IRevitUiContext
     ///     is <em>not</em> captured at construction time. The active view can change during the
     ///     lifetime of a single handler invocation (for example when the user switches views),
     ///     so storing it would risk returning a stale reference. Instead, <c>ActiveView</c> is
-    ///     evaluated lazily on each access via <see cref="UIDocument.ActiveView" />, with an
+    ///     evaluated lazily on each access via <see cref="Autodesk.Revit.UI.UIDocument.ActiveView" />, with an
     ///     <c>IsValidObject</c> guard to ensure the returned reference is still valid.
     /// </remarks>
     // Revit API: View.IsValidObject must be checked before access after potential document lifecycle events.

@@ -119,7 +119,7 @@ internal static class RevitReflectionHelper
     ///     Walks the type hierarchy from <paramref name="concreteType" /> up to (but not including)
     ///     <paramref name="stopType" /> and collects all methods that carry <typeparamref name="TAttribute" />
     ///     and match <paramref name="returnType" />.
-    ///     Returns the single match, <c>null</c> if none, or throws <see cref="InvalidOperationException" />
+    ///     Returns the single match, <c>null</c> if none, or throws <see cref="System.InvalidOperationException" />
     ///     if more than one is found.
     /// </summary>
     /// <typeparam name="TAttribute">The attribute type to search for.</typeparam>
@@ -127,7 +127,7 @@ internal static class RevitReflectionHelper
     /// <param name="stopType">The base type at which to stop (exclusive).</param>
     /// <param name="returnType">The required return type of the candidate methods.</param>
     /// <returns>The single matching <see cref="MethodInfo" />, or <c>null</c> if no match is found.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when more than one method in the hierarchy carries <typeparamref name="TAttribute" />.
     /// </exception>
     internal static MethodInfo? FindSingleAttributedMethod<TAttribute>(Type concreteType, Type stopType, Type returnType)

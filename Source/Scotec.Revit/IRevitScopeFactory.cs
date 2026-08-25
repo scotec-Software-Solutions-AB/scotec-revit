@@ -89,5 +89,5 @@ public interface IRevitScopeFactory : IServiceScopeFactory
     /// <returns>
     ///     A new <see cref="IServiceScope" />. The caller is responsible for disposing the scope.
     /// </returns>
-    new IServiceScope CreateScope(Action<IServiceCollection>? configure = null);
+    IServiceScope CreateScope(Action<IServiceCollection>? configure = null);
 }

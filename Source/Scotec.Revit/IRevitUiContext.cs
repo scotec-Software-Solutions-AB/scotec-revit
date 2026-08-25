@@ -67,7 +67,7 @@ public interface IRevitUiContext : IRevitContext
     ///     Unlike <see cref="UiApplication" /> and <see cref="UiDocument" />, the active view
     ///     is not captured at construction time. The active view can change during a single
     ///     handler invocation, so it is evaluated lazily on each access via
-    ///     <see cref="UIDocument.ActiveView" />, with an <c>IsValidObject</c> guard to ensure
+    ///     <see cref="Autodesk.Revit.UI.UIDocument.ActiveView" />, with an <c>IsValidObject</c> guard to ensure
     ///     the returned reference is still valid.
     /// </remarks>
     View? ActiveView { get; }

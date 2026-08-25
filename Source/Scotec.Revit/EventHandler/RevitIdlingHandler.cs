@@ -15,12 +15,12 @@ namespace Scotec.Revit.EventHandler;
 /// <remarks>
 ///     Only available when the application is registered as <c>IExternalApplication</c> (via <see cref="RevitApp" />).
 ///     <para>
-///         The per-invocation DI scope registers <see cref="IdlingEventArgs" /> and the
-///         <see cref="UIApplication" /> sender as <see cref="IRevitUiContext" />.
+///         The per-invocation DI scope registers <see cref="Autodesk.Revit.UI.Events.IdlingEventArgs" /> and the
+///         <see cref="Autodesk.Revit.UI.UIApplication" /> sender as <see cref="IRevitUiContext" />.
 ///     </para>
 ///     <para>
 ///         <strong>Performance note:</strong> this event fires repeatedly during idle periods.
-///         Avoid blocking work. Use <see cref="IdlingEventArgs.SetRaiseWithoutDelay" /> only when continuous
+///         Avoid blocking work. Use <see cref="Autodesk.Revit.UI.Events.IdlingEventArgs.SetRaiseWithoutDelay" /> only when continuous
 ///         polling is truly required, and revert to the default behavior as soon as possible.
 ///     </para>
 /// </remarks>

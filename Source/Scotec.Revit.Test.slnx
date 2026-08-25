@@ -18,7 +18,7 @@
     <File Path="../Documentation/RevitContext.md" />
     <File Path="../Documentation/RevitContextDesign.md" />
     <File Path="../Documentation/RevitEventHandler.md" />
-    <File Path="../Documentation/RevitTask.md" />
+    <File Path="../Documentation/RevitTaskDispatcher.md" />
     <File Path="../Documentation/RevitUpdater.md" />
   </Folder>
   <Project Path="Scotec.Revit.Analyzers/Scotec.Revit.Analyzers.csproj">
@@ -30,7 +30,7 @@
   <Project Path="Scotec.Revit.Isolation/Scotec.Revit.Isolation.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="Scotec.Revit.Test/Scotec.Revit.Test.csproj">
+  <Project Path="Sample/Scotec.Revit.Test/Scotec.Revit.Test.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="Scotec.Revit.Ui/Scotec.Revit.Ui.csproj">

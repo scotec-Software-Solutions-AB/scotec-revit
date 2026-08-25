@@ -211,7 +211,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     If not overridden, the value of the obsolete <see cref="CommandName" /> property is used as a fallback.
     /// </remarks>
     // TODO: Make this method abstract when the CommandName property is removed in order to enforce providing a transaction name.
-    protected virtual string TransactionName => CommandName;
+    protected virtual string TransactionName => string.Empty;
 
     /// <summary>
     ///     Gets the name of the Revit command.
@@ -220,7 +220,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     ///     This property is obsolete. Override <see cref="TransactionName" /> instead.
     /// </remarks>
     [Obsolete("CommandName is obsolete. Override TransactionName instead.")]
-    protected virtual string CommandName => string.Empty;
+    protected virtual string CommandName => TransactionName;
 
     /// <summary>
     ///     Gets or sets the default transaction mode for the command.
@@ -323,12 +323,12 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             var transactionMode = GetTransactionMode();
 
             // Call BeforeExecute before any transaction is opened.
-            InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider, logger, commandType);
+            InvokeOptionalMethod<RevitCommandBeforeExecuteAttribute>(commandData, elements, serviceProvider, commandType, logger);
 
             Result result;
 
             // Skip transaction management if no document is open or transaction is not required.
-            if (transactionMode == RevitTransactionMode.None || transactionMode == RevitTransactionMode.ReadOnly)
+            if (transactionMode is RevitTransactionMode.None || transactionMode is RevitTransactionMode.ReadOnly || context.Document is null)
             {
                 result = InvokeOnExecute(commandData, elements, serviceProvider, logger, commandType);
             }
@@ -345,7 +345,7 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
             }
 
             // Call AfterExecute after the transaction has been closed.
-            InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider, logger, commandType);
+            InvokeOptionalMethod<RevitCommandAfterExecuteAttribute>(commandData, elements, serviceProvider, commandType, logger);
 
             logger?.LogInformation(
                 "Command {CommandType}: execution completed with result {Result}. Document: '{DocumentPath}'.",
@@ -649,9 +649,11 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
+    /// <param name="logger">Optional logger for emitting debug diagnostics; may be <c>null</c> if not registered.</param>
+    /// <param name="commandType">The fully-qualified type name of the command, used in log messages.</param>
     private void InvokeOptionalMethod<TAttribute>(ExternalCommandData commandData, ElementSet elements,
                                                    IServiceProvider serviceProvider,
-                                                   ILogger? logger, string? commandType)
+                                                   string? commandType, ILogger? logger)
         where TAttribute : Attribute
     {
         var method = RevitReflectionHelper.FindSingleAttributedMethod<TAttribute>(GetType(), typeof(RevitCommand), typeof(void));
@@ -683,6 +685,8 @@ public abstract class RevitCommand : IExternalCommand, IFailuresPreprocessor, IF
     /// <param name="commandData">The current <see cref="ExternalCommandData" /> instance.</param>
     /// <param name="elements">The <see cref="ElementSet" /> for the current command execution.</param>
     /// <param name="serviceProvider">The scoped <see cref="IServiceProvider" /> for the current command execution.</param>
+    /// <param name="logger">Optional logger for emitting debug diagnostics; may be <c>null</c> if not registered.</param>
+    /// <param name="commandType">The fully-qualified type name of the command, used in log messages.</param>
     /// <returns>A <see cref="Result" /> indicating the outcome of the command execution.</returns>
     private Result InvokeOnExecute(ExternalCommandData commandData, ElementSet elements,
                                     IServiceProvider serviceProvider,

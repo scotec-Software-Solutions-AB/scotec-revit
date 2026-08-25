@@ -1,0 +1,99 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<LangVersion>latest</LangVersion>
+		<UseWpf>true</UseWpf>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		<!--<CompilerGeneratedFilesOutputPath>GeneratedFiles</CompilerGeneratedFilesOutputPath>-->
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
+		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2026'">
+		<TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RevitYear)' == '2027'">
+		<TargetFrameworks>net10.0-windows</TargetFrameworks>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="TabManager.cs" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <None Remove="Resources\Images\Information_16.png" />
+	  <None Remove="Resources\Images\Information_32.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Resources\Images\Information_16.png" />
+	  <Resource Include="Resources\Images\Information_32.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="TabManager.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="JetBrains.Annotations" />
+	  <PackageReference Include="Scotec.Revit.Isolation" />
+	</ItemGroup>
+
+	<!--<ItemGroup>
+	  <ProjectReference Include="..\..\Scotec.Revit.Wpf\Scotec.Revit.Wpf.csproj" />
+	  <ProjectReference Include="..\..\Scotec.Revit\Scotec.Revit.csproj" />
+	  <ProjectReference Include="..\..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />
+	  <ProjectReference Include="..\..\Scotec.Revit.Ui\Scotec.Revit.Ui.csproj" />
+	</ItemGroup>-->
+	<ItemGroup>
+		<PackageReference Include="Scotec.Revit" />
+		<PackageReference Include="Scotec.Revit.Ui" />
+		<PackageReference Include="Scotec.Revit.Wpf" />
+	  <!--<ProjectReference Include="..\..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />-->
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPI">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Nice3point.Revit.Api.AdWindows">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<!--<ItemGroup>
+	  <ProjectReference Include="..\..\Scotec.Revit.LoadContext\Scotec.Revit.LoadContext.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+	  <ProjectReference Include="..\..\Scotec.Revit.Wpf\Scotec.Revit.Wpf.csproj" />
+	  <ProjectReference Include="..\..\Scotec.Revit\Scotec.Revit.csproj" />
+	</ItemGroup>-->
+
+	<ItemGroup>
+	  <None Update="appsettings.json">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<Target Name="CopyAddin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+
+		<PropertyGroup>
+			<InputFile>$(MSBuildProjectDirectory)\Scotec.Revit.Test.addin</InputFile>
+			<OutputFile>$(ALLUSERSPROFILE)\Autodesk\Revit\Addins\$(RevitYear)\Scotec.Revit.Test.addin</OutputFile>
+		</PropertyGroup>
+
+		<Message Text="Copying .addin file to Autodesk Revit directory: $(OutDir)" Importance="High" />
+		<WriteLinesToFile File="$(OutputFile)" Lines="$([System.IO.File]::ReadAllText($(InputFile)).Replace('#{assemblyPath}#','$(MSBuildProjectDirectory)\$(OutDir)$(AssemblyName).dll'))" Overwrite="true" Encoding="utf-8" />
+	</Target>
+
+</Project>

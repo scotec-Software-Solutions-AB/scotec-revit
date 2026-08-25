@@ -11,7 +11,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -85,7 +84,7 @@ public abstract class RevitAppBase
     /// </remarks>
     private static IServiceProvider? ServiceProvider
     {
-        get => field;
+        get;
         set
         {
             if (field is not null && value is not null)
@@ -396,9 +395,9 @@ public abstract class RevitAppBase
 
             // Priority 3: obsolete parameter-less fallback.
             logger?.LogWarning(
-                "Add-in {AddInType}: no attributed or standard override found for '{MethodName}'. " +
-                "Falling back to the obsolete parameter-less {MethodName}() overload. " +
-                "Override {MethodName}(ControlledApplication) or declare a method with [Revit{Operation}] instead.",
+                "Add-in {AddInType}: no attributed or standard override found for '{MethodName1}'. " +
+                "Falling back to the obsolete parameter-less {MethodName2}() overload. " +
+                "Override {MethodName3}(ControlledApplication) or declare a method with an action attribute instead.",
                 addInType, methodName, methodName, methodName == "OnStartup" ? "Startup" : "Shutdown");
 
 #pragma warning disable CS0618

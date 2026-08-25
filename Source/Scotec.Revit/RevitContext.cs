@@ -35,7 +35,7 @@ internal class RevitContext : IRevitContext, IDisposable
     ///     for example event handlers and transaction commands.
     /// </summary>
     /// <param name="document">The active Revit document. Must not be <see langword="null"/>.</param>
-    /// <exception cref="ArgumentNullException">
+    /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="document"/> is <see langword="null"/>.
     /// </exception>
     /// <remarks>
@@ -57,7 +57,7 @@ internal class RevitContext : IRevitContext, IDisposable
     ///     for example commands that run without an open document.
     /// </summary>
     /// <param name="application">The Revit application. Must not be <see langword="null"/>.</param>
-    /// <exception cref="ArgumentNullException">
+    /// <exception cref="System.ArgumentNullException">
     ///     Thrown when <paramref name="application"/> is <see langword="null"/>.
     /// </exception>
     /// <remarks>
@@ -87,7 +87,7 @@ internal class RevitContext : IRevitContext, IDisposable
     /// <exception cref="ObjectDisposedException">
     ///     Thrown when this context has been disposed.
     /// </exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the underlying <see cref="Autodesk.Revit.ApplicationServices.Application"/>
     ///     is no longer valid.
     /// </exception>
@@ -119,7 +119,7 @@ internal class RevitContext : IRevitContext, IDisposable
     /// <exception cref="ObjectDisposedException">
     ///     Thrown when this context has been disposed.
     /// </exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="System.InvalidOperationException">
     ///     Thrown when the document reference is non-<see langword="null"/> and the underlying
     ///     <see cref="Autodesk.Revit.DB.Document"/> is no longer valid.
     /// </exception>

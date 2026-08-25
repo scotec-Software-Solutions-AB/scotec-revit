@@ -10,7 +10,7 @@ namespace Scotec.Revit.Isolation;
 ///     Defines an attribute to configure isolation settings for Revit commands.
 /// </summary>
 /// <remarks>
-///     Apply this attribute to classes implementing the <see cref="IExternalCommand" /> interface
+///     Apply this attribute to classes implementing the <see cref="Autodesk.Revit.UI.IExternalCommand" /> interface
 ///     to specify isolation behavior during Revit command execution.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]

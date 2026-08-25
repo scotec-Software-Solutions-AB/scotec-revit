@@ -16,16 +16,16 @@ namespace Scotec.Revit.Test;
 public partial class TestRevitDialog
 {
     private readonly IGlobalRevitUiContext _globalContext;
-    private readonly RevitTaskDispatcher _revitTask;
+    private readonly RevitTaskDispatcher _revitTaskDispatcher;
     private readonly RevitSelectionChangedHandler _selectionChangedHandler;
 
     public TestRevitDialog(
         IGlobalRevitUiContext globalContext,
-        RevitTaskDispatcher revitTask,
+        RevitTaskDispatcher revitTaskDispatcher,
         UIControlledApplication application) : base(globalContext.UiApplication)
     {
         _globalContext = globalContext;
-        _revitTask = revitTask;
+        _revitTaskDispatcher = revitTaskDispatcher;
         InitializeComponent();
 
         // Scoped to this dialog: the handler is active only while the window is open.
@@ -39,19 +39,19 @@ public partial class TestRevitDialog
             TaskDialog.Show("Selection Changed", $"Selected element count: {selectedIds.Count}");
         });
 
-        Closed += async (_,_) => await _revitTask.Run(_ => OnClosed());
+        Closed += async (_,_) => await _revitTaskDispatcher.Run(_ => OnClosed());
     }
 
 
     private async void DialogButton_Click(object sender, RoutedEventArgs e)
     {
-        var result = await _revitTask.Run(context =>
+        var result = await _revitTaskDispatcher.Run(context =>
         {
             TaskDialog.Show("Revit Task 1", "This is a message from the Revit task!");
             return true;
         });
-        await _revitTask.Run(context => { TaskDialog.Show("Revit Task 2", "This is a message from the Revit task!"); });
-        await _revitTask.Run(MyRevitTask);
+        await _revitTaskDispatcher.Run(context => { TaskDialog.Show("Revit Task 2", "This is a message from the Revit task!"); });
+        await _revitTaskDispatcher.Run(MyRevitTask);
     }
 
     private void OnClosed()
