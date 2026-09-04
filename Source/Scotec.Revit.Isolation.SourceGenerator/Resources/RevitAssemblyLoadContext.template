@@ -225,10 +225,9 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
     {{
         _context = context;
         RootAssembly = MakePathAbsolute(rootAssembly);
-        _resolver = new AssemblyDependencyResolver(rootAssembly);
+        _resolver = new AssemblyDependencyResolver(RootAssembly);
 
-        var fullPath = Path.GetFullPath(rootAssembly);
-        var rootPath = Path.GetDirectoryName(fullPath);
+        var rootPath = Path.GetDirectoryName(RootAssembly);
         if(rootPath is not null)
         {{
             CacheAssemblies(rootPath);
