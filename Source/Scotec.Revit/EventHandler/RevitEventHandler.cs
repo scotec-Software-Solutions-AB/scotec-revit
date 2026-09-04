@@ -350,17 +350,13 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
         var logger = serviceProvider.GetService<ILogger<RevitEventHandler<TSender, TEventArgs, TContext>>>();
 
-        logger?.LogDebug(
+        logger?.LogTrace(
             "EventHandler {HandlerType}: handling {EventArgsType}.",
             handlerType, typeof(TEventArgs).Name);
 
         try
         {
             InvokeOnExecute(typedSender, args, serviceProvider, logger, handlerType);
-
-            logger?.LogInformation(
-                "EventHandler {HandlerType}: {EventArgsType} handled successfully.",
-                handlerType, typeof(TEventArgs).Name);
         }
         catch (Exception ex)
         {
@@ -420,7 +416,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
                 try
                 {
-                    logger?.LogDebug(
+                    logger?.LogTrace(
                         "EventHandler {HandlerType}: dispatching {EventArgsType} to registered delegate '{DelegateName}'.",
                         handlerType, typeof(TEventArgs).Name, registration.Action.Method.Name);
 
@@ -443,7 +439,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
 
         if (method is not null)
         {
-            logger?.LogDebug(
+            logger?.LogTrace(
                 "EventHandler {HandlerType}: dispatching {EventArgsType} via [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
                 handlerType, typeof(TEventArgs).Name, nameof(RevitEventHandlerExecuteAttribute),
                 method.DeclaringType?.Name, method.Name);
@@ -459,7 +455,7 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
         }
 
         // Virtual OnExecute fallback.
-        logger?.LogDebug(
+        logger?.LogTrace(
             "EventHandler {HandlerType}: no delegates or [{AttributeName}]-attributed method found for {EventArgsType}. Dispatching via virtual OnExecute.",
             handlerType, nameof(RevitEventHandlerExecuteAttribute), typeof(TEventArgs).Name);
 
