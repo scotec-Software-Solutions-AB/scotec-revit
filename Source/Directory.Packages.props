@@ -21,14 +21,20 @@
   <!-- Scotec packages -->
   <ItemGroup>
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
-    <PackageVersion Include="Scotec.Extensions.Linq" Version="1.1.1" />
-    <PackageVersion Include="Scotec.Extensions.Utilities" Version="1.1.1" />
+    <PackageVersion Include="Scotec.Extensions.Linq" Version="1.2.0" />
+    <PackageVersion Include="Scotec.Extensions.Utilities" Version="1.2.0" />
   </ItemGroup>
   <!-- Other packages -->
   <ItemGroup>
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
     <PackageVersion Include="OpenMcdf" Version="3.1.4" />
+  </ItemGroup>
+  <!-- Microsoft.Extensions.* must follow the target framework. The net8.0 build must not pull 10.x. -->
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net8.0'))">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net8.0'))">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
   </ItemGroup>
 </Project>
