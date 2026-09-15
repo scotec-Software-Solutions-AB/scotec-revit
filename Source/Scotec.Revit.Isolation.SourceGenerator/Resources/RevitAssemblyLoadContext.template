@@ -230,7 +230,7 @@ internal class RevitAssemblyDependencyResolver : IRevitAssemblyDependencyResolve
         var rootPath = Path.GetDirectoryName(RootAssembly);
         if(rootPath is not null)
         {{
-            CacheAssemblies(rootPath);
+            //CacheAssemblies(rootPath);
         }}
     }}
 
