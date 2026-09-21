@@ -320,9 +320,11 @@ public abstract class RevitEventHandler<TSender, TEventArgs, TContext> : IDispos
                 scope = autofacRoot.BeginLifetimeScope(builder =>
                 {
                     IServiceCollection services = new ServiceCollection();
-                    services.AddScoped<TEventArgs>(_ => args);
                     RegisterEventContext(services, typedSender, args);
                     ConfigureServices(services);
+                    // The event args instance is owned by Revit, not by this scope, so it must not be
+                    // disposed when the scope closes.
+                    builder.RegisterInstance(args).As<TEventArgs>().ExternallyOwned();
                     // IRevitContext is always registered.
                     // IRevitUiContext is additionally registered when the context is a UI context.
                     builder.RegisterInstance(context!).As<IRevitContext>().OwnedByLifetimeScope();
