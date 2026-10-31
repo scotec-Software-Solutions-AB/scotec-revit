@@ -4,135 +4,38 @@ SPDX-FileCopyrightText: Copyright © 2026 scotec Software Solutions AB
 SPDX-License-Identifier: MIT
 -->
 
-# GitHub Copilot Instructions
+# GitHub Copilot instructions — Scotec.Revit
 
-These instructions define the default behavior for GitHub Copilot and Copilot agents in this repository.
+Scotec.Revit is a reusable .NET 8 library/framework for Autodesk Revit add-ins, **not** a specific family-management product. Work against the current repository source and documentation, not assumptions from other scotec projects.
 
-They apply to generated, modified, reviewed, and refactored code unless a more specific instruction overrides them.
+## Repository orientation
 
----
+- Repository: https://github.com/scotec-Software-Solutions-AB/scotec-revit
+- Start with `README.md`, `CONTRIBUTING.md`, `Source/`, `Documentation/`, `Build/`, `GenerateTest/`, and the relevant project files. Never assume a solution filename or installed Revit versions without checking.
+- Follow the actual target framework, referenced Revit API assemblies, compiler settings, test framework, `NuGet.config`, `GitVersion.yml`, and `Scotec StyleGuide.DotSettings`.
+- Public framework contracts are consumed by external add-ins; preserve source/binary compatibility unless the task explicitly calls for a breaking change. Explain changes in public behavior, API signatures, lifetimes, and supported Revit versions.
 
-## Primary Goal
+## Framework-specific principles
 
-Produce production-quality changes that integrate cleanly into this repository, preserve existing behavior, and remain compatible with the repository's .NET and Revit constraints.
+- Preserve `RevitApp`/`RevitDbApp` lifecycle behavior and `[RevitStartup]` / `[RevitShutdown]` injection semantics.
+- Respect `RevitCommand` transaction modes, failure processing and per-invocation DI scopes.
+- For `RevitEventHandler<>`, `RevitUpdater`, and command-availability checks, respect their registration, execution contexts, lifetimes and cleanup behavior.
+- Use `RevitTaskDispatcher` / external events for work initiated outside an allowed Revit API context; do not assume UI thread access alone makes Revit document modification legal.
+- Distinguish scoped `IRevitContext` / `IRevitUiContext` from long-lived `IGlobalRevitContext` / `IGlobalRevitUiContext`. Do not hold event- or command-scoped objects after their scope ends.
+- Treat `AssemblyLoadContext` isolation as a first-class requirement. Avoid accidental type identity conflicts, Default ALC leakage, unintentional shared dependencies, or changes to resolver precedence. Consider Revit's own loading behavior per supported version.
+- Cross-add-in requests must establish valid Revit context; inspect `RevitContextTracker` and `IRevitScopeFactory` rather than assuming the caller's context is reusable.
+- Do not bypass the host's transaction, event, document, threading, or startup/shutdown restrictions.
 
----
+## Implementation quality
 
-## Instruction Precedence
+- Inspect existing implementations and nearby tests first. Follow current naming, nullability, dependency injection, logging, documentation and style conventions.
+- Prefer minimal, focused changes; avoid unrelated reformatting, speculative abstractions and new packages unless justified.
+- Catch exceptions only to recover, translate or add context; preserve stack traces; never suppress errors or log secrets or sensitive model content.
+- Do not invent APIs, behavior, feature support, or benchmark/test results. Verify implementation details in code when uncertain.
+- Document public APIs with useful XML summaries, parameter/return/exception contracts where appropriate; keep samples aligned with actual signatures.
 
-When instructions conflict, apply this order:
+## Verification
 
-1. Explicit user request.
-2. More specific repository or folder-level instruction.
-3. Existing local code patterns in the touched area.
-4. These common instructions.
-
-When two valid approaches are possible, prefer the one that is simpler, more local, and more consistent with nearby code.
-
----
-
-## Repository Expectations
-
-- Work from the code that already exists in the touched project, not from generic framework examples.
-- Match the naming, file layout, nullability style, dependency style, and test style used nearby.
-- Preserve public APIs and serialized shapes unless a breaking change is explicitly requested.
-- Keep edits narrow. Do not combine feature work with cleanup or unrelated refactoring.
-- Do not invent project conventions, helper abstractions, or infrastructure that are not already supported by the repository.
-
----
-
-## Implementation Rules
-
-Prefer:
-
-- Clear, explicit code over clever or heavily abstracted code.
-- Small focused methods and straightforward control flow.
-- Strong typing, explicit null handling, and guard clauses.
-- Dependency injection or existing seams when they improve testability.
-- Business logic in testable units instead of entry points, UI glue, or infrastructure wrappers.
-
-Avoid:
-
-- Hidden global state.
-- Unnecessary new abstractions, interfaces, or base classes.
-- Silent exception handling.
-- Reflection unless there is an established need in the codebase.
-- Magic strings, magic numbers, dead code, and commented-out code.
-
-Add a new abstraction only when it clearly reduces duplication, isolates a boundary already present in the design, or is required for testability.
-
----
-
-## Revit and Host-Specific Rules
-
-When working with Revit-facing code:
-
-- Respect Revit API version boundaries and avoid assuming newer API surface is available.
-- Keep version-specific behavior isolated when support differs across target versions.
-- Do not move Revit API calls across transaction, document, threading, or host-lifecycle boundaries without clear evidence that the change is safe.
-- Treat document state, external events, file paths, and model data as sensitive to host constraints and failure handling.
-- Prefer small, explicit adapters around Revit-specific APIs rather than leaking host concerns through unrelated layers.
-
-If the safety of a Revit API change cannot be verified from nearby code, keep the change conservative and state the assumption.
-
----
-
-## Error Handling and Diagnostics
-
-- Never swallow exceptions silently.
-- Catch exceptions only to add context, recover, translate, or clean up.
-- Preserve stack traces when rethrowing.
-- Prefer specific exception types and actionable messages.
-- Log useful diagnostics, but never log secrets, credentials, tokens, private keys, or sensitive model data.
-
----
-
-## Dependencies and Compatibility
-
-- Prefer the standard library and dependencies already used in the repository.
-- Introduce new packages only when justified and only if they fit the target framework and repository conventions.
-- Respect configured target frameworks, language versions, analyzers, and nullable settings.
-- Do not use APIs that are unavailable in the targeted runtime or package version.
-
----
-
-## Testing and Validation
-
-For behavior changes, bug fixes, and non-trivial refactors:
-
-- Add or update tests when there is an existing test location and a reasonable seam for the behavior.
-- Prefer deterministic tests that exercise the changed behavior directly.
-- Validate the touched slice with the narrowest relevant check available, such as a focused test, build, or type check.
-- If validation cannot be run, say so explicitly and do not imply the change was verified.
-
-Do not stop at code generation alone when a local validation step is available.
-
----
-
-## Documentation and Comments
-
-- Keep documentation aligned with the implementation.
-- Add XML documentation for public APIs when the surrounding codebase uses it or when the contract is non-obvious.
-- Comments should explain intent, constraints, or non-obvious decisions, not restate the code.
-- Do not add noisy comments or tutorial-style explanations inside production code.
-
----
-
-## Communication Style
-
-- Be concise, concrete, and practical.
-- Call out assumptions, risks, and edge cases when they matter.
-- Prefer concrete code changes over abstract advice.
-- When context is incomplete, state the assumption instead of inventing missing behavior.
-
----
-
-## Definition of Done
-
-A change is complete only when all of the following are true:
-
-- The requested behavior is implemented or the requested analysis is complete.
-- The change is limited to the necessary scope.
-- Existing local patterns and compatibility constraints were respected.
-- Relevant tests or validation were updated and run when feasible, or the lack of validation was stated explicitly.
-- The final explanation includes important assumptions, risks, and any unverified areas.
+- Build affected projects and run targeted tests where possible; run broader tests for shared contracts, ALC handling, lifecycle or infrastructure changes.
+- Identify Revit-host-dependent behavior requiring manual/integration verification when no Revit runtime is available.
+- Report what was actually built/tested, what could not be run, any compatibility risks and remaining assumptions.
