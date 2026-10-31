@@ -2,9 +2,13 @@ name: Build & Deploy
 
 on: [workflow_dispatch]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-2025
 
     strategy:
       matrix:
@@ -27,39 +31,132 @@ jobs:
         useConfigFile: true
         configFilePath: GitVersion.yml
 
-    - name: Compute package version (incl prerelease)
-      shell: bash
+    - name: Compute package version
+      shell: pwsh
       run: |
-        BASE="${{ matrix.revitYear }}.${GITVERSION_MINOR}.${GITVERSION_PATCH}"
-        PKG_VERSION="${BASE}${GITVERSION_PRERELEASETAGWITHDASH}"
-    
-        REVIT_CONST="REVIT${{ matrix.revitYear }}"
-    
-        echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
-        echo "REVIT_CONST=$REVIT_CONST" >> $GITHUB_ENV
-    
-        echo "Computed PKG_VERSION: $PKG_VERSION"
-        echo "DefineConstants: $REVIT_CONST"
-        echo "SemVer (GitVersion): $GITVERSION_SEMVER"
+        $base = "${{ matrix.revitYear }}.$env:GITVERSION_MINOR.$env:GITVERSION_PATCH"
+        $pkgVersion = "$base$env:GITVERSION_PRERELEASETAGWITHDASH"
+
+        $revitConst = "REVIT${{ matrix.revitYear }}"
+
+        "PKG_VERSION=$pkgVersion" >> $env:GITHUB_ENV
+        "REVIT_CONST=$revitConst" >> $env:GITHUB_ENV
+
+        Write-Host "Computed PKG_VERSION: $pkgVersion"
+        Write-Host "DefineConstants: $revitConst"
+        Write-Host "SemVer (GitVersion): $env:GITVERSION_SEMVER"
+
     - name: Setup .NET 8.0
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore ./Source/Scotec.Revit.slnx
-        -p:RevitYear="${{ matrix.revitYear }}"
-        -p:DefineConstants="$REVIT_CONST"
+      shell: pwsh
+      run: |
+        dotnet restore ./Source/Scotec.Revit.slnx `
+          -p:RevitYear="${{ matrix.revitYear }}" `
+          -p:DefineConstants="$env:REVIT_CONST"
 
+    # Important:
+    # Do not generate NuGet packages yet. The assemblies must be signed first.
     - name: Build
-      run: >
-        dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release
-        -p:CompanyName="scotec Software Solutions AB"
-        -p:RevitYear="${{ matrix.revitYear }}"
-        -p:DefineConstants="$REVIT_CONST"
-        -p:Version="$PKG_VERSION"
-        -p:PackageVersion="$PKG_VERSION"
-        -p:InformationalVersion="$PKG_VERSION+$GITVERSION_SHA"
+      shell: pwsh
+      run: |
+        dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release `
+          -p:CompanyName="scotec Software Solutions AB" `
+          -p:RevitYear="${{ matrix.revitYear }}" `
+          -p:DefineConstants="$env:REVIT_CONST" `
+          -p:Version="$env:PKG_VERSION" `
+          -p:PackageVersion="$env:PKG_VERSION" `
+          -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
+          -p:GeneratePackageOnBuild=false
+
+    - name: Azure login
+      uses: azure/login@v3
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # Build a precise list of our assemblies.
+    # This avoids signing third-party assemblies and obj/ref assemblies.
+    - name: Create signing file list
+      shell: pwsh
+      run: |
+        $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
+
+        $files = Get-ChildItem `
+          -Path $sourceRoot `
+          -Recurse `
+          -File `
+          -Filter "Scotec*.dll" |
+          Where-Object {
+            $_.FullName -match '\\bin\\Release\\'
+          }
+
+        if (-not $files) {
+          throw "No Scotec DLLs were found for signing."
+        }
+
+        $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
+
+        $files |
+          ForEach-Object {
+            [System.IO.Path]::GetRelativePath(
+              $env:GITHUB_WORKSPACE,
+              $_.FullName
+            )
+          } |
+          Set-Content $catalog
+
+        Write-Host "Files to sign:"
+        Get-Content $catalog
+
+    - name: Sign assemblies
+      uses: azure/artifact-signing-action@v2
+      with:
+        endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+        signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+        certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+        files-catalog: ${{ github.workspace }}\signing-files.txt
+        file-digest: SHA256
+        timestamp-rfc3161: http://timestamp.acs.microsoft.com
+        timestamp-digest: SHA256
+
+    - name: Verify signatures
+      shell: pwsh
+      run: |
+        $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
+
+        foreach ($relativePath in Get-Content $catalog) {
+          $file = Join-Path $env:GITHUB_WORKSPACE $relativePath
+          $signature = Get-AuthenticodeSignature $file
+
+          Write-Host "$relativePath : $($signature.Status)"
+
+          if ($signature.Status -ne "Valid") {
+            throw "Invalid signature: $relativePath ($($signature.Status))"
+          }
+        }
+
+    # Now package the already signed assemblies.
+    - name: Pack
+      shell: pwsh
+      run: |
+        dotnet pack --no-build ./Source/Scotec.Revit.slnx -c Release `
+          -p:CompanyName="scotec Software Solutions AB" `
+          -p:RevitYear="${{ matrix.revitYear }}" `
+          -p:DefineConstants="$env:REVIT_CONST" `
+          -p:Version="$env:PKG_VERSION" `
+          -p:PackageVersion="$env:PKG_VERSION" `
+          -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
+          -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
 
     - name: Push package
-      run: dotnet nuget push ./localPackages/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      shell: pwsh
+      run: |
+        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
+          -s https://api.nuget.org/v3/index.json `
+          -k "${{ secrets.NUGET_API_KEY }}" `
+          --skip-duplicate
