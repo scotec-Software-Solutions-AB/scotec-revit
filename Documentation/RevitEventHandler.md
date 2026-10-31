@@ -2,7 +2,7 @@
 
 `RevitEventHandler<TEventArgs>` is the generic base class for handling Revit application events with automatic dependency injection (DI) scope per invocation. Each concrete handler wraps one specific Revit event, self-subscribes in the constructor, and self-unsubscribes on disposal.
 
-Each time the subscribed event fires, a new DI scope is created by default. Revit context objects available from the event -- such as `Document`, `View`, `UIApplication`, and `UIDocument` -- are registered automatically. Services from the application's DI container are resolved and injected into the handler method. Scope creation can be disabled per handler via `UseNewScope`.
+Each time the subscribed event fires, a new DI scope is created by default. An `IRevitContext` is registered automatically in every invocation scope. For UI-specific events, `IRevitUiContext` is registered as well. Services from the application's DI container are resolved and injected into the handler method. Scope creation can be disabled per handler via `UseNewScope`.
 
 ## Overview
 
@@ -19,9 +19,7 @@ Document handlers are available for both `RevitApp` (`IExternalApplication`) and
 
 ### The Recommended Approach: `[RevitEventHandlerExecute]` Attribute
 
-The preferred way to implement handler logic is to declare a method with the `[RevitEventHandlerExecute]` attribute. The method must return `void`. It may have any name and any combination of DI-resolvable parameters. The framework discovers the method at runtime, resolves all parameters from the per-invocation DI scope, and calls it.
-
-Event-args and known Revit context objects (for example `Document`, `View`) are passed through directly without going through DI registration.
+The framework discovers the method at runtime, resolves all parameters from the per-invocation DI scope, and calls it.
 
 **Example: react to a document being opened**
 
@@ -32,9 +30,9 @@ public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
         : base(application) { }
 
     [RevitEventHandlerExecute]
-    private void OnDocumentOpened(Document document, IMyService myService)
+    private void OnDocumentOpened(IRevitContext context, IMyService myService)
     {
-        myService.TrackDocument(document);
+        myService.TrackDocument(context.Document);
     }
 }
 ```
@@ -48,9 +46,9 @@ public class MyViewActivatedHandler : RevitViewActivatedHandler
         : base(application) { }
 
     [RevitEventHandlerExecute]
-    private void OnViewActivated(View view, Document document, IMyViewService viewService)
+    private void OnViewActivated(IRevitUiContext context, IMyViewService viewService)
     {
-        viewService.SetActiveView(view, document);
+        viewService.SetActiveView(context.ActiveView, context.Document);
     }
 }
 ```
@@ -70,7 +68,7 @@ The framework distinguishes between required and optional parameters:
 ```csharp
 [RevitEventHandlerExecute]
 private void OnDocumentOpened(
-    Document document,              // passed through directly
+    IRevitContext context,          // required -- always registered
     IMyService myService,           // required -- throws if not registered
     IOptionalFeature? feature,      // optional -- null if not registered
     ILogging logging = null)        // optional -- null if not registered
@@ -267,9 +265,9 @@ public sealed class SelectionSyncHandler : RevitViewActivatedHandler
     }
 
     [RevitEventHandlerExecute]
-    private void OnViewActivated(View view, Document document)
+    private void OnViewActivated(IRevitUiContext context)
     {
-        _viewModel.UpdateActiveView(view, document);
+        _viewModel.UpdateActiveView(context.ActiveView, context.Document);
     }
 }
 ```
@@ -344,19 +342,56 @@ The property is `virtual`, so the override may contain arbitrary logic:
 protected override bool UseNewScope => _settings.UseScopedHandlers;
 ```
 
-> **Note:** When `UseNewScope` is `false`, event args, `Document`, `View`, and other context objects listed in _What Is Registered by Default_ are **not** available for injection.
+> **Note:** When `UseNewScope` is `false`, event args, `IRevitContext`, `IRevitUiContext`, and any other objects registered via `ConfigureServices` or `RegisterEventContext` are **not** available for injection.
 
 ### What Is Registered by Default
 
-The event-args type and the Revit context objects specific to each event are registered automatically. See the tables above for what each handler registers. In addition:
+Every invocation scope always contains:
 
-| Type | Registered when |
-|------|-----------------|
-| `TEventArgs` | Always |
-| `Document` | Available from the event args or sender |
-| `View` | Available from the event args (`RevitViewActivatedHandler`) |
-| `UIApplication` | Available from the sender (`RevitViewActivatedHandler`, `RevitIdlingHandler`) |
-| `UIDocument` | Available from the sender's active document (`RevitViewActivatedHandler`) |
+| Type | Notes |
+|------|-------|
+| `TEventArgs` | The event args instance for the current invocation |
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
+| `IRevitUiContext` | Additionally registered for UI-handler events — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+
+The `Document` property on `IRevitContext` may be `null` when the document is not yet available (pre-open and pre-create events) or has already been destroyed (`DocumentClosed`).
+
+### Revit Context Interfaces: `IRevitContext` and `IRevitUiContext`
+
+Every invocation scope provides a context object that exposes the Revit state for the current event. The type depends on the event source:
+
+| Interface | Handler base classes | Properties |
+|---|---|---|
+| `IRevitContext` | All `ControlledApplication`-sender handlers | `Application`, `Document` |
+| `IRevitUiContext` | All `UIControlledApplication`-sender handlers | `Application`, `Document`, `UiApplication`, `UiDocument`, `ActiveView` |
+
+`IRevitUiContext` extends `IRevitContext`, so UI handlers expose both interfaces.
+
+The context is created once per invocation before any delegates or the `[RevitEventHandlerExecute]` method run. All delegates in the same invocation share the same instance.
+
+The `Document` property may be `null` when the document is not yet available:
+
+| Scenario | `Document` |
+|---|---|
+| Pre-open and pre-create events | `null` — document does not exist yet |
+| `DocumentClosed` | `null` — document has already been destroyed |
+| All other document events | Non-`null` |
+
+```csharp
+[RevitEventHandlerExecute]
+private void OnDocumentOpened(IRevitContext context)
+{
+    Log.Info($"Opened: {context.Document.Title}");
+}
+```
+
+```csharp
+[RevitEventHandlerExecute]
+private void OnViewActivated(IRevitUiContext context)
+{
+    _panelViewModel.UpdateView(context.ActiveView, context.Document);
+}
+```
 
 ### Registering Additional Services
 
@@ -374,26 +409,82 @@ public class MyDocumentOpenedHandler : RevitDocumentOpenedHandler
     }
 
     [RevitEventHandlerExecute]
-    private void OnDocumentOpened(Document document, IMyService myService, IMyValidator validator)
+    private void OnDocumentOpened(IRevitContext context, IMyService myService, IMyValidator validator)
     {
-        if (validator.IsValid(document))
+        if (validator.IsValid(context.Document))
         {
-            myService.TrackDocument(document);
+            myService.TrackDocument(context.Document);
         }
     }
 }
 ```
 
+### Registering Delegates with `AddHandler`
+
+As an alternative to the `[RevitEventHandlerExecute]` attribute, delegates can be registered programmatically via `AddHandler`. This is useful when subscriptions need to be managed at runtime or when multiple consumers share one handler instance.
+
+```csharp
+var handle = myDocumentOpenedHandler.AddHandler(
+    (IRevitContext context, IMyService service) =>
+    {
+        service.TrackDocument(context.Document);
+    });
+
+// Later: remove this specific subscription
+handle.Dispose();
+```
+
+The strongly-typed overload accepts `Action<TContext>` and receives the context directly:
+
+```csharp
+var handle = myDocumentOpenedHandler.AddHandler(
+    (IRevitContext context) => service.TrackDocument(context.Document));
+```
+
+All delegates registered on one handler instance share the same invocation scope and the same `IRevitContext` instance. A delegate may receive its own child scope by providing a `configureServices` callback:
+
+```csharp
+var handle = myDocumentOpenedHandler.AddHandler(
+    (ISpecialService svc) => svc.DoWork(),
+    services => services.AddTransient<ISpecialService, SpecialService>());
+```
+
+The child scope inherits all invocation scope registrations — including `IRevitContext`, `TEventArgs`, and `ConfigureServices` registrations — and adds the delegate-specific services on top.
+
+`AddHandler` returns an `IDisposable` handle. Disposing it removes that specific registration. Disposing the handler itself removes all registrations and unsubscribes from the event.
+
+> **Important:** When at least one delegate is registered via `AddHandler`, the `[RevitEventHandlerExecute]` method and the `OnExecute` override are **not** called. The `AddHandler` path is exclusive.
+
 ### DI Scope Creation Flow
 
 1. The event fires and Revit calls the handler's internal callback.
-2. If `UseNewScope` is `true`, a new Autofac lifetime scope is opened; otherwise the root container is used directly and steps 3–5 are skipped.
+2. If `UseNewScope` is `true`, a new Autofac lifetime scope is opened; otherwise the root container is used directly and steps 3–6 are skipped.
 3. The event-args instance is registered in the scope.
-4. `RegisterEventContext` is called — the concrete handler registers known Revit context objects via `IServiceCollection`.
-5. `ConfigureServices` is called to register additional user-provided services.
-6. The method marked with `[RevitEventHandlerExecute]` is discovered and invoked with parameters resolved from the scope or root container.
-7. If no attributed method exists, `OnExecute(TEventArgs)` is called instead.
-8. If a scope was created, it is disposed.
+4. `CreateContext` is called — the handler shim creates an `IRevitContext` (or `IRevitUiContext` for UI handlers) instance from the event sender and args. `IRevitContext` is always registered in the scope. For UI-specific handlers, `IRevitUiContext` is registered as well.
+5. `RegisterEventContext` is called — additional Revit context objects can be registered via `IServiceCollection`.
+6. `ConfigureServices` is called to register additional user-provided services.
+7. If delegates are registered via `AddHandler`, they run sequentially. Each delegate resolves parameters from the invocation scope. A delegate that provides a `configureServices` callback runs in a child scope that inherits all invocation scope registrations.
+8. If no `AddHandler` delegates are registered, the method marked with `[RevitEventHandlerExecute]` is discovered and invoked.
+9. If no attributed method exists, `OnExecute` is called instead.
+10. The invocation scope and any per-delegate child scopes are disposed.
+
+The resulting scope tree looks like this:
+
+```
+autofacRoot
+  └── invocation scope          (one per Revit event fire)
+        ├── TEventArgs
+        ├── IRevitContext         ← always registered
+        ├── IRevitUiContext       ← additionally registered for UI-handler events
+        ├── RegisterEventContext registrations
+        ├── ConfigureServices registrations
+        │
+        ├── delegate A            ← resolves directly from invocation scope
+        ├── delegate B            ← resolves directly from invocation scope
+        └── child scope           ← only when delegate provides configureServices
+              ├── inherits everything above
+              └── delegate-specific extras
+```
 
 ## Performance Considerations
 
@@ -407,42 +498,84 @@ The following events fire very frequently. Keep handler logic minimal and avoid 
 
 For `RevitIdlingHandler`, avoid calling `IdlingEventArgs.SetRaiseWithoutDelay()` unless continuous polling is truly required, and revert to the default behavior as soon as possible.
 
+## Multiple Handler Instances
+
+Multiple instances of the same handler class — or of different classes subscribed to the same event — operate independently. Each instance has its own invocation scope, its own `IRevitContext`, and its own delegate list:
+
+```
+Revit fires DocumentOpened
+  ├── Handler instance A  →  invocation scope A  →  IRevitContext A
+  └── Handler instance B  →  invocation scope B  →  IRevitContext B
+```
+
+The order in which instances are called reflects the order Revit delivers the event to each subscriber, which is not guaranteed.
+
+| Goal | Approach |
+|---|---|
+| Independent reactions from different parts of the add-in | Multiple handler instances |
+| Coordinated steps within one logical reaction | Multiple delegates on one handler via `AddHandler` |
+
+## Revit API Constraints Inside Event Handlers
+
+The Revit API enforces restrictions on what operations can be performed inside an event callback. Violating these constraints results in an `Autodesk.Revit.Exceptions.InvalidOperationException` at the API boundary.
+
+| Action | Allowed |
+|---|---|
+| Read document data | ✅ |
+| Modify elements (in a transaction, in writable events) | ✅ |
+| Cancel the event (in pre-events, where supported) | ✅ |
+| Queue work via `IExternalEventHandler` | ✅ |
+| Close, open, or create documents | ❌ |
+| Start a modal dialog synchronously | ❌ |
+| Call back into the event source recursively | ❌ |
+
+These restrictions are imposed by Revit regardless of the handler framework used. An `IRevitContext` obtained during a `DocumentOpened` callback, for example, holds a valid `Document` reference — but that document cannot be closed from within the same callback.
+
 ## Implementing a Custom Handler Base
 
-For events not covered by the pre-built handlers, or to share common behaviour across multiple handlers, derive directly from `RevitEventHandler<TEventArgs>`:
+To share common behaviour across multiple handlers, derive from the appropriate typed shim (`RevitApp*EventHandler` or `RevitUi*EventHandler`) rather than from the raw base class. The shims handle context creation and GUID extraction automatically.
 
 ```csharp
-public abstract class MyCustomEventHandler : RevitEventHandler<DocumentClosingEventArgs>
+// Abstract base that adds shared validation logic for any pre-document event.
+public abstract class ValidatedPreDocumentHandler<TEventArgs>
+    : RevitAppPreDocumentEventHandler<TEventArgs>
+    where TEventArgs : RevitAPIPreDocEventArgs
 {
-    private readonly ControlledApplication _application;
+    protected ValidatedPreDocumentHandler(ControlledApplication application)
+        : base(application) { }   // no Subscribe() here — class is abstract
 
-    protected MyCustomEventHandler(ControlledApplication application)
-        : base(application.ActiveAddInId.GetGUID())
+    protected override void ConfigureServices(IServiceCollection services)
     {
-        _application = application;
+        services.AddTransient<IDocumentValidator, DefaultDocumentValidator>();
+    }
+}
+
+// Concrete handler — implements Subscribe/Unsubscribe and the execute method.
+public sealed class MyDocumentSavingHandler : ValidatedPreDocumentHandler<DocumentSavingEventArgs>
+{
+    public MyDocumentSavingHandler(ControlledApplication application)
+        : base(application)
+    {
+        Subscribe();   // called in the most-derived class, after all fields are set
     }
 
-    protected override void Subscribe()
-    {
-        _application.DocumentClosing += HandleEvent;
-    }
+    protected sealed override void Subscribe()   => Application.DocumentSaving += HandleEvent;
+    protected sealed override void Unsubscribe() => Application.DocumentSaving -= HandleEvent;
 
-    protected override void Unsubscribe()
+    [RevitEventHandlerExecute]
+    private void OnDocumentSaving(IRevitContext context, IDocumentValidator validator)
     {
-        _application.DocumentClosing -= HandleEvent;
-    }
-
-    protected override void RegisterEventContext(IServiceCollection services, object sender, DocumentClosingEventArgs args)
-    {
-        if (args.Document is not null)
+        if (!validator.IsValid(context.Document))
         {
-            services.AddSingleton(args.Document);
+            Cancel();
         }
     }
 }
 ```
 
-Pass `application.ActiveAddInId.GetGUID()` to the base constructor -- this is used to look up the root Autofac container for the current add-in.
+The `Application` property is provided by the shim base class and holds the `ControlledApplication` (or `UIControlledApplication` for UI handlers) passed to the constructor. No `_application` field is needed in derived classes.
+
+> **Note:** `Subscribe()` must be called from the most-derived non-abstract class. Abstract intermediates must not call it in their constructors, because virtual methods may reference fields that are not yet initialized in a derived class.
 
 ## Disposal and Cleanup
 
@@ -467,6 +600,9 @@ protected override bool OnShutdown(UIControlledApplication application)
 | Disable per-invocation scope | Override `UseNewScope` and return `false` |
 | Document events (`RevitApp` and `RevitDbApp`) | Derive from a `Revit*Handler` class that takes `ControlledApplication` |
 | UI events (`RevitApp` only) | Derive from a `Revit*Handler` class that takes `UIControlledApplication` |
-| Custom event not in the pre-built set | Derive directly from `RevitEventHandler<TEventArgs>` |
+| Custom event not in the pre-built set | Derive from the appropriate typed shim (e.g. `RevitAppPostDocumentEventHandler<TEventArgs>`) |
 | Subscribe to the event | Automatic -- handled in the constructor |
 | Unsubscribe from the event | Dispose the handler instance when its owner is done |
+| Register a delegate at runtime | Call `AddHandler(delegate)` on the handler instance |
+| Access the current Revit context | Inject `IRevitContext` (document handlers) or `IRevitUiContext` (UI handlers) |
+| Multiple independent reactions to one event | Create multiple handler instances |

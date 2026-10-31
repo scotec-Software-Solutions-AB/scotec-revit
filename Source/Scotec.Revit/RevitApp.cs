@@ -5,14 +5,16 @@
 using System;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Scotec.Revit;
 
 /// <summary>
 ///     Represents an abstract base class for creating Revit external applications.
-///     This class provides integration with Revit's <see cref="UIControlledApplication" /> and supports
+///     This class provides integration with Revit's <see cref="Autodesk.Revit.UI.UIControlledApplication" /> and supports
 ///     advanced features such as dependency injection and service configuration.
 /// </summary>
 /// <remarks>
@@ -21,23 +23,23 @@ namespace Scotec.Revit;
 /// </remarks>
 public abstract class RevitApp : RevitAppBase, IExternalApplication
 {
-    private static readonly Type[] UIControlledApplicationSignature = [typeof(UIControlledApplication)];
+    private static readonly Type[] UiControlledApplicationSignature = [typeof(UIControlledApplication)];
 
     /// <summary>
-    ///     Gets the <see cref="UIControlledApplication" /> instance associated with the Revit application.
+    ///     Gets the <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance associated with the Revit application.
     /// </summary>
     /// <value>
-    ///     The <see cref="UIControlledApplication" /> instance that provides access to Revit's controlled application
+    ///     The <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance that provides access to Revit's controlled application
     ///     features.
     /// </value>
     /// <remarks>
     ///     This property is initialized during the startup process of the Revit application and provides access to
     ///     Revit's API for managing add-ins, events, and other application-level functionalities.
     /// </remarks>
-    public UIControlledApplication? Application { get; private set; }
+    protected UIControlledApplication? Application { get; private set; }
 
     /// <inheritdoc />
-    protected override Type[] StandardLifecycleApplicationSignature => UIControlledApplicationSignature;
+    protected override Type[] StandardLifecycleApplicationSignature => UiControlledApplicationSignature;
 
     /// <inheritdoc />
     protected override Type LifecycleStopType => typeof(RevitApp);
@@ -46,16 +48,16 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Invoked by Revit during the startup of the external application.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
+    ///     The <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
-    ///     A <see cref="Result" /> indicating the success or failure of the startup process.
+    ///     A <see cref="Autodesk.Revit.UI.Result" /> indicating the success or failure of the startup process.
     /// </returns>
     /// <remarks>
-    ///     This method initializes the <see cref="Application" /> property and delegates the startup logic
-    ///     to the <see cref="RevitAppBase.OnStartup(Autodesk.Revit.DB.AddInId)" /> method. If the base class startup process
-    ///     completes successfully, it returns <see cref="Result.Succeeded" />; otherwise, it returns
-    ///     <see cref="Result.Failed" />.
+    ///     This method initializes the <see cref="RevitApp.Application" /> property and delegates the startup logic
+    ///     to the <see cref="RevitAppBase.StartupCore(Autodesk.Revit.DB.AddInId)" /> method. If the base class startup process
+    ///     completes successfully, it returns <see cref="Autodesk.Revit.UI.Result.Succeeded" />; otherwise, it returns
+    ///     <see cref="Autodesk.Revit.UI.Result.Failed" />.
     /// </remarks>
     /// <exception cref="Exception">
     ///     Thrown if an error occurs during the startup process.
@@ -81,7 +83,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     <see cref="Autodesk.Revit.UI.Result.Failed" />.
     /// </returns>
     /// <remarks>
-    ///     This method delegates the shutdown process to the <see cref="RevitAppBase.OnShutdown(ControlledApplication)" />
+    ///     This method delegates the shutdown process to the <see cref="RevitApp.OnShutdown(Autodesk.Revit.UI.UIControlledApplication)" />
     ///     method
     ///     and performs additional cleanup tasks specific to the Revit external application.
     /// </remarks>
@@ -97,16 +99,17 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Executes tasks when Revit starts.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
+    ///     The <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating whether the startup process was successful.
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to implement custom startup logic with access to the
-    ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
+    ///     Revit <see cref="Autodesk.Revit.UI.UIControlledApplication" />, or declare a custom <c>OnStartup</c> method marked with
     ///     <see cref="RevitApplicationStartupAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
+    [UsedImplicitly]
     protected virtual bool OnStartup(UIControlledApplication application)
     {
         return true;
@@ -116,16 +119,17 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     ///     Executes tasks during the shutdown process of the Revit application.
     /// </summary>
     /// <param name="application">
-    ///     The <see cref="UIControlledApplication" /> instance provided by Revit.
+    ///     The <see cref="Autodesk.Revit.UI.UIControlledApplication" /> instance provided by Revit.
     /// </param>
     /// <returns>
     ///     A boolean value indicating the success or failure of the shutdown process.
     /// </returns>
     /// <remarks>
     ///     Override this method in a derived class to define custom shutdown behavior with access to the
-    ///     Revit <see cref="UIControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
+    ///     Revit <see cref="Autodesk.Revit.UI.UIControlledApplication" />, or declare a custom <c>OnShutdown</c> method marked with
     ///     <see cref="RevitApplicationShutdownAttribute" /> with additional DI-resolved parameters.
     /// </remarks>
+    [UsedImplicitly]
     protected virtual bool OnShutdown(UIControlledApplication application)
     {
         return true;
@@ -140,7 +144,7 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
     /// <remarks>
     ///     This method is invoked during the initialization of the Revit application to configure
     ///     dependency injection and service registration. It adds essential Revit-specific services,
-    ///     such as the <see cref="UIControlledApplication" />, the active add-in ID, and the controlled application,
+    ///     such as the <see cref="Autodesk.Revit.UI.UIControlledApplication" />, the active add-in ID, and the controlled application,
     ///     to the service collection.
     /// </remarks>
     protected override void OnConfigure(IHostBuilder builder)
@@ -154,9 +158,10 @@ public abstract class RevitApp : RevitAppBase, IExternalApplication
 
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton(Application);
-            services.AddSingleton(Application.ActiveAddInId);
-            services.AddSingleton(Application.ControlledApplication);
+            services.TryAddSingleton(Application);
+            services.TryAddSingleton(Application.ActiveAddInId);
+            services.TryAddSingleton(Application.ControlledApplication);
+            services.AddGlobalRevitContext(Application);
         });
     }
 }

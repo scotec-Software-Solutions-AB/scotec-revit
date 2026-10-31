@@ -9,7 +9,9 @@ using System.Reflection;
 using Autodesk.Revit.DB;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Scotec.Revit;
 
@@ -23,6 +25,8 @@ namespace Scotec.Revit;
 ///     Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitUpdaterExecuteAttribute : Attribute;
 
 /// <summary>
@@ -94,25 +98,45 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     /// <inheritdoc />
     void IUpdater.Execute(UpdaterData data)
     {
-        var document = data.GetDocument();
-        using var scope = RevitAppBase.GetServiceProvider(AddInId.GetGUID())
-                                      .GetAutofacRoot()
-                                      .BeginLifetimeScope(builder =>
-                                      {
-                                          builder.RegisterInstance(data).ExternallyOwned();
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Handler);
+        var context = new RevitContext(data.GetDocument());
 
-                                          if (document is not null)
-                                          {
-                                              builder.RegisterInstance(document).ExternallyOwned();
-                                          }
+        var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+        using var scope = autofacRoot
+                              .BeginLifetimeScope(builder =>
+                              {
+                                  builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                                  builder.RegisterInstance(data).ExternallyOwned();
 
-                                          var services = new ServiceCollection();
-                                          ConfigureServices(services);
-                                          builder.Populate(services);
-                                      });
+                                  var services = new ServiceCollection();
+                                  ConfigureServices(services);
+                                  builder.PopulateRevit(services, autofacRoot);
+                              });
 
         var serviceProvider = scope.Resolve<IServiceProvider>();
-        InvokeOnExecute(data, serviceProvider);
+        var logger = serviceProvider.GetService<ILogger<RevitUpdater>>();
+        var updaterType = GetType().FullName;
+        var documentPath = data.GetDocument().PathName;
+
+        logger?.LogDebug(
+            "Updater {UpdaterType}: executing. Document: '{DocumentPath}'.",
+            updaterType, documentPath);
+
+        try
+        {
+            InvokeOnExecute(data, serviceProvider, logger, updaterType);
+
+            logger?.LogInformation(
+                "Updater {UpdaterType}: execution completed. Document: '{DocumentPath}'.",
+                updaterType, documentPath);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex,
+                "Updater {UpdaterType}: unhandled exception during execution. Document: '{DocumentPath}'.",
+                updaterType, documentPath);
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -186,11 +210,16 @@ public abstract class RevitUpdater : IUpdater, IDisposable
     ///     <see cref="OnExecute(Autodesk.Revit.DB.UpdaterData)" />.
     ///     Throws <see cref="System.InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
-    private void InvokeOnExecute(UpdaterData data, IServiceProvider serviceProvider)
+    private void InvokeOnExecute(UpdaterData data, IServiceProvider serviceProvider,
+                                  ILogger? logger, string? updaterType)
     {
         var attributedExecute = RevitReflectionHelper.FindSingleAttributedMethod<RevitUpdaterExecuteAttribute>(GetType(), typeof(RevitUpdater), typeof(void));
         if (attributedExecute is not null)
         {
+            logger?.LogDebug(
+                "Updater {UpdaterType}: dispatching via [{AttributeName}]-attributed method '{DeclaringType}.{Method}'.",
+                updaterType, nameof(RevitUpdaterExecuteAttribute), attributedExecute.DeclaringType?.Name, attributedExecute.Name);
+
             RevitReflectionHelper.Invoke(this, attributedExecute, serviceProvider,
                 new Dictionary<Type, object>
                 {
@@ -199,6 +228,10 @@ public abstract class RevitUpdater : IUpdater, IDisposable
                 });
             return;
         }
+
+        logger?.LogDebug(
+            "Updater {UpdaterType}: no [{AttributeName}]-attributed method found. Dispatching via virtual OnExecute.",
+            updaterType, nameof(RevitUpdaterExecuteAttribute));
 
         OnExecute(data);
     }

@@ -3,6 +3,8 @@
 // This file is licensed to you under the MIT license.
 
 using System;
+using System.Linq;
+using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,13 @@ internal sealed class RevitHostBuilder : HostBuilder
     /// <seealso cref="RevitAppBase" />
     public RevitHostBuilder(RevitAppBase app)
     {
+        // Captured by the ConfigureContainer closure below.
+        // ConfigureServices callbacks all receive the same IServiceCollection instance and
+        // run before ConfigureContainer during Build(), so by the time ConfigureContainer
+        // is invoked this reference points to the fully populated service collection —
+        // including any AddRevitScopeFactory call made by the add-in in OnConfigure.
+        IServiceCollection? capturedServices = null;
+
         // Add required services.
         UseServiceProviderFactory(new AutofacServiceProviderFactory())
 
@@ -47,7 +56,21 @@ internal sealed class RevitHostBuilder : HostBuilder
             // Add required services.
             .ConfigureServices((context, services) =>
             {
+                capturedServices = services;
                 services.AddLogging(loggingBuilder => { loggingBuilder.AddConfiguration(context.Configuration.GetSection("Logging")); });
+            })
+
+            // Install the IServiceScopeFactory → IRevitScopeFactory forwarding rule in the
+            // root container when the add-in has opted in to IRevitScopeFactory. The rule is
+            // registered here (root) and in PopulateRevit (child scopes) so that resolving
+            // IServiceScopeFactory from any scope — root or child — always returns the
+            // Revit-aware factory rather than Autofac's AutofacServiceScopeFactory.
+            .ConfigureContainer<ContainerBuilder>((_, builder) =>
+            {
+                if (capturedServices?.Any(d => d.ServiceType == typeof(IRevitScopeFactory)) == true)
+                {
+                    builder.RegisterRevitScopeFactoryForwarding();
+                }
             });
     }
 

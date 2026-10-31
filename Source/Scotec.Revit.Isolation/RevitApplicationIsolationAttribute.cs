@@ -3,7 +3,6 @@
 // This file is licensed to you under the MIT license.
 
 using System;
-using Autodesk.Revit.UI;
 
 namespace Scotec.Revit.Isolation;
 
@@ -11,7 +10,7 @@ namespace Scotec.Revit.Isolation;
 ///     Defines an attribute to configure isolation settings for Revit applications.
 /// </summary>
 /// <remarks>
-///     Apply this attribute to classes implementing the <see cref="IExternalApplication" /> interface
+///     Apply this attribute to classes implementing the <see cref="Autodesk.Revit.UI.IExternalApplication" /> interface
 ///     to specify isolation behavior during Revit application execution.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class)]

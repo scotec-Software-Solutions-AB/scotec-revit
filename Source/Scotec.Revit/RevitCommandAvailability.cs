@@ -9,6 +9,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Scotec.Revit;
@@ -23,7 +24,8 @@ namespace Scotec.Revit;
 ///     directly. Only one method per type hierarchy may carry this attribute.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-[JetBrains.Annotations.MeansImplicitUse]
+[MeansImplicitUse]
+[PublicAPI]
 public sealed class RevitCommandAvailabilityCheckAttribute : Attribute;
 
 /// <summary>
@@ -54,44 +56,24 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     /// </remarks>
     bool IExternalCommandAvailability.IsCommandAvailable(UIApplication uiApplication, CategorySet selectedCategories)
     {
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
         try
         {
-            var application = uiApplication.Application;
-            var uiDocument = uiApplication.ActiveUIDocument;
-            var document = uiDocument?.Document;
-            var view = uiDocument?.ActiveView;
+            var context = new RevitUiContext(uiApplication);
 
-            using var scope = RevitAppBase.GetServiceProvider(uiApplication.ActiveAddInId.GetGUID())
-                                          .GetAutofacRoot()
-                                          .BeginLifetimeScope(builder =>
-                                          {
-                                              builder.RegisterInstance(uiApplication).ExternallyOwned();
+            var autofacRoot = RevitAppBase.GetServiceProvider().GetAutofacRoot();
+            using var scope = autofacRoot
+                                  .BeginLifetimeScope(builder =>
+                                  {
+                                      builder.RegisterInstance(context).As<IRevitContext>().OwnedByLifetimeScope();
+                                      // Same instance. Use ExternallyOwned here to avoid multiple calls to Dispose.
+                                      builder.RegisterInstance(context).As<IRevitUiContext>().ExternallyOwned();
 
-                                              if (application is not null)
-                                              {
-                                                  builder.RegisterInstance(application).ExternallyOwned();
-                                              }
-
-                                              if (uiDocument is not null)
-                                              {
-                                                  builder.RegisterInstance(uiDocument).ExternallyOwned();
-                                              }
-
-                                              if (document is not null)
-                                              {
-                                                  builder.RegisterInstance(document).ExternallyOwned();
-                                              }
-
-                                              if (view is not null)
-                                              {
-                                                  builder.RegisterInstance(view).ExternallyOwned();
-                                              }
-
-                                              // Allow derived classes to add services
-                                              var services = new ServiceCollection();
-                                              ConfigureServices(services);
-                                              builder.Populate(services);
-                                          });
+                                      // Allow derived classes to add services
+                                      var services = new ServiceCollection();
+                                      ConfigureServices(services);
+                                      builder.PopulateRevit(services, autofacRoot);
+                                  });
 
             var serviceProvider = scope.Resolve<IServiceProvider>();
             return InvokeIsCommandAvailable(uiApplication, selectedCategories, serviceProvider);
@@ -131,7 +113,7 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     <c>true</c> if the command is available for execution; otherwise, <c>false</c>.
     /// </returns>
     /// <remarks>
-    ///     This method is obsolete. Override <see cref="IsCommandAvailable(UIApplication, CategorySet)" /> instead,
+    ///     This method is obsolete. Override <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet)" /> instead,
     ///     or declare a custom <c>IsCommandAvailable</c> overload with DI-resolved parameters, which the framework will
     ///     discover and invoke automatically.
     ///     This method will not be called if a custom <c>IsCommandAvailable</c> overload is provided in the derived class.
@@ -169,9 +151,9 @@ public abstract class RevitCommandAvailability : IExternalCommandAvailability
     ///     Invokes the availability-check entry point. If a method marked with
     ///     <see cref="RevitCommandAvailabilityCheckAttribute" /> exists in the type hierarchy it is invoked with
     ///     DI-resolved parameters. Otherwise falls back to the standard
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet)" /> override, and finally to the obsolete
-    ///     <see cref="IsCommandAvailable(UIApplication, CategorySet, IServiceProvider)" /> for backward compatibility.
-    ///     Throws <see cref="InvalidOperationException" /> if more than one method carries the attribute.
+    ///     <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet)" /> override, and finally to the obsolete
+    ///     <see cref="IsCommandAvailable(Autodesk.Revit.UI.UIApplication, Autodesk.Revit.DB.CategorySet, System.IServiceProvider)" /> for backward compatibility.
+    ///     Throws <see cref="System.InvalidOperationException" /> if more than one method carries the attribute.
     /// </summary>
     private bool InvokeIsCommandAvailable(UIApplication applicationData, CategorySet selectedCategories,
                                           IServiceProvider serviceProvider)

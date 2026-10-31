@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 
 	<PropertyGroup Condition="'$(RevitYear)' == '2025'">
@@ -39,27 +39,30 @@
 		<ProjectReference Include="..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj">
 			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
-		<ProjectReference Include="..\Scotec.Revit.Analyzers\Scotec.Revit.Analyzers.csproj" OutputItemType="Analyzer"
-		                  ReferenceOutputAssembly="false" PrivateAssets="All">
+		<ProjectReference Include="..\Scotec.Revit.Analyzers\Scotec.Revit.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All">
 			<TreatAsUsed>true</TreatAsUsed>
 		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
-		<None
-			Remove="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" />
+		<None Remove="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None
-			Include="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll"
-			Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="..\Scotec.Revit.Analyzers\bin\$(PlatformTarget)\$(Configuration)\netstandard2.0\Scotec.Revit.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="RevitFamily\RevitBasicFileInfo.md" />
-
-
 	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resources\StringResources.resx" />
+		<EmbeddedResource Update="Resources\StringResources.de.resx">
+			<DependentUpon>StringResources.resx</DependentUpon>
+		</EmbeddedResource>
+	</ItemGroup>
+
+
 
 </Project>

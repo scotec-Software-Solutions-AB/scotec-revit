@@ -4,7 +4,6 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Reflection;
 
 namespace Scotec.Revit.Isolation.SourceGenerator;
@@ -84,6 +83,19 @@ public abstract class RevitIncrementalGenerator : IIncrementalGenerator
     /// </remarks>
     protected abstract void OnInitialize();
 
+    /// <summary>
+    ///     Returns an <see cref="IncrementalValueProvider{T}" /> that resolves the value of a MSBuild build property
+    ///     at source-generation time.
+    /// </summary>
+    /// <param name="propertyName">
+    ///     The name of the MSBuild property to read (e.g. <c>RevitYear</c>). The lookup is
+    ///     case-insensitive; the name is normalised to lower-case before querying the
+    ///     <see cref="AnalyzerConfigOptionsProvider" />.
+    /// </param>
+    /// <returns>
+    ///     An <see cref="IncrementalValueProvider{T}" /> that yields the property value as a
+    ///     <see cref="string" />, or <c>null</c> if the property is not defined in the build.
+    /// </returns>
     protected IncrementalValueProvider<string?> GetBuildProperty(string propertyName)
     {
         IncrementalValueProvider<string?> value = Context.AnalyzerConfigOptionsProvider.Select((p, _) =>

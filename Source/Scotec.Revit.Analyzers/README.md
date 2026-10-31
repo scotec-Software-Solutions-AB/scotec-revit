@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 SPDX-FileCopyrightText: Copyright (c) 2026 Olaf Meyer
 SPDX-FileCopyrightText: Copyright (c) 2026 scotec Software Solutions AB
 SPDX-License-Identifier: MIT
@@ -17,7 +17,7 @@ install Scotec.Revit, so you do not normally need to reference it directly.
 
 ## Diagnostics
 
-RevitTaskRunAnalyzer: Detects incorrect RevitTask usage that would cause Revit API calls to execute
+RevitTaskDispatcherRunAnalyzer: Detects incorrect RevitTaskDispatcher usage that would cause Revit API calls to execute
 outside the valid Revit API context. For example, calling Revit API methods directly from background
 threads or async continuations instead of dispatching them through the IExternalEventHandler
 mechanism.

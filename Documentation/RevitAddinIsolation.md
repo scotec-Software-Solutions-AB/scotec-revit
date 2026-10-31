@@ -11,6 +11,27 @@ During compilation, source generators create factory classes and load context in
 
 ---
 
+# Breaking Changes
+
+## Single `AssemblyLoadContext` per add-in
+
+> ⚠️ **Breaking change** — support for running multiple Scotec.Revit-based add-ins within a
+> single `AssemblyLoadContext` has been removed.
+
+Each add-in must now run in its own isolated `AssemblyLoadContext`. A single add-in context
+can no longer host more than one Scotec.Revit-based add-in.
+
+**What you need to do:**
+
+- Ensure every add-in assembly declares its own `[assembly: RevitAddinIsolationContext]`
+  attribute with a unique `ContextName`.
+- Do not share a single add-in context across multiple add-ins.
+- If assemblies must be shared between add-ins (e.g. UI frameworks, shared contracts),
+  use a dedicated **shared context** via `SharedContextName` and
+  `[assembly: RevitSharedIsolationContext]` — see [Shared Assembly Context](#shared-assembly-context).
+
+---
+
 # Revit 2026 Native Add-in Isolation
 
 Starting with **Revit 2026**, Autodesk introduced a built-in mechanism for add-in isolation based on `AssemblyLoadContext`.

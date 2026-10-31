@@ -85,10 +85,9 @@ public class MyCommand : RevitCommand
     }
 
     [RevitCommandExecute]
-    private Result Execute(Document document, IMyService myService)
+    private Result Execute(IRevitUiContext context, IMyService myService)
     {
-        // document and myService are resolved from the DI scope automatically.
-        myService.DoWork(document);
+        myService.DoWork(context.Document);
         return Result.Succeeded;
     }
 }
@@ -98,7 +97,8 @@ Any combination of DI-registered types is valid as parameters, including:
 
 - `ExternalCommandData` — passed directly
 - `ElementSet` — passed directly
-- `Document`, `UIDocument`, `UIApplication`, `Application`, `View` — registered by the framework
+- `IRevitContext` — always registered; provides `Application` and `Document`
+- `IRevitUiContext` — always registered for commands; extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView`
 - `IServiceProvider` — registered by the framework
 - Any type registered via `ConfigureServices`
 
@@ -117,14 +117,14 @@ The framework distinguishes between required and optional parameters using two c
 ```csharp
 [RevitCommandExecute]
 private Result Execute(
-    Document document,              // required (T)   — throws if not registered
+    IRevitUiContext context,         // required (T)   — always registered
     IMyService myService,           // required (T)   — throws if not registered
     IOptionalService? optionalA,    // optional (T?)  — null if not registered
     ILogging logging = null)        // optional (= null) — null if not registered
 {
     optionalA?.Notify();
     logging?.Log("Executing");
-    myService.DoWork(document);
+    myService.DoWork(context.Document);
     return Result.Succeeded;
 }
 ```
@@ -178,21 +178,21 @@ public class MyCommand : RevitCommand
     protected override string CommandName => "My Command";
 
     [RevitCommandBeforeExecute]
-    private void Setup(UIApplication uiApplication)
+    private void Setup(IRevitUiContext context)
     {
         // Runs before the transaction is opened.
         // Suitable for read-only setup, pre-checks, or UI preparation.
     }
 
     [RevitCommandExecute]
-    private Result Execute(Document document, IMyService myService)
+    private Result Execute(IRevitUiContext context, IMyService myService)
     {
-        myService.DoWork(document);
+        myService.DoWork(context.Document);
         return Result.Succeeded;
     }
 
     [RevitCommandAfterExecute]
-    private void Cleanup(UIApplication uiApplication)
+    private void Cleanup(IRevitUiContext context)
     {
         // Runs after the transaction has been committed or rolled back.
         // Suitable for post-processing, notifications, or cleanup.
@@ -241,15 +241,15 @@ protected override bool UseNewScope => _settings.UseScopedExecution;
 
 ### What Is Registered by Default
 
-The following types are registered in the per-execution scope (only when `UseNewScope` is `true`):
+The following types are registered in the per-execution scope (only when `UseNewScope` is `true`).
+Because commands always run from the Revit UI, both context interfaces are always available:
 
-| Type             | Registered when            |
-|------------------|----------------------------|
-| `UIApplication`  | Always                     |
-| `Application`    | Always                     |
-| `UIDocument`     | Active document is open    |
-| `Document`       | Active document is open    |
-| `View`           | Active view is available   |
+| Type | Notes |
+|------|-------|
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
+| `IRevitUiContext` | Always registered — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+
+The `Document` and `UiDocument` properties may be `null` when no document is currently open.
 
 ### Registering Additional Services
 
@@ -268,9 +268,9 @@ public class MyCommand : RevitCommand
     }
 
     [RevitCommandExecute]
-    private Result Execute(Document document, IMyService myService, MyDependency dep)
+    private Result Execute(IRevitUiContext context, IMyService myService, MyDependency dep)
     {
-        myService.DoWork(document);
+        myService.DoWork(context.Document);
         return Result.Succeeded;
     }
 }
