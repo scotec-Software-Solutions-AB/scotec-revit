@@ -1,6 +1,7 @@
 name: Build & Deploy
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -8,7 +9,17 @@ permissions:
 
 jobs:
   build:
+    # Only allow builds from develop or from a tag.
+    if: >
+      github.ref == 'refs/heads/develop' ||
+      startsWith(github.ref, 'refs/tags/')
+
     runs-on: windows-2025
+
+    # develop -> prerelease environment
+    # tag     -> release environment
+    environment:
+      name: ${{ startsWith(github.ref, 'refs/tags/') && 'release' || 'prerelease' }}
 
     strategy:
       matrix:
@@ -16,7 +27,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -42,12 +53,14 @@ jobs:
         "PKG_VERSION=$pkgVersion" >> $env:GITHUB_ENV
         "REVIT_CONST=$revitConst" >> $env:GITHUB_ENV
 
-        Write-Host "Computed PKG_VERSION: $pkgVersion"
+        Write-Host "Git ref: $env:GITHUB_REF"
+        Write-Host "Revit year: ${{ matrix.revitYear }}"
+        Write-Host "Computed package version: $pkgVersion"
         Write-Host "DefineConstants: $revitConst"
-        Write-Host "SemVer (GitVersion): $env:GITVERSION_SEMVER"
+        Write-Host "GitVersion SemVer: $env:GITVERSION_SEMVER"
 
     - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
 
@@ -58,8 +71,8 @@ jobs:
           -p:RevitYear="${{ matrix.revitYear }}" `
           -p:DefineConstants="$env:REVIT_CONST"
 
-    # Important:
-    # Do not generate NuGet packages yet. The assemblies must be signed first.
+    # Build the assemblies without creating NuGet packages.
+    # The DLLs must be signed before they are packaged.
     - name: Build
       shell: pwsh
       run: |
@@ -72,6 +85,7 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:GeneratePackageOnBuild=false
 
+    # Authenticate to Azure using GitHub OIDC.
     - name: Azure login
       uses: azure/login@v3
       with:
@@ -79,8 +93,8 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # Build a precise list of our assemblies.
-    # This avoids signing third-party assemblies and obj/ref assemblies.
+    # Create a list containing only our own release assemblies.
+    # Third-party libraries and assemblies under obj/ref are not signed.
     - name: Create signing file list
       shell: pwsh
       run: |
@@ -102,6 +116,7 @@ jobs:
         $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
 
         $files |
+          Sort-Object FullName -Unique |
           ForEach-Object {
             [System.IO.Path]::GetRelativePath(
               $env:GITHUB_WORKSPACE,
@@ -124,6 +139,7 @@ jobs:
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
 
+    # Verify the build output before creating the packages.
     - name: Verify signatures
       shell: pwsh
       run: |
@@ -140,7 +156,7 @@ jobs:
           }
         }
 
-    # Now package the already signed assemblies.
+    # Package the already signed assemblies.
     - name: Pack
       shell: pwsh
       run: |
@@ -153,10 +169,65 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
 
-    - name: Push package
+    # Verify the assemblies inside the actual NuGet packages.
+    - name: Verify package assemblies
       shell: pwsh
       run: |
-        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
-          -s https://api.nuget.org/v3/index.json `
-          -k "${{ secrets.NUGET_API_KEY }}" `
-          --skip-duplicate
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+        $packages = Get-ChildItem `
+          "$env:GITHUB_WORKSPACE\localPackages" `
+          -Filter "*.nupkg"
+
+        if (-not $packages) {
+          throw "No NuGet packages were created."
+        }
+
+        $verifiedAssemblies = 0
+
+        foreach ($package in $packages) {
+          Write-Host "Checking package: $($package.Name)"
+
+          $extractPath = Join-Path `
+            $env:RUNNER_TEMP `
+            ([System.IO.Path]::GetRandomFileName())
+
+          [System.IO.Compression.ZipFile]::ExtractToDirectory(
+            $package.FullName,
+            $extractPath
+          )
+
+          $assemblies = Get-ChildItem `
+            -Path $extractPath `
+            -Recurse `
+            -File `
+            -Filter "Scotec*.dll"
+
+          foreach ($assembly in $assemblies) {
+            $signature = Get-AuthenticodeSignature $assembly.FullName
+
+            Write-Host "  $($assembly.Name): $($signature.Status)"
+
+            if ($signature.Status -ne "Valid") {
+              throw "Invalid signature in $($package.Name): $($assembly.Name)"
+            }
+
+            $verifiedAssemblies++
+          }
+
+          Remove-Item $extractPath -Recurse -Force
+        }
+
+        if ($verifiedAssemblies -eq 0) {
+          throw "No Scotec assemblies were found in the generated NuGet packages."
+        }
+
+        Write-Host "Successfully verified $verifiedAssemblies signed assemblies."
+
+ #   - name: Push packages
+ #     shell: pwsh
+ #     run: |
+ #       dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
+ #         -s https://api.nuget.org/v3/index.json `
+ #         -k "${{ secrets.NUGET_API_KEY }}" `
+ #         --skip-duplicate
