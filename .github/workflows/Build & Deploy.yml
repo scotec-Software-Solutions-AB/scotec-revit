@@ -80,8 +80,8 @@ jobs:
           -p:RevitYear="${{ matrix.revitYear }}" `
           -p:DefineConstants="$env:REVIT_CONST"
 
-    # Build the assemblies, but do not create NuGet packages yet.
-    # The DLLs have to be signed before packaging.
+    # Build without creating NuGet packages.
+    # The assemblies must be signed before packaging.
     - name: Build
       shell: pwsh
       run: |
@@ -94,10 +94,8 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:GeneratePackageOnBuild=false
 
-    # Authenticate through GitHub OIDC.
-    #
-    # The GitHub identity only needs access to the Artifact Signing
-    # certificate profile. It does not need subscription-wide Reader access.
+    # Authenticate to Azure using GitHub OIDC.
+    # No subscription-level role is required for this signing-only workflow.
     - name: Azure login
       uses: azure/login@v3
       with:
@@ -105,45 +103,67 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         allow-no-subscriptions: true
 
-    # Find our assemblies in build output directories.
+    # Find only the primary output assembly of each Scotec.Revit project.
     #
-    # Do not rely on an exact bin\Release path because individual projects
-    # may use additional directories such as framework/platform folders.
+    # Example:
+    #   Scotec.Revit.csproj       -> Scotec.Revit.dll
+    #   Scotec.Revit.Ui.csproj    -> Scotec.Revit.Ui.dll
+    #   Scotec.Revit.Wpf.csproj   -> Scotec.Revit.Wpf.dll
+    #
+    # Referenced/copy-local assemblies such as Scotec.Extensions.* are
+    # deliberately excluded.
     - name: Create signing file list
       shell: pwsh
       run: |
         $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
 
-        $allFiles = Get-ChildItem `
+        $projects = Get-ChildItem `
           -Path $sourceRoot `
           -Recurse `
           -File `
-          -Filter "Scotec*.dll"
+          -Filter "Scotec.Revit*.csproj"
 
-        Write-Host "Scotec DLLs found after build:"
-
-        if ($allFiles) {
-          $allFiles | ForEach-Object {
-            Write-Host "  $($_.FullName)"
-          }
-        }
-        else {
-          Write-Host "  <none>"
+        if (-not $projects) {
+          throw "No Scotec.Revit projects were found."
         }
 
-        $files = $allFiles |
-          Where-Object {
-            $_.FullName -match '\\bin\\'
+        $files = @()
+
+        foreach ($project in $projects) {
+          $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project.Name)
+          $binDirectory = Join-Path $project.DirectoryName "bin"
+
+          if (-not (Test-Path $binDirectory)) {
+            Write-Host "Skipping $projectName - no bin directory found."
+            continue
           }
+
+          $projectAssemblies = Get-ChildItem `
+            -Path $binDirectory `
+            -Recurse `
+            -File `
+            -Filter "$projectName.dll"
+
+          if (-not $projectAssemblies) {
+            Write-Host "No output assembly found for $projectName."
+            continue
+          }
+
+          foreach ($assembly in $projectAssemblies) {
+            $files += $assembly
+          }
+        }
+
+        $files = $files |
+          Sort-Object FullName -Unique
 
         if (-not $files) {
-          throw "No Scotec DLLs were found in build output directories."
+          throw "No Scotec.Revit project assemblies were found for signing."
         }
 
         $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
 
         $files |
-          Sort-Object FullName -Unique |
           ForEach-Object {
             [System.IO.Path]::GetRelativePath(
               $env:GITHUB_WORKSPACE,
@@ -183,7 +203,7 @@ jobs:
           }
         }
 
-    # Create NuGet packages from the already signed assemblies.
+    # Package the already signed assemblies.
     - name: Pack
       shell: pwsh
       run: |
@@ -196,7 +216,7 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
 
-    # Verify the signatures of the actual DLLs stored inside the packages.
+    # Verify Scotec.Revit assemblies inside the generated NuGet packages.
     - name: Verify package assemblies
       shell: pwsh
       run: |
@@ -204,15 +224,16 @@ jobs:
 
         $packages = Get-ChildItem `
           "$env:GITHUB_WORKSPACE\localPackages" `
-          -Filter "*.nupkg"
+          -Filter "Scotec.Revit*.nupkg"
 
         if (-not $packages) {
-          throw "No NuGet packages were created."
+          throw "No Scotec.Revit NuGet packages were created."
         }
 
         $verifiedAssemblies = 0
 
         foreach ($package in $packages) {
+          Write-Host ""
           Write-Host "Checking package: $($package.Name)"
 
           $extractPath = Join-Path `
@@ -228,7 +249,7 @@ jobs:
             -Path $extractPath `
             -Recurse `
             -File `
-            -Filter "Scotec*.dll"
+            -Filter "Scotec.Revit*.dll"
 
           foreach ($assembly in $assemblies) {
             $signature = Get-AuthenticodeSignature $assembly.FullName
@@ -246,7 +267,7 @@ jobs:
         }
 
         if ($verifiedAssemblies -eq 0) {
-          throw "No Scotec assemblies were found in the generated NuGet packages."
+          throw "No Scotec.Revit assemblies were found in the generated NuGet packages."
         }
 
         Write-Host ""
@@ -270,7 +291,7 @@ jobs:
   #   Entity type: Environment
   #   Environment: release
   #
-  # Every tag therefore uses the same OIDC identity.
+  # Every release tag uses the same OIDC identity.
   # ---------------------------------------------------------------------------
 
   release:
