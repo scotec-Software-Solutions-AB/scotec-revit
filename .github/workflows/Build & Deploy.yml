@@ -279,13 +279,13 @@ jobs:
         Write-Host ""
         Write-Host "Successfully verified $verifiedAssemblies signed assemblies."
 
-#    - name: Push packages
-#      shell: pwsh
-#      run: |
-#        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
-#          -s https://api.nuget.org/v3/index.json `
-#          -k "${{ secrets.NUGET_API_KEY }}" `
-#          --skip-duplicate
+    - name: Push packages
+      shell: pwsh
+      run: |
+        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
+          -s https://api.nuget.org/v3/index.json `
+          -k "${{ secrets.NUGET_API_KEY }}" `
+          --skip-duplicate
 
 
   # ---------------------------------------------------------------------------
