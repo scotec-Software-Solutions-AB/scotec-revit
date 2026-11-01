@@ -8,24 +8,23 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    # Only allow builds from develop or from a tag.
-    if: >
-      github.ref == 'refs/heads/develop' ||
-      startsWith(github.ref, 'refs/tags/')
+  prerelease:
+    name: Prerelease - Revit ${{ matrix.revitYear }}
+
+    if: github.ref == 'refs/heads/develop'
 
     runs-on: windows-2025
 
-    # develop -> prerelease environment
-    # tag     -> release environment
-    environment:
-      name: ${{ startsWith(github.ref, 'refs/tags/') && 'release' || 'prerelease' }}
+    # IMPORTANT:
+    # No environment here.
+    # This causes GitHub's OIDC subject to identify the develop branch.
 
     strategy:
+      fail-fast: false
       matrix:
         revitYear: [2025, 2026, 2027]
 
-    steps:
+    steps: &build_steps
     - name: Checkout
       uses: actions/checkout@v5
       with:
@@ -71,8 +70,8 @@ jobs:
           -p:RevitYear="${{ matrix.revitYear }}" `
           -p:DefineConstants="$env:REVIT_CONST"
 
-    # Build the assemblies without creating NuGet packages.
-    # The DLLs must be signed before they are packaged.
+    # Build without creating NuGet packages.
+    # Assemblies must be signed before they are packaged.
     - name: Build
       shell: pwsh
       run: |
@@ -85,7 +84,6 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:GeneratePackageOnBuild=false
 
-    # Authenticate to Azure using GitHub OIDC.
     - name: Azure login
       uses: azure/login@v3
       with:
@@ -93,8 +91,7 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # Create a list containing only our own release assemblies.
-    # Third-party libraries and assemblies under obj/ref are not signed.
+    # Only sign scotec assemblies from the release build output.
     - name: Create signing file list
       shell: pwsh
       run: |
@@ -139,7 +136,6 @@ jobs:
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
 
-    # Verify the build output before creating the packages.
     - name: Verify signatures
       shell: pwsh
       run: |
@@ -156,7 +152,7 @@ jobs:
           }
         }
 
-    # Package the already signed assemblies.
+    # Create the packages only after signing.
     - name: Pack
       shell: pwsh
       run: |
@@ -169,7 +165,8 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
 
-    # Verify the assemblies inside the actual NuGet packages.
+    # Verify that the DLLs actually stored in the NuGet packages
+    # are still correctly signed.
     - name: Verify package assemblies
       shell: pwsh
       run: |
@@ -224,10 +221,28 @@ jobs:
 
         Write-Host "Successfully verified $verifiedAssemblies signed assemblies."
 
- #   - name: Push packages
- #     shell: pwsh
- #     run: |
- #       dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
- #         -s https://api.nuget.org/v3/index.json `
- #         -k "${{ secrets.NUGET_API_KEY }}" `
- #         --skip-duplicate
+#    - name: Push packages
+#      shell: pwsh
+#      run: |
+#        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
+#          -s https://api.nuget.org/v3/index.json `
+#          -k "${{ secrets.NUGET_API_KEY }}" `
+#          --skip-duplicate
+
+
+  release:
+    name: Release - Revit ${{ matrix.revitYear }}
+
+    if: startsWith(github.ref, 'refs/tags/')
+
+    runs-on: windows-2025
+
+    # All tags use the same stable OIDC identity.
+    environment: release
+
+    strategy:
+      fail-fast: false
+      matrix:
+        revitYear: [2025, 2026, 2027]
+
+    steps: *build_steps
