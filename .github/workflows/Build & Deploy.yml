@@ -138,18 +138,25 @@ jobs:
             continue
           }
 
+          # Primary project assemblies
           $projectAssemblies = Get-ChildItem `
             -Path $binDirectory `
             -Recurse `
             -File `
             -Filter "$projectName.dll"
 
-          if (-not $projectAssemblies) {
-            Write-Host "No output assembly found for $projectName."
-            continue
+          foreach ($assembly in $projectAssemblies) {
+            $files += $assembly
           }
 
-          foreach ($assembly in $projectAssemblies) {
+          # Satellite resource assemblies belonging to this project
+          $resourceAssemblies = Get-ChildItem `
+            -Path $binDirectory `
+            -Recurse `
+            -File `
+            -Filter "$projectName.resources.dll"
+
+          foreach ($assembly in $resourceAssemblies) {
             $files += $assembly
           }
         }
@@ -175,7 +182,6 @@ jobs:
         Write-Host ""
         Write-Host "Files to sign:"
         Get-Content $catalog
-
     - name: Sign assemblies
       uses: azure/artifact-signing-action@v2
       with:
