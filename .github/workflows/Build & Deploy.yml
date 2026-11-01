@@ -108,10 +108,11 @@ jobs:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         allow-no-subscriptions: true
-        - name: Create signing file list
-          shell: pwsh
-          run: |
-            $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
+    
+    - name: Create signing file list
+      shell: pwsh
+      run: |
+        $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
 
         $files = Get-ChildItem `
           -Path $sourceRoot `
