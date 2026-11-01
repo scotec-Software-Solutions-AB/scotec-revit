@@ -12,16 +12,13 @@ jobs:
   # ---------------------------------------------------------------------------
   # Prerelease
   #
-  # Manually executed from the develop branch.
+  # Manual build from develop.
   #
   # Azure federated credential:
   #   Entity type: Branch
   #   Branch: develop
   #
-  # IMPORTANT:
-  # Do NOT specify a GitHub environment for this job.
-  # Otherwise GitHub will generate an environment-based OIDC subject instead
-  # of the branch-based subject expected by Azure.
+  # Do NOT specify a GitHub environment here.
   # ---------------------------------------------------------------------------
 
   prerelease:
@@ -36,7 +33,8 @@ jobs:
       matrix:
         revitYear: [2025, 2026, 2027]
 
-    steps:
+    steps: &build_steps
+
     - name: Checkout
       uses: actions/checkout@v5
       with:
@@ -82,8 +80,8 @@ jobs:
           -p:RevitYear="${{ matrix.revitYear }}" `
           -p:DefineConstants="$env:REVIT_CONST"
 
-    # Build without creating NuGet packages.
-    # The DLLs must be signed before packaging.
+    # Build the assemblies, but do not create NuGet packages yet.
+    # The DLLs have to be signed before packaging.
     - name: Build
       shell: pwsh
       run: |
@@ -96,35 +94,50 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:GeneratePackageOnBuild=false
 
-#    - name: Azure login
-#      uses: azure/login@v3
-#      with:
-#        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-#        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-#        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    # Authenticate through GitHub OIDC.
+    #
+    # The GitHub identity only needs access to the Artifact Signing
+    # certificate profile. It does not need subscription-wide Reader access.
     - name: Azure login
       uses: azure/login@v3
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         allow-no-subscriptions: true
-    
+
+    # Find our assemblies in build output directories.
+    #
+    # Do not rely on an exact bin\Release path because individual projects
+    # may use additional directories such as framework/platform folders.
     - name: Create signing file list
       shell: pwsh
       run: |
         $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
 
-        $files = Get-ChildItem `
+        $allFiles = Get-ChildItem `
           -Path $sourceRoot `
           -Recurse `
           -File `
-          -Filter "Scotec*.dll" |
+          -Filter "Scotec*.dll"
+
+        Write-Host "Scotec DLLs found after build:"
+
+        if ($allFiles) {
+          $allFiles | ForEach-Object {
+            Write-Host "  $($_.FullName)"
+          }
+        }
+        else {
+          Write-Host "  <none>"
+        }
+
+        $files = $allFiles |
           Where-Object {
-            $_.FullName -match '\\bin\\Release\\'
+            $_.FullName -match '\\bin\\'
           }
 
         if (-not $files) {
-          throw "No Scotec DLLs were found for signing."
+          throw "No Scotec DLLs were found in build output directories."
         }
 
         $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
@@ -139,6 +152,7 @@ jobs:
           } |
           Set-Content $catalog
 
+        Write-Host ""
         Write-Host "Files to sign:"
         Get-Content $catalog
 
@@ -169,6 +183,7 @@ jobs:
           }
         }
 
+    # Create NuGet packages from the already signed assemblies.
     - name: Pack
       shell: pwsh
       run: |
@@ -181,6 +196,7 @@ jobs:
           -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
           -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
 
+    # Verify the signatures of the actual DLLs stored inside the packages.
     - name: Verify package assemblies
       shell: pwsh
       run: |
@@ -233,27 +249,28 @@ jobs:
           throw "No Scotec assemblies were found in the generated NuGet packages."
         }
 
+        Write-Host ""
         Write-Host "Successfully verified $verifiedAssemblies signed assemblies."
 
-    - name: Push packages
-      shell: pwsh
-      run: |
-        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
-          -s https://api.nuget.org/v3/index.json `
-          -k "${{ secrets.NUGET_API_KEY }}" `
-          --skip-duplicate
+#    - name: Push packages
+#      shell: pwsh
+#      run: |
+#        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
+#          -s https://api.nuget.org/v3/index.json `
+#          -k "${{ secrets.NUGET_API_KEY }}" `
+#          --skip-duplicate
 
 
   # ---------------------------------------------------------------------------
   # Release
   #
-  # Manually executed from a tag.
+  # Manual build from a tag.
   #
   # Azure federated credential:
   #   Entity type: Environment
   #   Environment: release
   #
-  # All release tags therefore use the same OIDC identity.
+  # Every tag therefore uses the same OIDC identity.
   # ---------------------------------------------------------------------------
 
   release:
@@ -270,201 +287,4 @@ jobs:
       matrix:
         revitYear: [2025, 2026, 2027]
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
-
-    - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.10.2
-      with:
-        versionSpec: '5.12.x'
-
-    - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0.10.2
-      with:
-        useConfigFile: true
-        configFilePath: GitVersion.yml
-
-    - name: Compute package version
-      shell: pwsh
-      run: |
-        $base = "${{ matrix.revitYear }}.$env:GITVERSION_MINOR.$env:GITVERSION_PATCH"
-        $pkgVersion = "$base$env:GITVERSION_PRERELEASETAGWITHDASH"
-
-        $revitConst = "REVIT${{ matrix.revitYear }}"
-
-        "PKG_VERSION=$pkgVersion" >> $env:GITHUB_ENV
-        "REVIT_CONST=$revitConst" >> $env:GITHUB_ENV
-
-        Write-Host "Git ref: $env:GITHUB_REF"
-        Write-Host "Revit year: ${{ matrix.revitYear }}"
-        Write-Host "Package version: $pkgVersion"
-        Write-Host "DefineConstants: $revitConst"
-        Write-Host "GitVersion SemVer: $env:GITVERSION_SEMVER"
-
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 8.0.x
-
-    - name: Restore dependencies
-      shell: pwsh
-      run: |
-        dotnet restore ./Source/Scotec.Revit.slnx `
-          -p:RevitYear="${{ matrix.revitYear }}" `
-          -p:DefineConstants="$env:REVIT_CONST"
-
-    - name: Build
-      shell: pwsh
-      run: |
-        dotnet build --no-restore ./Source/Scotec.Revit.slnx -c Release `
-          -p:CompanyName="scotec Software Solutions AB" `
-          -p:RevitYear="${{ matrix.revitYear }}" `
-          -p:DefineConstants="$env:REVIT_CONST" `
-          -p:Version="$env:PKG_VERSION" `
-          -p:PackageVersion="$env:PKG_VERSION" `
-          -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
-          -p:GeneratePackageOnBuild=false
-
-    - name: Azure login
-      uses: azure/login@v3
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-    - name: Create signing file list
-      shell: pwsh
-      run: |
-        $sourceRoot = Join-Path $env:GITHUB_WORKSPACE "Source"
-
-        $files = Get-ChildItem `
-          -Path $sourceRoot `
-          -Recurse `
-          -File `
-          -Filter "Scotec*.dll" |
-          Where-Object {
-            $_.FullName -match '\\bin\\Release\\'
-          }
-
-        if (-not $files) {
-          throw "No Scotec DLLs were found for signing."
-        }
-
-        $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
-
-        $files |
-          Sort-Object FullName -Unique |
-          ForEach-Object {
-            [System.IO.Path]::GetRelativePath(
-              $env:GITHUB_WORKSPACE,
-              $_.FullName
-            )
-          } |
-          Set-Content $catalog
-
-        Write-Host "Files to sign:"
-        Get-Content $catalog
-
-    - name: Sign assemblies
-      uses: azure/artifact-signing-action@v2
-      with:
-        endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
-        signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
-        files-catalog: ${{ github.workspace }}\signing-files.txt
-        file-digest: SHA256
-        timestamp-rfc3161: http://timestamp.acs.microsoft.com
-        timestamp-digest: SHA256
-
-    - name: Verify signatures
-      shell: pwsh
-      run: |
-        $catalog = Join-Path $env:GITHUB_WORKSPACE "signing-files.txt"
-
-        foreach ($relativePath in Get-Content $catalog) {
-          $file = Join-Path $env:GITHUB_WORKSPACE $relativePath
-          $signature = Get-AuthenticodeSignature $file
-
-          Write-Host "$relativePath : $($signature.Status)"
-
-          if ($signature.Status -ne "Valid") {
-            throw "Invalid signature: $relativePath ($($signature.Status))"
-          }
-        }
-
-    - name: Pack
-      shell: pwsh
-      run: |
-        dotnet pack --no-build ./Source/Scotec.Revit.slnx -c Release `
-          -p:CompanyName="scotec Software Solutions AB" `
-          -p:RevitYear="${{ matrix.revitYear }}" `
-          -p:DefineConstants="$env:REVIT_CONST" `
-          -p:Version="$env:PKG_VERSION" `
-          -p:PackageVersion="$env:PKG_VERSION" `
-          -p:InformationalVersion="$env:PKG_VERSION+$env:GITVERSION_SHA" `
-          -p:PackageOutputPath="$env:GITHUB_WORKSPACE\localPackages"
-
-    - name: Verify package assemblies
-      shell: pwsh
-      run: |
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-        $packages = Get-ChildItem `
-          "$env:GITHUB_WORKSPACE\localPackages" `
-          -Filter "*.nupkg"
-
-        if (-not $packages) {
-          throw "No NuGet packages were created."
-        }
-
-        $verifiedAssemblies = 0
-
-        foreach ($package in $packages) {
-          Write-Host "Checking package: $($package.Name)"
-
-          $extractPath = Join-Path `
-            $env:RUNNER_TEMP `
-            ([System.IO.Path]::GetRandomFileName())
-
-          [System.IO.Compression.ZipFile]::ExtractToDirectory(
-            $package.FullName,
-            $extractPath
-          )
-
-          $assemblies = Get-ChildItem `
-            -Path $extractPath `
-            -Recurse `
-            -File `
-            -Filter "Scotec*.dll"
-
-          foreach ($assembly in $assemblies) {
-            $signature = Get-AuthenticodeSignature $assembly.FullName
-
-            Write-Host "  $($assembly.Name): $($signature.Status)"
-
-            if ($signature.Status -ne "Valid") {
-              throw "Invalid signature in $($package.Name): $($assembly.Name)"
-            }
-
-            $verifiedAssemblies++
-          }
-
-          Remove-Item $extractPath -Recurse -Force
-        }
-
-        if ($verifiedAssemblies -eq 0) {
-          throw "No Scotec assemblies were found in the generated NuGet packages."
-        }
-
-        Write-Host "Successfully verified $verifiedAssemblies signed assemblies."
-
-#    - name: Push packages
-#      shell: pwsh
-#      run: |
-#        dotnet nuget push "$env:GITHUB_WORKSPACE\localPackages\*.nupkg" `
-#          -s https://api.nuget.org/v3/index.json `
-#          -k "${{ secrets.NUGET_API_KEY }}" `
-#          --skip-duplicate
+    steps: *build_steps
