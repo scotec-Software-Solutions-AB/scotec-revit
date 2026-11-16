@@ -7,8 +7,9 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,14 +20,18 @@ namespace Scotec.Revit;
 ///     Base implementation for dispatching delegates to run inside the Revit API context
 ///     using an external event handler.
 /// </summary>
+/// <remarks>
+///     Instances are thread-safe and can be shared (for example as a singleton). Each call to <c>Run</c> or <c>Post</c>
+///     creates its own request. Requests are queued and executed sequentially, in queuing order, inside
+///     <c>IExternalEventHandler.Execute</c>. Neither <c>Run</c> nor <c>Post</c> blocks the calling thread. Always await the
+///     task returned by <c>Run</c>; blocking on it from the UI thread or from within a Revit API context can deadlock.
+/// </remarks>
 public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposable
 {
     private readonly ExternalEvent _externalEvent;
     private readonly string _name;
-    private readonly ManualResetEvent _resetEvent = new(false);
-    private Func<IRevitUiContext, object>? _function;
-    private Exception? _exception;
-    private object? _result;
+    private readonly ConcurrentQueue<Request> _requests = new();
+    private int _disposed;
 
     /// <summary>
     ///     Initializes a new instance with an optional name used to identify the external event handler.
@@ -44,13 +49,26 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     Releases all resources used by the <see cref="RevitTaskDispatcher" /> instance.
     /// </summary>
     /// <remarks>
-    ///     This method disposes of the external event and reset event associated with the <see cref="RevitTaskDispatcher" /> instance.
+    ///     This method disposes of the external event associated with the <see cref="RevitTaskDispatcher" /> instance.
+    ///     Requests that are still queued and have not started are canceled, so awaiting callers do not hang.
     ///     It should be called when the dispatcher is no longer needed to free up resources.
     /// </remarks>
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
         _externalEvent.Dispose();
-        _resetEvent.Dispose();
+
+        while (_requests.TryDequeue(out var request))
+        {
+            if (request.TryAbandon())
+            {
+                request.Completion?.TrySetCanceled();
+            }
+        }
     }
 
     /// <summary>
@@ -61,28 +79,40 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     and its related objects.
     /// </param>
     /// <remarks>
-    ///     This method is invoked by the Revit API when the external event is raised. It ensures that the action
-    ///     associated with the task is executed on the appropriate thread and signals the completion of the task.
+    ///     This method is invoked by the Revit API when the external event is raised. Because Revit may coalesce
+    ///     several raises into a single call, all queued requests are drained and executed sequentially.
+    ///     Each request completes its own task; a failing request does not affect the others.
     /// </remarks>
     void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
-        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
-        try
+        while (_requests.TryDequeue(out var request))
         {
-            if (_function is not null)
+            if (!request.TryStart())
+            {
+                // Abandoned (denied raise or dispose).
+                continue;
+            }
+
+            using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
+            try
             {
                 var context = new RevitUiContext(uiApplication);
-                _result = _function(context);
+                var result = request.Function(context);
+                request.Completion?.TrySetResult(result);
             }
-        }
-        catch (Exception ex)
-        {
-            // Log the exception or handle it as needed
-            _exception = ex;
-        }
-        finally
-        {
-            _resetEvent.Set();
+            catch (Exception ex)
+            {
+                if (request.Completion is not null)
+                {
+                    request.Completion.TrySetException(
+                        new InvalidOperationException("An error occurred while executing the Revit task.", ex));
+                }
+                else
+                {
+                    // Fire-and-forget request: nobody observes the failure, so log it.
+                    GetLogger()?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
+                }
+            }
         }
     }
 
@@ -116,21 +146,25 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     of type <typeparamref name="TResult" /> upon completion.
     /// </returns>
     /// <remarks>
-    ///     This method schedules the provided function to be executed within the Revit API context.
-    ///     It ensures that the task is executed on the appropriate thread and facilitates asynchronous
-    ///     programming in the Revit environment.
+    ///     This method queues the provided function for execution within the Revit API context and returns without
+    ///     blocking. It can be called concurrently from multiple threads; each call receives its own result or exception.
+    ///     Await the returned task; do not block on it with <c>Wait()</c> or <c>Result</c> from the UI thread or a Revit API
+    ///     context. Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="InvalidOperationException" />.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
     /// </exception>
+    /// <exception cref="System.ObjectDisposedException">Thrown (through the task) if the dispatcher has been disposed.</exception>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown (through the task) if <paramref name="action" /> fails or Revit does not accept the external event request.
+    /// </exception>
     public async Task<TResult> Run<TResult>(Func<IRevitUiContext, TResult> action)
     {
-        _function = context => action(context)!;
-        var task = ExecuteInternalAsync<TResult>();
+        ArgumentNullException.ThrowIfNull(action);
 
-        var result = await task;
+        var result = await Enqueue(context => action(context));
 
-        return result;
+        return (TResult)result!;
     }
 
     /// <summary>
@@ -143,24 +177,81 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     A <see cref="Task" /> representing the asynchronous operation.
     /// </returns>
     /// <remarks>
-    ///     This method schedules the provided action to be executed within the Revit API context.
-    ///     It ensures that the action is executed on the appropriate thread and facilitates asynchronous
-    ///     programming in the Revit environment.
+    ///     This method queues the provided action for execution within the Revit API context and returns without
+    ///     blocking. It can be called concurrently from multiple threads. Await the returned task; do not block on it
+    ///     from the UI thread or a Revit API context. Use <see cref="Post(Action{IRevitUiContext})" /> if the outcome is not needed.
+    ///     Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="InvalidOperationException" />.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
     /// </exception>
+    /// <exception cref="System.ObjectDisposedException">Thrown (through the task) if the dispatcher has been disposed.</exception>
+    /// <exception cref="System.InvalidOperationException">
+    ///     Thrown (through the task) if <paramref name="action" /> fails or Revit does not accept the external event request.
+    /// </exception>
     [UsedImplicitly]
     public async Task Run(Action<IRevitUiContext> action)
     {
-        _function = context =>
+        ArgumentNullException.ThrowIfNull(action);
+
+        await Enqueue(context =>
         {
             action(context);
-            return new object();
-        };
-        var task = ExecuteInternalAsync<object>();
+            return null;
+        });
+    }
 
-        await task;
+    /// <summary>
+    ///     Schedules an action to run inside the Revit API context without waiting for its completion (fire and forget).
+    /// </summary>
+    /// <param name="action">
+    ///     An action that takes an <see cref="IRevitUiContext" /> instance as a parameter.
+    /// </param>
+    /// <remarks>
+    ///     The method returns immediately and never blocks the caller, so it is safe to call from the UI thread or from
+    ///     within a Revit API context. The action runs later, when Revit processes the external event. Exceptions thrown by
+    ///     the action cannot be observed by the caller and are logged instead. Do not capture scoped objects that may be
+    ///     disposed before the action runs.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
+    /// <exception cref="System.ObjectDisposedException">Thrown if the dispatcher has been disposed.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown if Revit denied the external event request.</exception>
+    public void Post(Action<IRevitUiContext> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        Submit(new Request(
+                   context =>
+                   {
+                       action(context);
+                       return null;
+                   },
+                   null));
+    }
+
+    /// <summary>
+    ///     Schedules a delegate, whose parameters are resolved from a scoped Autofac lifetime scope, to run inside the
+    ///     Revit API context without waiting for its completion (fire and forget).
+    /// </summary>
+    /// <param name="action">
+    ///     A delegate with any number and types of parameters. See <see cref="Run(Delegate, Action{IServiceCollection})" />
+    ///     for the resolution rules. A return value is discarded.
+    /// </param>
+    /// <param name="configureServices">
+    ///     An optional callback to register additional services into the lifetime scope before the delegate is invoked.
+    /// </param>
+    /// <remarks>
+    ///     The method returns immediately and never blocks the caller. Exceptions, including failed parameter resolution,
+    ///     cannot be observed by the caller and are logged instead.
+    /// </remarks>
+    /// <exception cref="System.ArgumentNullException">Thrown if <paramref name="action" /> is <c>null</c>.</exception>
+    /// <exception cref="System.ObjectDisposedException">Thrown if the dispatcher has been disposed.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown if Revit denied the external event request.</exception>
+    public void Post(Delegate action, Action<IServiceCollection>? configureServices = null)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        Submit(new Request(CreateDelegateFunction(action, configureServices), null));
     }
 
     /// <summary>
@@ -194,16 +285,9 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
                 $"Delegate '{action.Method.Name}' returns void. Use Run(Delegate, ...) instead.");
         }
 
-        _function = context =>
-        {
-            using var scope = CreateLifetimeScope(context, configureServices);
-            var serviceProvider = scope.Resolve<IServiceProvider>();
-            var args = ResolveParameters(action.Method, serviceProvider);
+        var result = await Enqueue(CreateDelegateFunction(action, configureServices));
 
-            return action.DynamicInvoke(args)!;
-        };
-
-        return (TResult)await ExecuteInternalAsync<object>();
+        return (TResult)result!;
     }
 
     /// <summary>
@@ -228,18 +312,23 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
 
         // Return value is discarded; SCOTEC0002 warns at compile time when the caller passes a non-void delegate.
 
-        _function = context =>
+        await Enqueue(CreateDelegateFunction(action, configureServices));
+    }
+
+    /// <summary>
+    ///     Creates the function that resolves the delegate parameters from a scoped lifetime scope and invokes the delegate
+    ///     inside the Revit API context. The scope is disposed after the invocation.
+    /// </summary>
+    private static Func<IRevitUiContext, object?> CreateDelegateFunction(Delegate action, Action<IServiceCollection>? configureServices)
+    {
+        return context =>
         {
             using var scope = CreateLifetimeScope(context, configureServices);
             var serviceProvider = scope.Resolve<IServiceProvider>();
-
             var args = ResolveParameters(action.Method, serviceProvider);
 
-            action.DynamicInvoke(args);
-            return new object();
+            return action.DynamicInvoke(args);
         };
-
-        await ExecuteInternalAsync<object>();
     }
 
     /// <summary>
@@ -284,38 +373,95 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     }
 
     /// <summary>
-    ///     Executes the internal logic of the task within the Revit API context and returns a result of the specified type.
+    ///     Queues a function for execution inside the Revit API context and returns a task that completes with its result.
     /// </summary>
-    /// <typeparam name="TResult">
-    ///     The type of the result returned by the task.
-    /// </typeparam>
+    /// <param name="function">The function to execute inside the Revit API context.</param>
     /// <returns>
-    ///     A <see cref="Task{TResult}" /> representing the asynchronous operation, which contains the result
-    ///     of type <typeparamref name="TResult" /> upon completion.
+    ///     A task that completes when the function has run. Continuations run asynchronously, so completing the task
+    ///     inside the external event never executes caller code on the Revit API thread.
     /// </returns>
-    /// <remarks>
-    ///     This method is responsible for raising the external event and waiting for its completion.
-    ///     It ensures that the task is executed on the appropriate thread within the Revit API context.
-    /// </remarks>
-    private Task<TResult> ExecuteInternalAsync<TResult>()
+    private Task<object?> Enqueue(Func<IRevitUiContext, object?> function)
     {
-        _resetEvent.Reset();
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Submit(new Request(function, completion));
+        return completion.Task;
+    }
 
-        var task = Task.Run(() =>
+    /// <summary>
+    ///     Adds a request to the queue and raises the external event. Never blocks the caller.
+    /// </summary>
+    private void Submit(Request request)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+
+        _requests.Enqueue(request);
+
+        ExternalEventRequest raiseResult;
+        try
         {
-            _externalEvent.Raise();
-            _resetEvent.WaitOne();
+            raiseResult = _externalEvent.Raise();
+        }
+        catch
+        {
+            request.TryAbandon();
+            throw;
+        }
 
-            if (_exception is not null)
+        // Disposed concurrently after the check above: Dispose may already have drained the queue.
+        if (Volatile.Read(ref _disposed) != 0 && request.TryAbandon())
+        {
+            throw new ObjectDisposedException(GetType().Name);
+        }
+
+        if (raiseResult is ExternalEventRequest.Denied or ExternalEventRequest.TimedOut)
+        {
+            if (request.TryAbandon())
             {
-                var exception = _exception;
-                _exception = null; // Clear the exception to avoid rethrowing it in subsequent calls
-                throw new InvalidOperationException("An error occurred while executing the Revit task.", exception);
+                throw new InvalidOperationException($"Revit did not accept the external event request ({raiseResult}).");
             }
+        }
+    }
 
-            return (TResult)_result!;
-        });
-        return task;
+    private static ILogger? GetLogger()
+    {
+        try
+        {
+            return RevitAppBase.GetServiceProvider().GetService<ILogger<RevitTaskDispatcherBase>>();
+        }
+        catch (InvalidOperationException)
+        {
+            // Service provider not available (add-in not started or already shut down).
+            return null;
+        }
+    }
+
+    /// <summary>
+    ///     A unit of work queued for execution inside the Revit API context.
+    /// </summary>
+    private sealed class Request(Func<IRevitUiContext, object?> function, TaskCompletionSource<object?>? completion)
+    {
+        private const int Pending = 0;
+        private const int Started = 1;
+        private const int Abandoned = 2;
+
+        private int _state;
+
+        public Func<IRevitUiContext, object?> Function { get; } = function;
+
+        /// <summary>
+        ///     The completion source of the caller, or <c>null</c> for fire-and-forget requests.
+        /// </summary>
+        public TaskCompletionSource<object?>? Completion { get; } = completion;
+
+        public bool TryStart()
+        {
+            return Interlocked.CompareExchange(ref _state, Started, Pending) == Pending;
+        }
+
+        public bool TryAbandon()
+        {
+            return Interlocked.CompareExchange(ref _state, Abandoned, Pending) == Pending;
+        }
     }
 }
 
