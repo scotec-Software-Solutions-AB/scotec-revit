@@ -82,6 +82,33 @@ private bool Initialize(
 }
 ```
 
+#### Services That Need a Valid Revit API Context
+
+Some singletons can only be created inside a valid Revit API context, for example a service that creates an
+`ExternalEvent`. Singleton services are created lazily on first resolution, which may happen later on another thread
+or outside a valid context.
+
+To make sure such a service is created during startup, declare it as a parameter of the `[RevitStartup]` method. The
+framework resolves all parameters from the DI root service provider while the add-in is starting up, in a valid Revit
+context, so the singleton is created at that point:
+
+```csharp
+[RevitStartup]
+private bool Initialize(IMyExternalEventService service)
+{
+    // Resolving the parameter created the singleton inside the startup context.
+    return true;
+}
+```
+
+This also works with optional parameters, as long as the service is registered. Note that only the `[RevitStartup]`
+method resolves additional services. The standard `OnStartup(UIControlledApplication)` / `OnStartup(ControlledApplication)`
+overrides do not.
+
+`AddRevitTaskDispatcher()` needs no such parameter: the framework creates the `RevitTaskDispatcher` during startup
+automatically. `IHostedService.StartAsync` is not a reliable place for this kind of initialization, because only the code
+before its first `await` is guaranteed to run on the startup thread.
+
 ### Standard Override: `OnStartup` / `OnShutdown` with the Application Instance
 
 If you need the Revit application instance but no other DI services, override the standard overload directly.

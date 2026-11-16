@@ -69,6 +69,21 @@ using Scotec.Revit;
 var RevitTaskDispatcher = new RevitTaskDispatcher("MyRevitOperation");
 ```
 
+The constructor creates a Revit `ExternalEvent`, so it must be called from a valid Revit API context (for example in
+`OnStartup` or inside a command).
+
+### Registering in DI
+
+In an add-in based on `RevitApp` / `RevitDbApp`, register the dispatcher in `OnConfigure`:
+
+```csharp
+services.AddRevitTaskDispatcher();
+```
+
+The framework creates the singleton during add-in startup, right after the host has been built and before the startup
+method runs, so the `ExternalEvent` is created in a valid Revit context. The dispatcher receives the optional
+`ILoggerFactory` from the container. The container disposes it with the host.
+
 ### Running a Task with a Result
 
 ```csharp
@@ -108,7 +123,10 @@ RevitTaskDispatcher.Post(context =>
 ```
 
 `Post` returns immediately and never blocks. Because nobody observes the outcome, exceptions thrown by the delegate are
-logged (`ILogger<RevitTaskDispatcherBase>`, if available) instead of being propagated. A DI-based overload
+logged instead of being propagated, provided the dispatcher was created with an `ILoggerFactory`. The dispatcher
+registered with `AddRevitTaskDispatcher()` receives the factory from the container automatically. For a dispatcher created
+manually, pass it to the constructor: `new RevitTaskDispatcher("MyOperation", loggerFactory)`. Without a factory, failures
+of posted work are not reported.
 `Post(Delegate, Action<IServiceCollection>?)` is available as well. `Post` itself throws only if the dispatcher is
 disposed or Revit does not accept the external event request.
 
