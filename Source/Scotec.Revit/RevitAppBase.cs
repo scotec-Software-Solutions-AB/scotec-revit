@@ -230,6 +230,9 @@ public abstract class RevitAppBase
 
         Host = builder.Build();
 
+        // Create singletons that need a valid Revit API context (e.g. RevitTaskDispatcher) now, while the add-in is starting up.
+        EagerSingletonRegistration.Initialize(Host.Services);
+
         Host.Start();
 
         ServiceProvider = Host.Services;

@@ -29,6 +29,7 @@ namespace Scotec.Revit;
 public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposable
 {
     private readonly ExternalEvent _externalEvent;
+    private readonly ILogger? _logger;
     private readonly string _name;
     private readonly ConcurrentQueue<Request> _requests = new();
     private int _disposed;
@@ -39,9 +40,14 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     /// <param name="name">
     ///     An optional name for the dispatcher. If not provided, an empty string is used as the default.
     /// </param>
-    private protected RevitTaskDispatcherBase(string? name = null)
+    /// <param name="loggerFactory">
+    ///     An optional logger factory. If provided, failures of fire-and-forget work scheduled with <c>Post</c>
+    ///     are logged using a logger whose category is the concrete dispatcher type. If <c>null</c>, such failures are not logged.
+    /// </param>
+    private protected RevitTaskDispatcherBase(string? name = null, ILoggerFactory? loggerFactory = null)
     {
         _name = name ?? string.Empty;
+        _logger = loggerFactory?.CreateLogger(GetType());
         _externalEvent = ExternalEvent.Create(this);
     }
 
@@ -109,8 +115,8 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
                 }
                 else
                 {
-                    // Fire-and-forget request: nobody observes the failure, so log it.
-                    GetLogger()?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
+                    // Fire-and-forget request: nobody observes the failure, so log it (if a logger is available).
+                    _logger?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
                 }
             }
         }
@@ -422,19 +428,6 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
         }
     }
 
-    private static ILogger? GetLogger()
-    {
-        try
-        {
-            return RevitAppBase.GetServiceProvider().GetService<ILogger<RevitTaskDispatcherBase>>();
-        }
-        catch (InvalidOperationException)
-        {
-            // Service provider not available (add-in not started or already shut down).
-            return null;
-        }
-    }
-
     /// <summary>
     ///     A unit of work queued for execution inside the Revit API context.
     /// </summary>
@@ -472,8 +465,28 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
 /// </summary>
 public sealed class RevitTaskDispatcher : RevitTaskDispatcherBase
 {
-    /// <inheritdoc />
+    /// <summary>
+    ///     Initializes a new instance without a logger. Failures of work scheduled with <c>Post</c> are not logged.
+    /// </summary>
+    /// <param name="name">An optional name used to identify the external event handler.</param>
+    /// <remarks>
+    ///     Must be called from a valid Revit API context, because an <c>ExternalEvent</c> is created.
+    /// </remarks>
     public RevitTaskDispatcher(string? name = null) : base(name)
+    {
+    }
+
+    /// <summary>
+    ///     Initializes a new instance that logs failures of work scheduled with <c>Post</c>.
+    /// </summary>
+    /// <param name="name">An optional name used to identify the external event handler.</param>
+    /// <param name="loggerFactory">
+    ///     An optional logger factory. If <c>null</c>, failures of posted work are not logged.
+    /// </param>
+    /// <remarks>
+    ///     Must be called from a valid Revit API context, because an <c>ExternalEvent</c> is created.
+    /// </remarks>
+    public RevitTaskDispatcher(string? name, ILoggerFactory? loggerFactory) : base(name, loggerFactory)
     {
     }
 }
@@ -484,8 +497,13 @@ public sealed class RevitTaskDispatcher : RevitTaskDispatcherBase
 [Obsolete("RevitTask has been renamed to RevitTaskDispatcher. This alias will be removed in a future version.")]
 public sealed class RevitTask : RevitTaskDispatcherBase
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="RevitTaskDispatcher(string?)" />
     public RevitTask(string? name = null) : base(name)
+    {
+    }
+
+    /// <inheritdoc cref="RevitTaskDispatcher(string?, ILoggerFactory?)" />
+    public RevitTask(string? name, ILoggerFactory? loggerFactory) : base(name, loggerFactory)
     {
     }
 }

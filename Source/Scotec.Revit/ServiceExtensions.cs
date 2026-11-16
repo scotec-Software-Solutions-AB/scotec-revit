@@ -6,6 +6,7 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace Scotec.Revit;
@@ -80,15 +81,18 @@ public static class RevitGlobalContextServiceExtensions
 public static class RevitTaskServiceExtensions
 {
     /// <summary>
-    ///     Registers a new <see cref="Scotec.Revit.RevitTaskDispatcher" /> instance as a singleton in the service collection.
+    ///     Registers <see cref="Scotec.Revit.RevitTaskDispatcher" /> as a singleton in the service collection.
     /// </summary>
     /// <remarks>
     ///     <see cref="Scotec.Revit.RevitTaskDispatcher" /> wraps a Revit <c>ExternalEvent</c> and marshals work onto the Revit
-    ///     API thread. Because <c>ExternalEvent</c> must be created while Revit is idle and is tied to
-    ///     the add-in lifetime, the instance is constructed eagerly and registered as a singleton.
+    ///     API thread. Because <c>ExternalEvent</c> must be created inside a valid Revit API context, the instance is created
+    ///     eagerly during add-in startup: the framework resolves it right after the host has been built, before the add-in's
+    ///     startup method runs. It receives an optional <see cref="Microsoft.Extensions.Logging.ILoggerFactory" /> from the
+    ///     container to log failures of work scheduled with <c>Post</c>.
     ///     <para>
-    ///         Dispose the registered <see cref="Scotec.Revit.RevitTaskDispatcher" /> during add-in shutdown to release the
-    ///         underlying <c>ExternalEvent</c>.
+    ///         Nothing is registered if a <see cref="Scotec.Revit.RevitTaskDispatcher" /> registration already exists.
+    ///         The container owns the instance and disposes it when the host is disposed; <c>Dispose</c> can safely be called
+    ///         more than once.
     ///     </para>
     /// </remarks>
     /// <param name="services">The service collection to register into.</param>
@@ -99,7 +103,9 @@ public static class RevitTaskServiceExtensions
     public static IServiceCollection AddRevitTaskDispatcher(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.TryAddSingleton(new RevitTaskDispatcher());
+        EagerSingletonRegistration.TryAddEagerSingleton(
+            services,
+            serviceProvider => new RevitTaskDispatcher(null, serviceProvider.GetService<ILoggerFactory>()));
 
         return services;
     }
@@ -111,7 +117,9 @@ public static class RevitTaskServiceExtensions
     public static IServiceCollection AddRevitTask(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.TryAddSingleton(new RevitTask());
+        EagerSingletonRegistration.TryAddEagerSingleton(
+            services,
+            serviceProvider => new RevitTask(null, serviceProvider.GetService<ILoggerFactory>()));
 
         return services;
     }
