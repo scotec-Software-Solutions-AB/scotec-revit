@@ -51,6 +51,9 @@ the Revit context.
 - Schedules your delegate to run in the Revit API context, regardless of the calling thread.
 - Supports synchronous and asynchronous workflows via `Task` and `Task<TResult>`.
 - Propagates exceptions correctly.
+- Thread-safe: a single instance can be shared and called concurrently from multiple threads.
+- Never blocks the caller; safe to call from the UI thread or from within a Revit API context as long as the returned task is awaited.
+- Offers fire-and-forget execution via `Post`.
 - Avoids direct Revit API access from invalid contexts.
 - Supports DI-based parameter resolution with optional and required service conventions (DI mode).
 
@@ -89,6 +92,25 @@ await RevitTaskDispatcher.Run(context =>
 ```csharp
 RevitTaskDispatcher.Dispose();
 ```
+
+Requests that are still queued and have not started are canceled on dispose, so awaiting callers receive a
+`TaskCanceledException` instead of hanging. Calling `Run` or `Post` after dispose throws `ObjectDisposedException`.
+
+### Fire and Forget with Post
+
+Use `Post` when the caller does not need to wait for the result:
+
+```csharp
+RevitTaskDispatcher.Post(context =>
+{
+    TaskDialog.Show("Revit", "Posted to the Revit context.");
+});
+```
+
+`Post` returns immediately and never blocks. Because nobody observes the outcome, exceptions thrown by the delegate are
+logged (`ILogger<RevitTaskDispatcherBase>`, if available) instead of being propagated. A DI-based overload
+`Post(Delegate, Action<IServiceCollection>?)` is available as well. `Post` itself throws only if the dispatcher is
+disposed or Revit does not accept the external event request.
 
 
 ## DI-Based Usage
@@ -177,10 +199,31 @@ Revit is single-threaded with respect to its API. Even if your code runs on the 
 automatically mean you are inside a valid Revit API context. `RevitTaskDispatcher` ensures your delegate is executed inside a
 proper `IExternalEventHandler.Execute` call.
 
+### Concurrency and Ordering
+
+Every call to `Run` or `Post` creates its own request. Requests are queued and executed one after another inside
+`Execute`, in the order in which they were queued. Each `Run` caller receives its own result or exception, so one
+instance can safely be shared (for example as a singleton) and used from multiple threads. Revit may coalesce several
+external event raises into one `Execute` call; all queued requests are processed in that call.
+
+### Avoiding Deadlocks
+
+`Run` never blocks a thread. Always `await` the returned task. Do not block on it with `.Wait()` or `.Result` from the
+UI thread or from within a Revit API context, because the delegate can only run after Revit returns to idle and the
+blocked thread would prevent that. If you do not need the result, use `Post`.
+
+Delegates run later, not at the time of the call. Do not capture objects with a limited lifetime (for example scoped
+services) that may be disposed before the delegate runs.
+
 
 ## Error Handling
 
-Exceptions thrown inside your delegate are captured and propagated to the returned `Task`.
+Exceptions thrown inside your delegate are captured and propagated to the returned `Task`. They are wrapped in an
+`InvalidOperationException` ("An error occurred while executing the Revit task.") with the original exception as
+`InnerException`. A failing request does not affect other queued requests.
+
+If Revit does not accept the external event request (`ExternalEventRequest.Denied` or `TimedOut`), the call fails with an
+`InvalidOperationException` instead of waiting indefinitely.
 
 ```csharp
 try
