@@ -1,8 +1,22 @@
 {
   "profiles": {
-    "BI.Revit.Test": {
+    "Run Revit 2025": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\Autodesk\\Revit 2025\\Revit.exe",
+      "environmentVariables": {
+        "REVIT_ENVIRONMENT": "Development"
+      }
+    },
+    "Run Revit 2026": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2026\\Revit.exe",
+      "environmentVariables": {
+        "REVIT_ENVIRONMENT": "Development"
+      }
+    },
+    "Run Revit 2027": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2027\\Revit.exe",
       "environmentVariables": {
         "REVIT_ENVIRONMENT": "Development"
       }

@@ -31,6 +31,7 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     private readonly ExternalEvent _externalEvent;
     private readonly ILogger? _logger;
     private readonly string _name;
+    private readonly int _maxRequestsPerExecute;
     private readonly ConcurrentQueue<Request> _requests = new();
     private int _disposed;
 
@@ -44,8 +45,12 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     An optional logger factory. If provided, failures of fire-and-forget work scheduled with <c>Post</c>
     ///     are logged using a logger whose category is the concrete dispatcher type. If <c>null</c>, such failures are not logged.
     /// </param>
-    private protected RevitTaskDispatcherBase(string? name = null, ILoggerFactory? loggerFactory = null)
+    /// <param name="options">
+    ///     Optional options. If <c>null</c>, the defaults of <see cref="RevitTaskDispatcherOptions" /> are used.
+    /// </param>
+    private protected RevitTaskDispatcherBase(string? name = null, ILoggerFactory? loggerFactory = null, RevitTaskDispatcherOptions? options = null)
     {
+        _maxRequestsPerExecute = (options ?? new RevitTaskDispatcherOptions()).MaxRequestsPerExecute;
         _name = name ?? string.Empty;
         _logger = loggerFactory?.CreateLogger(GetType());
         _externalEvent = ExternalEvent.Create(this);
@@ -85,13 +90,19 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     and its related objects.
     /// </param>
     /// <remarks>
-    ///     This method is invoked by the Revit API when the external event is raised. Because Revit may coalesce
-    ///     several raises into a single call, all queued requests are drained and executed sequentially.
+    ///     This method is invoked by the Revit API when the external event is raised. Revit does not queue repeated
+    ///     raises: while the event is already pending, <c>Raise()</c> returns <c>Pending</c> and no additional call
+    ///     is made. The dispatcher therefore keeps its own queue of requests and executes the requests that are queued
+    ///     when this call starts sequentially, up to <see cref="RevitTaskDispatcherOptions.MaxRequestsPerExecute" />.
+    ///     Requests that arrive in the meantime are not processed in the same call, so a steady stream of requests cannot
+    ///     monopolize the Revit API context and delay external events of other add-ins. If requests remain after the
+    ///     batch, the external event is raised again.
     ///     Each request completes its own task; a failing request does not affect the others.
     /// </remarks>
     void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
-        while (_requests.TryDequeue(out var request))
+        var batchSize = Math.Min(_requests.Count, _maxRequestsPerExecute);
+        for (var i = 0; i < batchSize && _requests.TryDequeue(out var request); i++)
         {
             if (!request.TryStart())
             {
@@ -118,6 +129,23 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
                     // Fire-and-forget request: nobody observes the failure, so log it (if a logger is available).
                     _logger?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
                 }
+            }
+        }
+
+        // Requests that arrived during the batch (or whose Raise() returned Pending) must not be stranded.
+        if (!_requests.IsEmpty && Volatile.Read(ref _disposed) == 0)
+        {
+            try
+            {
+                var raiseResult = _externalEvent.Raise();
+                if (raiseResult is ExternalEventRequest.Denied or ExternalEventRequest.TimedOut)
+                {
+                    _logger?.LogWarning("Revit did not accept the follow-up external event request ({RaiseResult}) in dispatcher '{DispatcherName}'. Queued requests run with the next accepted request.", raiseResult, _name);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to raise the follow-up external event in dispatcher '{DispatcherName}'.", _name);
             }
         }
     }
@@ -487,6 +515,21 @@ public sealed class RevitTaskDispatcher : RevitTaskDispatcherBase
     ///     Must be called from a valid Revit API context, because an <c>ExternalEvent</c> is created.
     /// </remarks>
     public RevitTaskDispatcher(string? name, ILoggerFactory? loggerFactory) : base(name, loggerFactory)
+    {
+    }
+
+    /// <summary>
+    ///     Initializes a new instance with a logger and custom options.
+    /// </summary>
+    /// <param name="name">An optional name used to identify the external event handler.</param>
+    /// <param name="loggerFactory">
+    ///     An optional logger factory. If <c>null</c>, failures of posted work are not logged.
+    /// </param>
+    /// <param name="options">Options of the dispatcher. If <c>null</c>, the defaults are used.</param>
+    /// <remarks>
+    ///     Must be called from a valid Revit API context, because an <c>ExternalEvent</c> is created.
+    /// </remarks>
+    public RevitTaskDispatcher(string? name, ILoggerFactory? loggerFactory, RevitTaskDispatcherOptions? options) : base(name, loggerFactory, options)
     {
     }
 }

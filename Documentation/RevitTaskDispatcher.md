@@ -84,6 +84,25 @@ The framework creates the singleton during add-in startup, right after the host 
 method runs, so the `ExternalEvent` is created in a valid Revit context. The dispatcher receives the optional
 `ILoggerFactory` from the container. The container disposes it with the host.
 
+### Options
+
+`MaxRequestsPerExecute` limits how many queued requests one external event call executes (default: 1, so each request gets its own external event call). If more are
+queued, the dispatcher raises the external event again, so Revit can run other external events in between. Use a small
+value for fairness towards other add-ins and the Revit UI, a larger one for throughput.
+
+```csharp
+services.AddRevitTaskDispatcher(options => options.MaxRequestsPerExecute = 25);
+```
+
+The dispatcher registered with `AddRevitTaskDispatcher()` reads its settings from
+`IOptions<RevitTaskDispatcherOptions>`, so the options can also be set with
+`services.Configure<RevitTaskDispatcherOptions>(...)` or bound from configuration, for example
+`services.Configure<RevitTaskDispatcherOptions>(configuration.GetSection("RevitTaskDispatcher"))`.
+The options are read once, when the dispatcher is created during add-in startup.
+
+For a manually created dispatcher, pass the options to the constructor:
+`new RevitTaskDispatcher("MyOperation", loggerFactory, new RevitTaskDispatcherOptions { MaxRequestsPerExecute = 25 })`.
+
 ### Running a Task with a Result
 
 ```csharp
@@ -143,8 +162,8 @@ The following services are registered in the scope before your delegate is invok
 
 | Type | Notes |
 |------|-------|
-| `IRevitContext` | Always registered — provides `Application` and `Document` |
-| `IRevitUiContext` | Always registered — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+| `IRevitContext` | Always registered ï¿½ provides `Application` and `Document` |
+| `IRevitUiContext` | Always registered ï¿½ extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
 
 The `Document` and `UiDocument` properties may be `null` when no document is currently open.
 
@@ -196,9 +215,9 @@ and `RevitApp`:
 
 | Convention | Example | Behaviour |
 |---|---|---|
-| Nullable annotation | `IMyService? service` | Optional — receives `null` if not registered |
-| Default value of `null` | `IMyService service = null` | Optional — receives `null` if not registered |
-| No annotation, no default | `IMyService service` | Required — throws if not registered |
+| Nullable annotation | `IMyService? service` | Optional ï¿½ receives `null` if not registered |
+| Default value of `null` | `IMyService service = null` | Optional ï¿½ receives `null` if not registered |
+| No annotation, no default | `IMyService service` | Required ï¿½ throws if not registered |
 
 ```csharp
 Delegate action = (IRevitUiContext context, IMyService myService, IOptionalLogger? logger) =>
@@ -221,8 +240,11 @@ proper `IExternalEventHandler.Execute` call.
 
 Every call to `Run` or `Post` creates its own request. Requests are queued and executed one after another inside
 `Execute`, in the order in which they were queued. Each `Run` caller receives its own result or exception, so one
-instance can safely be shared (for example as a singleton) and used from multiple threads. Revit may coalesce several
-external event raises into one `Execute` call; all queued requests are processed in that call.
+instance can safely be shared (for example as a singleton) and used from multiple threads. While the external event is
+already pending, Revit ignores further raises (`Raise()` returns `Pending`), so the dispatcher keeps its own queue. One
+`Execute` call processes the requests that were queued when it started; if more requests remain afterwards (for
+example because they arrived during the call), the dispatcher raises the external event again. This keeps other
+add-ins' external events from being starved by a continuous stream of requests.
 
 ### Avoiding Deadlocks
 
@@ -331,7 +353,7 @@ public class MyViewModel : IDisposable
 {
     private readonly RevitTaskDispatcher _revitTask = new RevitTaskDispatcher("WPF Integration");
 
-    // Direct mode — no DI container required
+    // Direct mode ï¿½ no DI container required
     public async Task ShowInfoAsync()
     {
         await _revitTask.Run(context =>
@@ -340,7 +362,7 @@ public class MyViewModel : IDisposable
         });
     }
 
-    // DI mode — services injected automatically
+    // DI mode ï¿½ services injected automatically
     public async Task ProcessDocumentAsync()
     {
         Delegate action = (IRevitUiContext context, IMyService myService) =>

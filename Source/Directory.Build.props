@@ -77,4 +77,15 @@
 	<PropertyGroup>
 		<PackageOutputPath>..\..\localPackages</PackageOutputPath>
 	</PropertyGroup>
+
+  <!-- Builds inside Visual Studio always produce local packages, so the sample picks up the latest changes. -->
+  <PropertyGroup Condition="'$(LocalPackageBuild)' == '' And '$(BuildingInsideVisualStudio)' == 'true'">
+    <LocalPackageBuild>true</LocalPackageBuild>
+  </PropertyGroup>
+
+  <!-- Local package builds: unique, increasing prerelease version (use -p:LocalPackageBuild=true). -->
+  <PropertyGroup Condition="'$(LocalPackageBuild)' == 'true'">
+    <Version>1.0.1-local.$([System.DateTime]::UtcNow.ToString('yyyyMMddHHmm'))</Version>
+  </PropertyGroup>
+
 </Project>
