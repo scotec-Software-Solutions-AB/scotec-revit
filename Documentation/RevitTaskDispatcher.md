@@ -162,8 +162,8 @@ The following services are registered in the scope before your delegate is invok
 
 | Type | Notes |
 |------|-------|
-| `IRevitContext` | Always registered � provides `Application` and `Document` |
-| `IRevitUiContext` | Always registered � extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
+| `IRevitContext` | Always registered — provides `Application` and `Document` |
+| `IRevitUiContext` | Always registered — extends `IRevitContext` with `UiApplication`, `UiDocument`, and `ActiveView` |
 
 The `Document` and `UiDocument` properties may be `null` when no document is currently open.
 
@@ -215,9 +215,9 @@ and `RevitApp`:
 
 | Convention | Example | Behaviour |
 |---|---|---|
-| Nullable annotation | `IMyService? service` | Optional � receives `null` if not registered |
-| Default value of `null` | `IMyService service = null` | Optional � receives `null` if not registered |
-| No annotation, no default | `IMyService service` | Required � throws if not registered |
+| Nullable annotation | `IMyService? service` | Optional — receives `null` if not registered |
+| Default value of `null` | `IMyService service = null` | Optional — receives `null` if not registered |
+| No annotation, no default | `IMyService service` | Required — throws if not registered |
 
 ```csharp
 Delegate action = (IRevitUiContext context, IMyService myService, IOptionalLogger? logger) =>
@@ -353,7 +353,7 @@ public class MyViewModel : IDisposable
 {
     private readonly RevitTaskDispatcher _revitTask = new RevitTaskDispatcher("WPF Integration");
 
-    // Direct mode � no DI container required
+    // Direct mode — no DI container required
     public async Task ShowInfoAsync()
     {
         await _revitTask.Run(context =>
@@ -362,7 +362,7 @@ public class MyViewModel : IDisposable
         });
     }
 
-    // DI mode � services injected automatically
+    // DI mode — services injected automatically
     public async Task ProcessDocumentAsync()
     {
         Delegate action = (IRevitUiContext context, IMyService myService) =>
