@@ -1,4 +1,4 @@
-﻿// Copyright © 2023 - 2024 Olaf Meyer
+// Copyright © 2023 - 2024 Olaf Meyer
 // Copyright © 2023 - 2024 scotec Software Solutions AB, www.scotec-software.com
 // This file is licensed to you under the MIT license.
 
@@ -20,6 +20,7 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.DB.Events;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Scotec.Revit.EventHandler;
 
 [assembly: RevitAddinIsolationContext(ContextName = "Scotec.Revit.Test")]
@@ -54,6 +55,7 @@ public class RevitTestApp : RevitApp
 
             panel.AddItem(CreateTestButtonData());
             panel.AddItem(CreateShowDialogButtonData());
+            panel.AddItem(CreateDispatcherTestButtonData());
 
         }
         catch (Exception)
@@ -71,7 +73,16 @@ public class RevitTestApp : RevitApp
 
         builder.ConfigureServices((context, services) =>
         {
+            var logSink = new InMemoryLogSink();
+            services.AddSingleton(logSink);
+            services.AddLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Debug);
+                logging.AddDebug();
+                logging.AddProvider(new InMemoryLoggerProvider(logSink));
+            });
             services.AddScoped<TestRevitDialog>();
+            services.Configure<RevitTaskDispatcherOptions>(context.Configuration.GetSection("RevitTaskDispatcher"));
             services.AddRevitTaskDispatcher();
         });
     }
@@ -104,6 +115,20 @@ public class RevitTestApp : RevitApp
             largeImageSource,
             typeof(ShowTestDialogCommandFactory),
             typeof(ShowTestDialogCommandAvailabilityFactory));
+    }
+
+    private static PushButtonData CreateDispatcherTestButtonData()
+    {
+        var smallImageSource = BuildImageResourcePath("Information_16.png");
+        var largeImageSource = BuildImageResourcePath("Information_32.png");
+        return RevitControlFactory.CreateButtonData(
+            "DispatcherTests",
+            "Dispatcher Tests",
+            "Run the RevitTaskDispatcher tests inside Revit.",
+            smallImageSource,
+            largeImageSource,
+            typeof(RevitTaskDispatcherTestCommandFactory),
+            typeof(RevitTestCommandAvailabilityFactory));
     }
 
     private static Uri BuildImageResourcePath(string imageFileName)

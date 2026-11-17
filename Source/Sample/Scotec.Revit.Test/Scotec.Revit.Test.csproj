@@ -57,7 +57,7 @@
 		<PackageReference Include="Scotec.Revit" />
 		<PackageReference Include="Scotec.Revit.Ui" />
 		<PackageReference Include="Scotec.Revit.Wpf" />
-	  <!--<ProjectReference Include="..\..\Scotec.Revit.Isolation\Scotec.Revit.Isolation.csproj" />-->
+		<PackageReference Include="Scotec.Revit.Isolation" />
 	</ItemGroup>
 
 	<ItemGroup>

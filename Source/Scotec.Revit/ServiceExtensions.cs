@@ -7,6 +7,7 @@ using Autodesk.Revit.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 
 namespace Scotec.Revit;
@@ -88,7 +89,9 @@ public static class RevitTaskServiceExtensions
     ///     API thread. Because <c>ExternalEvent</c> must be created inside a valid Revit API context, the instance is created
     ///     eagerly during add-in startup: the framework resolves it right after the host has been built, before the add-in's
     ///     startup method runs. It receives an optional <see cref="Microsoft.Extensions.Logging.ILoggerFactory" /> from the
-    ///     container to log failures of work scheduled with <c>Post</c>.
+    ///     container to log failures of work scheduled with <c>Post</c>. Its <see cref="RevitTaskDispatcherOptions" /> are taken
+    ///     from <see cref="Microsoft.Extensions.Options.IOptions{TOptions}" />, so they can be configured with
+    ///     <c>services.Configure&lt;RevitTaskDispatcherOptions&gt;(...)</c>, configuration binding or the overload that takes a callback.
     ///     <para>
     ///         Nothing is registered if a <see cref="Scotec.Revit.RevitTaskDispatcher" /> registration already exists.
     ///         The container owns the instance and disposes it when the host is disposed; <c>Dispose</c> can safely be called
@@ -103,15 +106,39 @@ public static class RevitTaskServiceExtensions
     public static IServiceCollection AddRevitTaskDispatcher(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        services.AddOptions<RevitTaskDispatcherOptions>();
         EagerSingletonRegistration.TryAddEagerSingleton(
             services,
-            serviceProvider => new RevitTaskDispatcher(null, serviceProvider.GetService<ILoggerFactory>()));
+            serviceProvider => new RevitTaskDispatcher(
+                null,
+                serviceProvider.GetService<ILoggerFactory>(),
+                serviceProvider.GetService<IOptions<RevitTaskDispatcherOptions>>()?.Value));
 
         return services;
     }
 
     /// <summary>
-    ///     Obsolete. Use <see cref="AddRevitTaskDispatcher" /> instead.
+    ///     Registers a <see cref="Scotec.Revit.RevitTaskDispatcher" /> like <see cref="AddRevitTaskDispatcher(IServiceCollection)" />
+    ///     and configures <see cref="RevitTaskDispatcherOptions" /> with <paramref name="configure" />.
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <param name="configure">A callback that configures the dispatcher options.</param>
+    /// <returns>The same <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection" /> for chaining.</returns>
+    /// <exception cref="System.ArgumentNullException">
+    ///     Thrown when <paramref name="services" /> or <paramref name="configure" /> is <c>null</c>.
+    /// </exception>
+    public static IServiceCollection AddRevitTaskDispatcher(this IServiceCollection services, Action<RevitTaskDispatcherOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        services.Configure(configure);
+
+        return services.AddRevitTaskDispatcher();
+    }
+
+    /// <summary>
+    ///     Obsolete. Use <see cref="AddRevitTaskDispatcher(IServiceCollection)" /> instead.
     /// </summary>
     [Obsolete("AddRevitTask has been renamed to AddRevitTaskDispatcher. This method will be removed in a future version.")]
     public static IServiceCollection AddRevitTask(this IServiceCollection services)
