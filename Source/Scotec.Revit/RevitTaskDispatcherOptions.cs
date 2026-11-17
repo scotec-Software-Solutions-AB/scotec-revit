@@ -16,8 +16,6 @@ public sealed class RevitTaskDispatcherOptions
     /// </summary>
     public const int DefaultMaxRequestsPerExecute = 1;
 
-    private int _maxRequestsPerExecute = DefaultMaxRequestsPerExecute;
-
     /// <summary>
     ///     Gets or sets the maximum number of queued requests that are executed in one external event call.
     ///     The default is <see cref="DefaultMaxRequestsPerExecute" />.
@@ -28,14 +26,14 @@ public sealed class RevitTaskDispatcherOptions
     ///     and the Revit UI; a larger value increases throughput for many small requests. A value of <c>1</c> runs one
     ///     request per external event call.
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    /// <exception cref="System.ArgumentOutOfRangeException">The value is less than 1.</exception>
     public int MaxRequestsPerExecute
     {
-        get => _maxRequestsPerExecute;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
-            _maxRequestsPerExecute = value;
+            field = value;
         }
-    }
+    } = DefaultMaxRequestsPerExecute;
 }

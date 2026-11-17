@@ -101,6 +101,16 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     /// </remarks>
     void IExternalEventHandler.Execute(UIApplication uiApplication)
     {
+        ExecuteBatch(uiApplication);
+        RaiseFollowUpIfNeeded();
+    }
+
+    /// <summary>
+    ///     Executes the requests that are queued now, up to <see cref="RevitTaskDispatcherOptions.MaxRequestsPerExecute" />.
+    ///     Requests that arrive while the batch runs are left for the next external event call.
+    /// </summary>
+    private void ExecuteBatch(UIApplication uiApplication)
+    {
         var batchSize = Math.Min(_requests.Count, _maxRequestsPerExecute);
         for (var i = 0; i < batchSize && _requests.TryDequeue(out var request); i++)
         {
@@ -110,43 +120,60 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
                 continue;
             }
 
-            using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
-            try
+            ExecuteRequest(request, uiApplication);
+        }
+    }
+
+    /// <summary>
+    ///     Runs a single started request inside the Revit API context and reports its outcome: through the completion
+    ///     source for <c>Run</c>, or through the logger for fire-and-forget <c>Post</c> requests.
+    /// </summary>
+    private void ExecuteRequest(Request request, UIApplication uiApplication)
+    {
+        using var _ = RevitContextTracker.Activate(RevitEntryPointKind.Command);
+        try
+        {
+            var context = new RevitUiContext(uiApplication);
+            var result = request.Function(context);
+            request.Completion?.TrySetResult(result);
+        }
+        catch (Exception ex)
+        {
+            if (request.Completion is not null)
             {
-                var context = new RevitUiContext(uiApplication);
-                var result = request.Function(context);
-                request.Completion?.TrySetResult(result);
+                request.Completion.TrySetException(
+                    new InvalidOperationException("An error occurred while executing the Revit task.", ex));
             }
-            catch (Exception ex)
+            else
             {
-                if (request.Completion is not null)
-                {
-                    request.Completion.TrySetException(
-                        new InvalidOperationException("An error occurred while executing the Revit task.", ex));
-                }
-                else
-                {
-                    // Fire-and-forget request: nobody observes the failure, so log it (if a logger is available).
-                    _logger?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
-                }
+                // Fire-and-forget request: nobody observes the failure, so log it (if a logger is available).
+                _logger?.LogError(ex, "An error occurred while executing a posted Revit task in dispatcher '{DispatcherName}'.", _name);
             }
         }
+    }
 
-        // Requests that arrived during the batch (or whose Raise() returned Pending) must not be stranded.
-        if (!_requests.IsEmpty && Volatile.Read(ref _disposed) == 0)
+    /// <summary>
+    ///     Raises the external event again if requests remain, so that requests that arrived during the batch (or whose
+    ///     <c>Raise()</c> returned <c>Pending</c>) are not stranded.
+    /// </summary>
+    private void RaiseFollowUpIfNeeded()
+    {
+        if (_requests.IsEmpty || Volatile.Read(ref _disposed) != 0)
         {
-            try
+            return;
+        }
+
+        try
+        {
+            var raiseResult = _externalEvent.Raise();
+            if (raiseResult is ExternalEventRequest.Denied or ExternalEventRequest.TimedOut)
             {
-                var raiseResult = _externalEvent.Raise();
-                if (raiseResult is ExternalEventRequest.Denied or ExternalEventRequest.TimedOut)
-                {
-                    _logger?.LogWarning("Revit did not accept the follow-up external event request ({RaiseResult}) in dispatcher '{DispatcherName}'. Queued requests run with the next accepted request.", raiseResult, _name);
-                }
+                _logger?.LogWarning("Revit did not accept the follow-up external event request ({RaiseResult}) in dispatcher '{DispatcherName}'. Queued requests run with the next accepted request.", raiseResult, _name);
             }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to raise the follow-up external event in dispatcher '{DispatcherName}'.", _name);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to raise the follow-up external event in dispatcher '{DispatcherName}'.", _name);
         }
     }
 
@@ -183,7 +210,7 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     This method queues the provided function for execution within the Revit API context and returns without
     ///     blocking. It can be called concurrently from multiple threads; each call receives its own result or exception.
     ///     Await the returned task; do not block on it with <c>Wait()</c> or <c>Result</c> from the UI thread or a Revit API
-    ///     context. Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="InvalidOperationException" />.
+    ///     context. Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="System.InvalidOperationException" />.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
@@ -214,7 +241,7 @@ public abstract class RevitTaskDispatcherBase : IExternalEventHandler, IDisposab
     ///     This method queues the provided action for execution within the Revit API context and returns without
     ///     blocking. It can be called concurrently from multiple threads. Await the returned task; do not block on it
     ///     from the UI thread or a Revit API context. Use <see cref="Post(Action{IRevitUiContext})" /> if the outcome is not needed.
-    ///     Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="InvalidOperationException" />.
+    ///     Exceptions thrown by <paramref name="action" /> are wrapped in an <see cref="System.InvalidOperationException" />.
     /// </remarks>
     /// <exception cref="System.ArgumentNullException">
     ///     Thrown if the <paramref name="action" /> parameter is <c>null</c>.
