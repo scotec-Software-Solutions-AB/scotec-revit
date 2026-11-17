@@ -1,4 +1,4 @@
-// Copyright © 2023 - 2026 Olaf Meyer
+﻿// Copyright © 2023 - 2026 Olaf Meyer
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
@@ -39,7 +39,7 @@ public class RevitTaskDispatcherTestCommand : RevitCommand
 
             var failed = results.Count(result => result.Status == TestStatus.Failed);
             var details = string.Join(Environment.NewLine + Environment.NewLine,
-                                      results.Select(result => $"[{result.Status.ToString().ToUpperInvariant()}] {result.Name}{Environment.NewLine}{result.Details}"));
+                                      results.Select(result => $"[{result.Status.ToString().ToUpperInvariant()}] {result.Name} ({result.Duration.TotalMilliseconds:0} ms){Environment.NewLine}{result.Details}"));
             Debug.WriteLine(details);
 
             await dispatcher.Run(_ =>

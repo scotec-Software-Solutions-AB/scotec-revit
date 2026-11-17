@@ -1,9 +1,10 @@
-// Copyright © 2023 - 2026 Olaf Meyer
+﻿// Copyright © 2023 - 2026 Olaf Meyer
 // Copyright © 2023 - 2026 scotec Software Solutions AB, www.scotec.com
 // This file is licensed to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ public enum TestStatus
 /// <summary>
 ///     The result of a single in-Revit test.
 /// </summary>
-public sealed record TestResult(string Name, TestStatus Status, string Details);
+public sealed record TestResult(string Name, TestStatus Status, string Details, TimeSpan Duration);
 
 /// <summary>
 ///     Runs tests for <see cref="RevitTaskDispatcher" /> inside a running Revit instance.
@@ -68,22 +69,23 @@ public sealed class RevitTaskDispatcherTestRunner(RevitTaskDispatcher dispatcher
 
     private static async Task<TestResult> RunTestAsync(string name, Func<Task<string>> test, TestStatus successStatus = TestStatus.Passed)
     {
+        var stopwatch = Stopwatch.StartNew();
         try
         {
             var details = await test().WaitAsync(TestTimeout);
-            return new TestResult(name, successStatus, details);
+            return new TestResult(name, successStatus, details, stopwatch.Elapsed);
         }
         catch (TimeoutException)
         {
-            return new TestResult(name, TestStatus.Failed, $"Timed out after {TestTimeout.TotalSeconds:0} s. A request may have been lost.");
+            return new TestResult(name, TestStatus.Failed, $"Timed out after {TestTimeout.TotalSeconds:0} s. A request may have been lost.", stopwatch.Elapsed);
         }
         catch (TestFailedException ex)
         {
-            return new TestResult(name, TestStatus.Failed, ex.Message);
+            return new TestResult(name, TestStatus.Failed, ex.Message, stopwatch.Elapsed);
         }
         catch (Exception ex)
         {
-            return new TestResult(name, TestStatus.Failed, $"Unexpected {ex.GetType().Name}: {ex.Message}");
+            return new TestResult(name, TestStatus.Failed, $"Unexpected {ex.GetType().Name}: {ex.Message}", stopwatch.Elapsed);
         }
     }
 
